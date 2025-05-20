@@ -1,0 +1,11 @@
+[package]
+name = "luminary"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bollard = { version = "0.16.1", features = ["chrono"] }
+color-eyre = "0.6.3"
+eyre = "0.6.12"
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+tokio-tungstenite = "0.26.2"
