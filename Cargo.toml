@@ -1,0 +1,6 @@
+[workspace]
+members = ["packages/macros", "packages/node"]
+resolver = "2"
+
+[workspace.dependencies]
+luminary-macros = { path = "packages/macros" }
