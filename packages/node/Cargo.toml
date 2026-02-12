@@ -9,4 +9,9 @@ color-eyre = "0.6.5"
 serde = "1.0.228"
 serde_json = "1.0.149"
 specta = { version = "1.0.5", features = ["functions"] }
-tokio = { version = "1.49.0", features = ["rt-multi-thread", "macros"] }
+luminary-macros = { path = "../macros" }
+tokio = { version = "1.49.0", features = [
+    "rt-multi-thread",
+    "macros",
+    "process",
+] }
