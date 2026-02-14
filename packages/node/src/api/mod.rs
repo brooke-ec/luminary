@@ -1,7 +1,6 @@
+use axum::routing::get;
 use axum::Router;
 
-use crate::state::LuminaryState;
-
-pub fn router() -> Router<LuminaryState> {
-    Router::new().route("/ping", axum::routing::get(|| async { "pong" }))
+pub fn router() -> Router {
+    Router::new().route("/ping", get(|| async { "pong" }))
 }
