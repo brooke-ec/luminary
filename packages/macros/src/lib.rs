@@ -23,7 +23,7 @@ pub fn wrap_err(attr: TokenStream, item: TokenStream) -> TokenStream {
 
     return quote! {
         #visibility #signature {
-            (#asyncness move || #output #block)()#wait.wrap_err(#attr)
+            color_eyre::eyre::WrapErr::wrap_err((#asyncness move || #output #block)()#wait, #attr)
         }
     }
     .into();
