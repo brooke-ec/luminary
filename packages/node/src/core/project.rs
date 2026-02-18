@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, path::Path};
 
 use bollard::query_parameters::ListContainersOptionsBuilder;
 use color_eyre::eyre::{ContextCompat, Ok, Result, WrapErr};
@@ -9,25 +9,20 @@ use tokio::fs::{self, File};
 use crate::core::{
     LuminaryCore,
     model::{LuminaryProject, LuminaryService},
-    project,
 };
 
 const COMPOSE_PROJECT_DIR_LABEL: &str = "com.docker.compose.project.working_dir";
 const COMPOSE_PROJECT_LABEL: &str = "com.docker.compose.project";
 const COMPOSE_SERVICE_LABEL: &str = "com.docker.compose.service";
 
-const ENV_PROJECT_DIRECTORY: &str = "LUMINARY_PROJECT_DIRECTORY";
 const COMPOSE_FILENAME: &str = "compose.yml";
 
 impl LuminaryCore {
     #[wrap_err("Failed to list projects from filesystem")]
     async fn list_from_filesystem(&self) -> Result<HashMap<String, LuminaryProject>> {
-        let dir = std::env::var(ENV_PROJECT_DIRECTORY)
-            .wrap_err("Failed to read project directory from environment variable")?;
-
         let mut projects = HashMap::<String, LuminaryProject>::new();
 
-        let mut entries = fs::read_dir(dir)
+        let mut entries = fs::read_dir(&self.configuration.project_directory)
             .await
             .wrap_err("Failed to list project directory contents")?;
         while let Some(entry) = entries.next_entry().await? {
@@ -43,6 +38,19 @@ impl LuminaryCore {
                 if path.exists() {
                     let file = File::open(path).await.wrap_err("Failed to open compose file")?;
                     let compose: Compose = serde_saphyr::from_reader(file.into_std().await)?;
+
+                    projects.insert(
+                        project_name.clone(),
+                        LuminaryProject {
+                            name: project_name,
+                            services: compose
+                                .services
+                                .0
+                                .into_iter()
+                                .map(|(name, _)| (name.clone(), LuminaryService { name: name.clone() }))
+                                .collect(),
+                        },
+                    );
                 }
             }
         }
@@ -65,14 +73,15 @@ impl LuminaryCore {
                     && let Some(project) = labels.remove(COMPOSE_PROJECT_LABEL)
                     && let Some(dir) = labels.remove(COMPOSE_PROJECT_DIR_LABEL)
                 {
-                    acc.entry(project.clone())
-                        .or_insert_with(|| LuminaryProject {
-                            services: HashMap::new(),
-                            name: project,
-                            dir,
-                        })
-                        .services
-                        .insert(service.clone(), LuminaryService { name: service });
+                    if Path::new(&dir).starts_with(&self.configuration.project_directory) {
+                        acc.entry(project.clone())
+                            .or_insert_with(|| LuminaryProject {
+                                services: HashMap::new(),
+                                name: project,
+                            })
+                            .services
+                            .insert(service.clone(), LuminaryService { name: service });
+                    }
                 }
 
                 return acc;

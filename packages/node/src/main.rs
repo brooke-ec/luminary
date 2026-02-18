@@ -1,7 +1,6 @@
-use std::fs::read_dir;
-
 use axum::Router;
 use color_eyre::eyre::Result;
+use dotenv::dotenv;
 use tokio::net::TcpListener;
 
 mod api;
@@ -9,6 +8,8 @@ mod core;
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    dotenv().ok();
+
     let listener = TcpListener::bind("0.0.0.0:9000").await?;
     let router = Router::new().nest("/api/", api::router());
 

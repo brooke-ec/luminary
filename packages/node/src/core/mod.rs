@@ -3,19 +3,32 @@ use std::process::Stdio;
 use bollard::Docker;
 use color_eyre::eyre::{Context, Result};
 use luminary_macros::wrap_err;
+use serde::Deserialize;
 use tokio::process::Command;
 
 mod model;
 mod project;
 
+#[derive(Deserialize, Debug)]
+pub struct LuminaryConfiguration {
+    pub project_directory: String,
+}
+
+#[derive(Debug)]
 pub struct LuminaryCore {
+    pub configuration: LuminaryConfiguration,
     docker: Docker,
 }
 
 impl LuminaryCore {
     pub fn new() -> Result<Self> {
         let docker = Docker::connect_with_defaults().wrap_err("Failed to connect to docker engine.")?;
-        return Ok(Self { docker });
+        let configuration = envy::prefixed("LUMINARY_").from_env::<LuminaryConfiguration>()?;
+
+        return Ok(Self {
+            configuration,
+            docker,
+        });
     }
 
     #[wrap_err("Failed to read from docker compose command line interface")]
