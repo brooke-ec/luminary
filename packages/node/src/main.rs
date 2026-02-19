@@ -1,17 +1,18 @@
+//! The main entry point for the Luminary Node, which serves as the backend for the Luminary Panel.
+
 use axum::Router;
-use color_eyre::eyre::Result;
 use dotenv::dotenv;
+use eyre::Result;
 use tokio::net::TcpListener;
 
 mod api;
-mod core;
 
 #[tokio::main]
 async fn main() -> Result<()> {
     dotenv().ok();
 
-    let core = core::LuminaryCore::new()?;
-    let projects = core.list_projects().await?;
+    let engine = luminary_core::LuminaryEngine::default()?;
+    let projects = engine.list_projects().await?;
     println!("Projects: {:#?}", projects);
 
     // let listener = TcpListener::bind("0.0.0.0:9000").await?;

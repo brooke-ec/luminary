@@ -1,3 +1,5 @@
+//! A crate containing procedural macros for Luminary. These are used to reduce boilerplate and improve ergonomics within its codebase.
+
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
@@ -25,7 +27,7 @@ pub fn wrap_err(attr: TokenStream, item: TokenStream) -> TokenStream {
     return quote! {
         #(#attrs)*
         #visibility #signature {
-            color_eyre::eyre::WrapErr::wrap_err((#asyncness move || #output #block)()#wait, #attr)
+            eyre::WrapErr::wrap_err((#asyncness move || #output #block)()#wait, #attr)
         }
     }
     .into();

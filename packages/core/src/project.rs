@@ -3,13 +3,13 @@
 use std::{collections::HashMap, path::Path};
 
 use bollard::{query_parameters::ListContainersOptionsBuilder, secret::ContainerSummaryStateEnum};
-use color_eyre::eyre::{Ok, Result, WrapErr};
 use docker_compose_types::Compose;
+use eyre::{Ok, Result, WrapErr};
 use luminary_macros::wrap_err;
 use tokio::fs::{self, File};
 
-use crate::core::{
-    LuminaryCore,
+use crate::{
+    LuminaryEngine,
     model::{LuminaryProject, LuminaryService, LuminaryStatus},
 };
 
@@ -19,7 +19,7 @@ const COMPOSE_SERVICE_LABEL: &str = "com.docker.compose.service";
 
 const COMPOSE_FILENAME: &str = "compose.yml";
 
-impl LuminaryCore {
+impl LuminaryEngine {
     /// Lists all Luminary projects by combining data from both the filesystem and Docker engine.
     #[wrap_err("Failed to list projects")]
     pub async fn list_projects(&self) -> Result<HashMap<String, LuminaryProject>> {
