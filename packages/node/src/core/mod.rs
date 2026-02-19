@@ -9,11 +9,13 @@ use tokio::process::Command;
 mod model;
 mod project;
 
+/// A struct containing Luminary configuration, to be loaded from environment variables.
 #[derive(Deserialize, Debug)]
 pub struct LuminaryConfiguration {
     pub project_directory: String,
 }
 
+/// The core struct of the Luminary application, containing shared state and configuration.
 #[derive(Debug)]
 pub struct LuminaryCore {
     pub configuration: LuminaryConfiguration,
@@ -21,6 +23,7 @@ pub struct LuminaryCore {
 }
 
 impl LuminaryCore {
+    /// Initializes a new instance of the LuminaryCore struct, loading configuration from environment variables and connecting to the Docker engine.
     pub fn new() -> Result<Self> {
         let docker = Docker::connect_with_defaults().wrap_err("Failed to connect to docker engine.")?;
         let configuration = envy::prefixed("LUMINARY_").from_env::<LuminaryConfiguration>()?;
