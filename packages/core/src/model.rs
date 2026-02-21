@@ -5,6 +5,9 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
+/// A type alias for a collection of Luminary projects, keyed by project name.
+pub type LuminaryProjects = HashMap<String, LuminaryProject>;
+
 /// Represents a Luminary project, consisting of a docker compose project.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Type)]
 #[serde(rename_all = "camelCase")]

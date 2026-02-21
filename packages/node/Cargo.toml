@@ -6,6 +6,7 @@ edition = "2024"
 tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
 luminary-macros = { path = "../macros" }
 luminary-core = { path = "../core" }
+futures-util = { workspace = true }
 serde = { workspace = true }
 eyre = { workspace = true }
 color-eyre = "0.6.5"

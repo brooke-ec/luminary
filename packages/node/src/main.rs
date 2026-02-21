@@ -5,6 +5,8 @@ use dotenv::dotenv;
 use eyre::Result;
 use tokio::net::TcpListener;
 
+use futures_util::StreamExt;
+
 mod api;
 
 #[tokio::main]
@@ -12,8 +14,11 @@ async fn main() -> Result<()> {
     dotenv().ok();
 
     let engine = luminary_core::LuminaryEngine::default()?;
-    let projects = engine.list_projects().await?;
-    println!("Projects: {:#?}", projects);
+    let mut stream = engine.changes();
+
+    while let Some(projects) = stream.next().await {
+        println!("{:#?}", projects?);
+    }
 
     // let listener = TcpListener::bind("0.0.0.0:9000").await?;
     // let router = Router::new().nest("/api/", api::router());

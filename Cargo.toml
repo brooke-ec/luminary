@@ -3,6 +3,7 @@ resolver = "3"
 members = ["packages/core", "packages/macros", "packages/node"]
 
 [workspace.dependencies]
+futures-util = "0.3"
 serde = "1.0.228"
 tokio = "1.49.0"
 eyre = "0.6.12"
