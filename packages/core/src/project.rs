@@ -1,20 +1,16 @@
 //! This module implements the core logic for managing Luminary projects.
 
-use std::{collections::HashMap, path::Path, pin::Pin};
+use std::{collections::HashMap, path::Path};
 
-use bollard::{
-    query_parameters::{EventsOptionsBuilder, ListContainersOptionsBuilder},
-    secret::ContainerSummaryStateEnum,
-};
+use bollard::{query_parameters::ListContainersOptionsBuilder, secret::ContainerSummaryStateEnum};
 use docker_compose_types::Compose;
 use eyre::{Ok, Result, WrapErr};
-use futures_util::{Stream, StreamExt};
 use luminary_macros::wrap_err;
 use tokio::fs::{self, File};
 
 use crate::{
     LuminaryEngine,
-    model::{LuminaryProject, LuminaryProjects, LuminaryService, LuminaryStatus},
+    model::{LuminaryProject, LuminaryProjectList, LuminaryService, LuminaryStatus},
 };
 
 const COMPOSE_PROJECT_DIR_LABEL: &str = "com.docker.compose.project.working_dir";
@@ -26,7 +22,7 @@ const COMPOSE_FILENAME: &str = "compose.yml";
 impl LuminaryEngine {
     /// Lists all Luminary projects by combining data from both the filesystem and Docker engine.
     #[wrap_err("Failed to list projects")]
-    pub async fn list_projects(&self) -> Result<LuminaryProjects> {
+    pub async fn list_projects(&self) -> Result<LuminaryProjectList> {
         let disk_projects = self.list_from_filesystem().await?;
         let mut projects = self.list_from_docker().await?;
 
@@ -40,8 +36,8 @@ impl LuminaryEngine {
 
     /// Lists all Luminary projects found in the configured projects directory.
     #[wrap_err("Failed to list projects from filesystem")]
-    async fn list_from_filesystem(&self) -> Result<LuminaryProjects> {
-        let mut projects = HashMap::<String, LuminaryProject>::new();
+    async fn list_from_filesystem(&self) -> Result<LuminaryProjectList> {
+        let mut projects = LuminaryProjectList::new();
 
         let mut entries = fs::read_dir(&self.configuration.project_directory)
             .await
@@ -76,6 +72,7 @@ impl LuminaryEngine {
                     (
                         name.clone(),
                         LuminaryService {
+                            id: None,
                             name: name.clone(),
                             status: LuminaryStatus::Down,
                         },
@@ -87,7 +84,7 @@ impl LuminaryEngine {
 
     /// Lists all Luminary projects by querying the Docker engine for containers with specific labels.
     #[wrap_err("Failed to list projects from docker engine")]
-    async fn list_from_docker(&self) -> Result<LuminaryProjects> {
+    async fn list_from_docker(&self) -> Result<LuminaryProjectList> {
         let options = ListContainersOptionsBuilder::default().all(true).build();
         let projects = self
             .docker
@@ -95,7 +92,7 @@ impl LuminaryEngine {
             .await
             .wrap_err("Failed to fetch containers from docker engine")?
             .iter_mut()
-            .fold(HashMap::<String, LuminaryProject>::new(), |mut acc, container| {
+            .fold(LuminaryProjectList::new(), |mut acc, container| {
                 if let Some(mut labels) = container.labels.take()
                     && let Some(service) = labels.remove(COMPOSE_SERVICE_LABEL)
                     && let Some(project) = labels.remove(COMPOSE_PROJECT_LABEL)
@@ -113,6 +110,7 @@ impl LuminaryEngine {
                             .insert(
                                 service.clone(),
                                 LuminaryService {
+                                    id: container.id.take(),
                                     name: service,
                                     status,
                                 },
@@ -139,18 +137,5 @@ impl LuminaryEngine {
             Some(ContainerSummaryStateEnum::DEAD) => LuminaryStatus::Down,
             None => LuminaryStatus::Down,
         };
-    }
-
-    /// Subscribes to Docker events and emits an updated list of Luminary projects whenever a change occurs.
-    pub fn changes(&self) -> Pin<Box<dyn Stream<Item = Result<LuminaryProjects>> + '_>> {
-        let mut filters = HashMap::new();
-        filters.insert("type", vec!["container"]);
-
-        let options = EventsOptionsBuilder::default().filters(&filters).build();
-        return Box::pin(self.docker.events(Some(options)).then(async |_| {
-            self.list_projects()
-                .await
-                .wrap_err("Failed to fetch updated projects after docker event")
-        }));
     }
 }

@@ -4,13 +4,14 @@ edition = "2024"
 
 [dependencies]
 tokio = { workspace = true, features = ["process", "fs"] }
-specta = { version = "1.0.5", features = ["functions"] }
-bollard = { version = "0.20.1", features = ["chrono"] }
+specta = { version = "1.0", features = ["functions"] }
+bollard = { version = "0.20", features = ["chrono"] }
 luminary-macros = { path = "../macros" }
 futures-util = { workspace = true }
-docker-compose-types = "0.22.0"
+docker-compose-types = "0.22"
 serde = { workspace = true }
 eyre = { workspace = true }
-serde-saphyr = "0.0.19"
-serde_json = "1.0.149"
-envy = "0.4.2"
+serde-saphyr = "0.0"
+serde_json = "1.0"
+pin-project = "1.1"
+envy = "0.4"

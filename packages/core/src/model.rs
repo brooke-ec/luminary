@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use specta::Type;
 
 /// A type alias for a collection of Luminary projects, keyed by project name.
-pub type LuminaryProjects = HashMap<String, LuminaryProject>;
+pub type LuminaryProjectList = HashMap<String, LuminaryProject>;
 
 /// Represents a Luminary project, consisting of a docker compose project.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Type)]
@@ -21,6 +21,7 @@ pub struct LuminaryProject {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Type)]
 #[serde(rename_all = "camelCase")]
 pub struct LuminaryService {
+    pub id: Option<String>,
     pub name: String,
     pub status: LuminaryStatus,
 }

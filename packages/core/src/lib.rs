@@ -4,5 +4,6 @@ mod configuration;
 pub mod engine;
 pub mod model;
 mod project;
+mod subscribe;
 
 pub use engine::LuminaryEngine;

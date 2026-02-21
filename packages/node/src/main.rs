@@ -14,7 +14,7 @@ async fn main() -> Result<()> {
     dotenv().ok();
 
     let engine = luminary_core::LuminaryEngine::default()?;
-    let mut stream = engine.changes();
+    let mut stream = engine.subscribe();
 
     while let Some(projects) = stream.next().await {
         println!("{:#?}", projects?);

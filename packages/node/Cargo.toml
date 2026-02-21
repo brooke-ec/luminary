@@ -9,6 +9,6 @@ luminary-core = { path = "../core" }
 futures-util = { workspace = true }
 serde = { workspace = true }
 eyre = { workspace = true }
-color-eyre = "0.6.5"
-dotenv = "0.15.0"
-axum = "0.8.8"
+color-eyre = "0.6"
+dotenv = "0.15"
+axum = "0.8"
