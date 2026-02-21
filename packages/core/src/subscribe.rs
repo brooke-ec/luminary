@@ -9,7 +9,11 @@ use eyre::Result;
 use futures_util::{FutureExt, Stream, future::BoxFuture};
 use pin_project::pin_project;
 
-use crate::{LuminaryEngine, model::LuminaryProjectList};
+use crate::{
+    LuminaryEngine,
+    model::{LuminaryProjectList, LuminaryStatus},
+    project::{LuminaryProjectListExt, LuminaryProjectParser},
+};
 
 impl LuminaryEngine {
     /// Subscribes to Docker events and emits an updated list of Luminary projects whenever a change occurs.
@@ -42,11 +46,36 @@ where
 }
 
 async fn process_event<'a>(
-    _engine: &'a LuminaryEngine,
-    state: LuminaryProjectList,
-    _event: EventMessage,
+    engine: &'a LuminaryEngine,
+    mut state: LuminaryProjectList,
+    event: EventMessage,
 ) -> Result<LuminaryProjectList> {
-    return Ok(state); // TODO: Implement actual event processing logic to update the project list based on the event.
+    if let Some(action) = event.action
+        && let Some(actor) = event.actor
+        && let Some(labels) = actor.attributes
+        && let Some(status) = parse_action(action.clone())
+        && let Some(project) = engine.parse_labels(status, labels)
+    {
+        state.merge_project(project);
+    }
+
+    return Ok(state);
+}
+
+fn parse_action(action: String) -> Option<LuminaryStatus> {
+    return match action.as_str() {
+        "create" => Some(LuminaryStatus::Loading),
+        "destroy" => Some(LuminaryStatus::Down),
+        "start" => Some(LuminaryStatus::Running),
+        "stop" => Some(LuminaryStatus::Exited),
+        "restart" => Some(LuminaryStatus::Running),
+        "kill" => Some(LuminaryStatus::Loading),
+        "pause" => Some(LuminaryStatus::Paused),
+        "unpause" => Some(LuminaryStatus::Running),
+        "die" => Some(LuminaryStatus::Exited),
+        "oom" => Some(LuminaryStatus::Exited),
+        _ => None,
+    };
 }
 
 impl<'a, S> Stream for LuminaryChangeStream<'a, S>

@@ -21,7 +21,6 @@ pub struct LuminaryProject {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Type)]
 #[serde(rename_all = "camelCase")]
 pub struct LuminaryService {
-    pub id: Option<String>,
     pub name: String,
     pub status: LuminaryStatus,
 }
@@ -31,13 +30,22 @@ pub struct LuminaryService {
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Type)]
 #[serde(rename_all = "camelCase")]
 pub enum LuminaryStatus {
+    /// Represents a service that has exited (usually due to an error).
     Exited,
+
+    /// Represents a service that is offline.
     Down,
+
+    /// Represents a service that has been paused.
     Paused,
-    Restarting,
-    Removing,
-    Starting,
+
+    /// Represents a service that is in the process of changing state.
+    Loading,
+
+    /// Represents a service that is running and online.
     Running,
+
+    /// Represents a service that is actively passing health checks.
     Healthy,
 }
 
