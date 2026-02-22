@@ -1,0 +1,8 @@
+[package]
+name = "luminary-library"
+edition = "2024"
+
+[dependencies]
+luminary-macros = { path = "./macros" }
+futures-util = { workspace = true }
+pin-project = "1.1"

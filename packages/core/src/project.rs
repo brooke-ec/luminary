@@ -5,7 +5,7 @@ use std::{collections::HashMap, path::Path};
 use bollard::{query_parameters::ListContainersOptionsBuilder, secret::ContainerSummaryStateEnum};
 use docker_compose_types::Compose;
 use eyre::{Ok, Result, WrapErr};
-use luminary_macros::wrap_err;
+use luminary_library::wrap_err;
 use tokio::fs::{self, File};
 
 use crate::{

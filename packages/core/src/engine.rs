@@ -4,7 +4,7 @@ use std::process::Stdio;
 
 use bollard::Docker;
 use eyre::{Context, Result};
-use luminary_macros::wrap_err;
+use luminary_library::wrap_err;
 use tokio::process::Command;
 
 use crate::configuration::LuminaryConfiguration;
@@ -18,7 +18,7 @@ pub struct LuminaryEngine {
 
 impl LuminaryEngine {
     /// Initializes a new instance of the Engine struct, loading configuration from environment variables and connecting to the Docker engine.
-    pub fn default() -> Result<Self> {
+    pub fn create() -> Result<Self> {
         let docker = Docker::connect_with_defaults().wrap_err("Failed to connect to docker engine.")?;
         let configuration = envy::prefixed("LUMINARY_").from_env::<LuminaryConfiguration>()?;
 

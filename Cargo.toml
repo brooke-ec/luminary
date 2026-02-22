@@ -1,9 +1,10 @@
 [workspace]
 resolver = "3"
-members = ["packages/core", "packages/macros", "packages/node"]
+members = ["packages/core", "packages/library", "packages/node"]
 
 [workspace.dependencies]
 futures-util = "0.3"
+serde_json = "1.0"
 serde = "1.0"
 tokio = "1.49"
 eyre = "0.6"
