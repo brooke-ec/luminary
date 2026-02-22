@@ -8,7 +8,7 @@ use bollard::{
 };
 use docker_compose_types::Compose;
 use eyre::{Result, WrapErr};
-use futures_util::{Stream, StreamExt};
+use futures_util::{StreamExt, stream::BoxStream};
 use luminary_macros::wrap_err;
 use tokio::fs::{self, File};
 
@@ -33,7 +33,7 @@ impl LuminaryEngine {
     /// use futures_util::StreamExt;
     /// use luminary_core::LuminaryProjectList;
     ///
-    /// let mut stream = engine.subscribe();
+    /// let mut stream = engine.stream();
     /// let mut state = engine.list_projects().await?;
     ///
     /// while let Some(project) = stream.next().await {
@@ -41,28 +41,32 @@ impl LuminaryEngine {
     ///     println!("{state:#?}");
     /// }
     /// ```
-    pub fn subscribe(&self) -> impl Stream<Item = Result<LuminaryProject>> {
+    pub fn stream(&self) -> BoxStream<'_, Result<LuminaryProject>> {
         let mut filters = HashMap::new();
         filters.insert("type", vec!["container"]);
         let options = EventsOptionsBuilder::default().filters(&filters).build();
 
-        self.docker.events(Some(options)).filter_map(move |event| async {
-            match event.wrap_err("Failed to receive Docker event") {
-                Err(err) => Some(Err(err)),
-                Ok(event) => {
-                    if let Some(actor) = event.actor
-                        && let Some(action) = event.action
-                        && let Some(labels) = actor.attributes
-                        && let Some(status) = self.parse_action(action.clone())
-                        && let Some(project) = self.parse_labels(status, labels)
-                    {
-                        return Some(Ok(project));
-                    } else {
-                        return None;
+        return self
+            .docker
+            .events(Some(options))
+            .filter_map(move |event| async {
+                match event.wrap_err("Failed to receive Docker event") {
+                    Err(err) => Some(Err(err)),
+                    Ok(event) => {
+                        if let Some(actor) = event.actor
+                            && let Some(action) = event.action
+                            && let Some(labels) = actor.attributes
+                            && let Some(status) = self.parse_action(action.clone())
+                            && let Some(project) = self.parse_labels(status, labels)
+                        {
+                            return Some(Ok(project));
+                        } else {
+                            return None;
+                        }
                     }
                 }
-            }
-        })
+            })
+            .boxed();
     }
 
     /// Lists all Luminary projects by combining data from both the filesystem and Docker engine.

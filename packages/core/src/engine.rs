@@ -1,6 +1,6 @@
 //! The core engine of the Luminary application, containing shared state and configuration.
 
-use std::process::Stdio;
+use std::{process::Stdio, sync::Arc};
 
 use bollard::Docker;
 use eyre::{Context, Result};
@@ -10,17 +10,18 @@ use tokio::process::Command;
 use crate::configuration::LuminaryConfiguration;
 
 /// The core engine of the Luminary application, containing shared state and configuration.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct LuminaryEngine {
-    pub configuration: LuminaryConfiguration,
+    pub configuration: Arc<LuminaryConfiguration>,
     pub(crate) docker: Docker,
 }
 
 impl LuminaryEngine {
     /// Initializes a new instance of the Engine struct, loading configuration from environment variables and connecting to the Docker engine.
+    #[wrap_err("Failed to create LuminaryEngine")]
     pub fn create() -> Result<Self> {
         let docker = Docker::connect_with_defaults().wrap_err("Failed to connect to docker engine.")?;
-        let configuration = envy::prefixed("LUMINARY_").from_env::<LuminaryConfiguration>()?;
+        let configuration = Arc::new(envy::prefixed("LUMINARY_").from_env::<LuminaryConfiguration>()?);
 
         return Ok(Self {
             configuration,

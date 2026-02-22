@@ -1,24 +1,13 @@
-use std::convert::Infallible;
+//! Contains all the routes for Luminary Node's API.
 
-use axum::response::Sse;
+use crate::state::LuminaryState;
+use axum::Router;
 use axum::routing::get;
-use axum::{Router, response::sse::Event};
-use futures_util::{Stream, StreamExt};
 
-use crate::ENGINE;
+pub mod state;
 
-pub fn router() -> Router {
+pub fn router() -> Router<LuminaryState> {
     Router::new()
         .route("/ping", get(|| async { "pong" }))
-        .route("/containers", get(containers))
-}
-
-async fn containers() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
-    return Sse::new(
-        ENGINE
-            .get()
-            .unwrap()
-            .subscribe()
-            .map(|r| Ok(Event::default().data(serde_json::to_string(&r.unwrap()).unwrap()))),
-    );
+        .route("/containers", get(state::handle_request))
 }
