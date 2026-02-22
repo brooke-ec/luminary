@@ -2,9 +2,13 @@
 
 use std::{collections::HashMap, path::Path};
 
-use bollard::{query_parameters::ListContainersOptionsBuilder, secret::ContainerSummaryStateEnum};
+use bollard::{
+    query_parameters::{EventsOptionsBuilder, ListContainersOptionsBuilder},
+    secret::ContainerSummaryStateEnum,
+};
 use docker_compose_types::Compose;
-use eyre::{Ok, Result, WrapErr};
+use eyre::{Result, WrapErr};
+use futures_util::{Stream, StreamExt};
 use luminary_macros::wrap_err;
 use tokio::fs::{self, File};
 
@@ -20,6 +24,31 @@ const COMPOSE_SERVICE_LABEL: &str = "com.docker.compose.service";
 const COMPOSE_FILENAME: &str = "compose.yml";
 
 impl LuminaryEngine {
+    /// Subscribes to Docker events and emits a partial `LuminaryProject` whenever one of its containers changes state.
+    pub fn subscribe(&self) -> impl Stream<Item = Result<LuminaryProject>> {
+        let mut filters = HashMap::new();
+        filters.insert("type", vec!["container"]);
+        let options = EventsOptionsBuilder::default().filters(&filters).build();
+
+        self.docker.events(Some(options)).filter_map(move |event| async {
+            match event.wrap_err("Failed to receive Docker event") {
+                Err(err) => Some(Err(err)),
+                Ok(event) => {
+                    if let Some(actor) = event.actor
+                        && let Some(action) = event.action
+                        && let Some(labels) = actor.attributes
+                        && let Some(status) = self.parse_action(action.clone())
+                        && let Some(project) = self.parse_labels(status, labels)
+                    {
+                        return Some(Ok(project));
+                    } else {
+                        return None;
+                    }
+                }
+            }
+        })
+    }
+
     /// Lists all Luminary projects by combining data from both the filesystem and Docker engine.
     #[wrap_err("Failed to list projects")]
     pub async fn list_projects(&self) -> Result<LuminaryProjectList> {
@@ -71,7 +100,7 @@ impl LuminaryEngine {
             .fold(LuminaryProjectList::new(), |mut acc, container| {
                 if let Some(labels) = container.labels.take() {
                     if let Some(project) = self.parse_labels(self.parse_state(container.state), labels) {
-                        acc.merge_project(project);
+                        project.merge_into(&mut acc);
                     }
                 }
 
@@ -80,25 +109,8 @@ impl LuminaryEngine {
 
         return Ok(projects);
     }
-}
 
-pub trait LuminaryProjectParser {
-    /// Parses a given compose file into a LuminaryProject struct, initializing all services with a default status of "Down".
-    fn parse_compose(&self, name: String, compose: Compose) -> LuminaryProject;
-
-    /// Parses container labels to determine if they correspond to a Luminary project, if so, constructs a LuminaryProject struct from them.
-    fn parse_labels(
-        &self,
-        status: LuminaryStatus,
-        labels: HashMap<String, String>,
-    ) -> Option<LuminaryProject>;
-
-    /// Parses a Docker container state into a corresponding LuminaryStatus.
-    fn parse_state(&self, state: Option<ContainerSummaryStateEnum>) -> LuminaryStatus;
-}
-
-impl LuminaryProjectParser for LuminaryEngine {
-    fn parse_compose(&self, name: String, compose: Compose) -> LuminaryProject {
+    pub(crate) fn parse_compose(&self, name: String, compose: Compose) -> LuminaryProject {
         LuminaryProject {
             name,
             status: LuminaryStatus::Down,
@@ -119,7 +131,7 @@ impl LuminaryProjectParser for LuminaryEngine {
         }
     }
 
-    fn parse_labels(
+    pub(crate) fn parse_labels(
         &self,
         status: LuminaryStatus,
         mut labels: HashMap<String, String>,
@@ -145,7 +157,7 @@ impl LuminaryProjectParser for LuminaryEngine {
         return None;
     }
 
-    fn parse_state(&self, state: Option<ContainerSummaryStateEnum>) -> LuminaryStatus {
+    pub(crate) fn parse_state(&self, state: Option<ContainerSummaryStateEnum>) -> LuminaryStatus {
         return match state {
             Some(ContainerSummaryStateEnum::CREATED) => LuminaryStatus::Loading,
             Some(ContainerSummaryStateEnum::RUNNING) => LuminaryStatus::Running,
@@ -158,23 +170,36 @@ impl LuminaryProjectParser for LuminaryEngine {
             None => LuminaryStatus::Down,
         };
     }
+
+    /// Translate a Docker event action into a LuminaryStatus, if possible.
+    pub(crate) fn parse_action(&self, action: String) -> Option<LuminaryStatus> {
+        return match action.as_str() {
+            "create" => Some(LuminaryStatus::Loading),
+            "destroy" => Some(LuminaryStatus::Down),
+            "start" => Some(LuminaryStatus::Running),
+            "stop" => Some(LuminaryStatus::Exited),
+            "restart" => Some(LuminaryStatus::Running),
+            "kill" => Some(LuminaryStatus::Loading),
+            "pause" => Some(LuminaryStatus::Paused),
+            "unpause" => Some(LuminaryStatus::Running),
+            "die" => Some(LuminaryStatus::Exited),
+            "oom" => Some(LuminaryStatus::Exited),
+            _ => None,
+        };
+    }
 }
 
-pub trait LuminaryProjectListExt {
-    /// Adds a project to the list, merging with any existing project of the same name.
-    fn merge_project(&mut self, b: LuminaryProject);
-}
-
-impl LuminaryProjectListExt for LuminaryProjectList {
-    fn merge_project(&mut self, project: LuminaryProject) {
-        if let Some(existing) = self.get_mut(&project.name) {
-            for (service_name, service) in project.services {
+impl LuminaryProject {
+    /// Merges this project into the provided list, combining with existing services.
+    pub fn merge_into(self, list: &mut LuminaryProjectList) {
+        if let Some(existing) = list.get_mut(&self.name) {
+            for (service_name, service) in self.services {
                 existing.services.insert(service_name, service);
             }
 
             existing.status = LuminaryStatus::min(existing.services.values().map(|s| s.status));
         } else {
-            self.insert(project.name.clone(), project);
+            list.insert(self.name.clone(), self);
         }
     }
 }
