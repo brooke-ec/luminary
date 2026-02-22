@@ -1,3 +1,5 @@
+//! This module implements a stream for listening to changes from Docker engine.
+
 use std::{
     collections::HashMap,
     pin::Pin,
@@ -31,6 +33,7 @@ impl LuminaryEngine {
     }
 }
 
+/// A stream that listens to Docker events and emits an updated list of Luminary projects whenever a change occurs.
 #[pin_project]
 pub struct LuminaryChangeStream<'a, S>
 where
@@ -45,6 +48,7 @@ where
     engine: &'a LuminaryEngine,
 }
 
+/// Process a Docker event and update the project list accordingly.
 async fn process_event<'a>(
     engine: &'a LuminaryEngine,
     mut state: LuminaryProjectList,
@@ -62,6 +66,7 @@ async fn process_event<'a>(
     return Ok(state);
 }
 
+/// Translate a Docker event action into a LuminaryStatus, if possible.
 fn parse_action(action: String) -> Option<LuminaryStatus> {
     return match action.as_str() {
         "create" => Some(LuminaryStatus::Loading),
@@ -84,6 +89,7 @@ where
 {
     type Item = Result<LuminaryProjectList>;
 
+    // Adapted from https://docs.rs/futures-util/0.3.32/src/futures_util/stream/stream/then.rs.html#64-78
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         let mut this = self.project();
 
