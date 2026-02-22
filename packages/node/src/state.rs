@@ -26,14 +26,16 @@ pub struct LuminaryState {
 }
 
 impl LuminaryState {
+    /// Creates a new LuminaryState with default values.
     #[wrap_err("Failed to create LuminaryState")]
     pub fn create() -> Result<Self> {
         Ok(Self {
             engine: LuminaryEngine::create()?,
-            channel: LuminaryStateChannel::create(),
+            channel: LuminaryStateChannel::new(),
         })
     }
 
+    /// Spawns a background worker that listens for changes from the Luminary Engine and sends them to clients.
     #[wrap_err("Failed to spawn LuminaryState worker")]
     pub async fn spawn_worker(self) -> Result<()> {
         self.refresh().await?;
@@ -54,6 +56,10 @@ impl LuminaryState {
         return Ok(());
     }
 
+    /// Synchronises [LuminaryStateChannel]'s internal state with the current state of the Luminary Engine.
+    ///
+    /// This should only need to be called, when needing to update from disk.
+    /// This is because [LuminaryEngine::stream] will theoretically emit all neccesary updates to keep the state in sync.
     #[wrap_err("Failed to refresh LuminaryState")]
     pub async fn refresh(&self) -> Result<()> {
         let list = self.engine.list_projects().await?;
@@ -71,6 +77,10 @@ impl FromRef<LuminaryState> for LuminaryEngine {
     }
 }
 
+/// Represents the main channel for sending updates to the frontend.
+///
+/// This is implemented with a broadcast channel, which allows for multiple subscribers to receive updates without needing to manage individual connections.
+/// This channel sends diffs, which are generated using an internal state to track how each emission changes the document.
 #[derive(Debug, Clone)]
 pub struct LuminaryStateChannel {
     channel: broadcast::Sender<Result<Event, Infallible>>,
@@ -78,13 +88,18 @@ pub struct LuminaryStateChannel {
 }
 
 impl LuminaryStateChannel {
-    fn create() -> Self {
+    /// Creates a new LuminaryStateChannel with default values.
+    ///
+    /// This will initialise the channel with an empty project list, use [LuminaryState::refresh]
+    /// or [LuminaryState::spawn_worker] to update it with the current state of the engine.
+    fn new() -> Self {
         return Self {
             channel: broadcast::channel(64).0,
             state: Arc::new(RwLock::new((LuminaryProjectList::new(), json!({})))),
         };
     }
 
+    /// Sends a [eyre::Report] to all subscribers.
     fn error(&self, error: eyre::Report) {
         println!("{}", error);
         let event = Event::default()
@@ -96,6 +111,7 @@ impl LuminaryStateChannel {
         self.channel.send(Ok(event)).ok(); // This will only error if there are no active subscribers, so we can safely ignore it
     }
 
+    /// Handles a single iteration of the worker loop, merging changes into the internal state and sending diffs to subscribers.
     async fn worker_iteration(&self, result: Result<LuminaryProject>) -> Result<()> {
         let project = result?;
         let mut guard = self.state.write().await;
@@ -104,6 +120,9 @@ impl LuminaryStateChannel {
         Ok(())
     }
 
+    /// Sends a diff to all subscribers and updates internal state.
+    ///
+    /// Should be called before updating `state.1` with the serialised `state.0`.
     fn send_changes(
         &self,
         mut guard: RwLockWriteGuard<'_, (LuminaryProjectList, serde_json::Value)>,
@@ -116,6 +135,7 @@ impl LuminaryStateChannel {
         return Ok(());
     }
 
+    /// Generates a Server-Sent Event containing a JSON Patch diff between two states.
     fn generate_event(left: &serde_json::Value, right: &serde_json::Value) -> Result<Event, Infallible> {
         let diff = json_patch::diff(&left, &right);
         let event = Event::default()
@@ -126,6 +146,7 @@ impl LuminaryStateChannel {
         return Ok(event);
     }
 
+    /// Creates a Server-Sent Event stream for clients to subscribe to.
     pub async fn sse(&self) -> Sse<impl Stream<Item = Result<Event, Infallible>> + use<>> {
         let event = LuminaryStateChannel::generate_event(&json!({}), &self.state.read().await.1);
         let mut reciever = self.channel.subscribe();
