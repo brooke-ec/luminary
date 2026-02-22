@@ -18,7 +18,7 @@ pub struct LuminaryEngine {
 
 impl LuminaryEngine {
     /// Initializes a new instance of the Engine struct, loading configuration from environment variables and connecting to the Docker engine.
-    pub fn default() -> Result<Self> {
+    pub fn create() -> Result<Self> {
         let docker = Docker::connect_with_defaults().wrap_err("Failed to connect to docker engine.")?;
         let configuration = envy::prefixed("LUMINARY_").from_env::<LuminaryConfiguration>()?;
 

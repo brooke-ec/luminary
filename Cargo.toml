@@ -4,6 +4,6 @@ members = ["packages/core", "packages/macros", "packages/node"]
 
 [workspace.dependencies]
 futures-util = "0.3"
-serde = "1.0"
 tokio = "1.49"
+serde = "1.0"
 eyre = "0.6"
