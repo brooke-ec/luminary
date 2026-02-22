@@ -11,10 +11,11 @@ mod state;
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    color_eyre::install()?;
     dotenv().ok();
 
     let state = LuminaryState::create()?;
-    state.spawn_worker();
+    state.clone().spawn_worker().await?;
 
     let listener = TcpListener::bind("0.0.0.0:9000").await?;
     let router = Router::<LuminaryState>::new()
