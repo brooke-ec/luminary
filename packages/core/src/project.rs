@@ -24,7 +24,23 @@ const COMPOSE_SERVICE_LABEL: &str = "com.docker.compose.service";
 const COMPOSE_FILENAME: &str = "compose.yml";
 
 impl LuminaryEngine {
-    /// Subscribes to Docker events and emits a partial `LuminaryProject` whenever one of its containers changes state.
+    /// Subscribes to Docker events and emits a partial [LuminaryProject] whenever one of its containers changes state.
+    ///
+    /// Partial projects can be merged into an existing [LuminaryProjectList] using [LuminaryProject::merge_into]
+    ///
+    /// # Examples
+    /// ```
+    /// use futures_util::StreamExt;
+    /// use luminary_core::LuminaryProjectList;
+    ///
+    /// let mut stream = engine.subscribe();
+    /// let mut state = engine.list_projects().await?;
+    ///
+    /// while let Some(project) = stream.next().await {
+    ///     project?.merge_into(&mut state);
+    ///     println!("{state:#?}");
+    /// }
+    /// ```
     pub fn subscribe(&self) -> impl Stream<Item = Result<LuminaryProject>> {
         let mut filters = HashMap::new();
         filters.insert("type", vec!["container"]);
@@ -110,6 +126,7 @@ impl LuminaryEngine {
         return Ok(projects);
     }
 
+    /// Parses a given compose file into a LuminaryProject struct, initializing all services with a default status of "Down".
     pub(crate) fn parse_compose(&self, name: String, compose: Compose) -> LuminaryProject {
         LuminaryProject {
             name,
@@ -131,6 +148,7 @@ impl LuminaryEngine {
         }
     }
 
+    /// Lists all Luminary projects by querying the Docker engine for containers with specific labels.
     pub(crate) fn parse_labels(
         &self,
         status: LuminaryStatus,
@@ -157,6 +175,7 @@ impl LuminaryEngine {
         return None;
     }
 
+    /// Parses a Docker container state into a corresponding LuminaryStatus.
     pub(crate) fn parse_state(&self, state: Option<ContainerSummaryStateEnum>) -> LuminaryStatus {
         return match state {
             Some(ContainerSummaryStateEnum::CREATED) => LuminaryStatus::Loading,
