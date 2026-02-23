@@ -21,3 +21,5 @@ sqlx = { version = "0.8.6", features = [
     "macros",
     "migrate",
 ] }
+axum-login = "0.18.0"
+tower-sessions = "0.15.0"
