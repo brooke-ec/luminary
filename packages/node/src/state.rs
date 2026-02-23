@@ -1,3 +1,5 @@
+//! The main state management for the Luminary Node
+
 use std::{convert::Infallible, sync::Arc};
 
 use async_stream::stream;
@@ -30,19 +32,22 @@ pub struct LuminaryState {
 }
 
 impl LuminaryState {
-    /// Creates a new LuminaryState with default values.
+    /// Creates a new LuminaryState with default values, and starts the state worker.
     #[wrap_err("Failed to create LuminaryState")]
-    pub fn create(pool: SqlitePool) -> Result<Self> {
-        Ok(Self {
+    pub async fn setup(pool: SqlitePool) -> Result<Self> {
+        let state = Self {
             channel: LuminaryStateChannel::new(),
             engine: LuminaryEngine::create()?,
             pool,
-        })
+        };
+
+        state.clone().spawn_worker().await?;
+        return Ok(state);
     }
 
     /// Spawns a background worker that listens for changes from the Luminary Engine and sends them to clients.
-    #[wrap_err("Failed to spawn LuminaryState worker")]
-    pub async fn spawn_worker(self) -> Result<()> {
+    #[wrap_err("Failed to spawn state worker")]
+    async fn spawn_worker(self) -> Result<()> {
         self.refresh().await?;
         tokio::spawn(async move {
             let mut reciever = self.engine.stream();
@@ -106,7 +111,7 @@ impl LuminaryStateChannel {
 
     /// Sends a [eyre::Report] to all subscribers.
     fn error(&self, error: eyre::Report) {
-        println!("{}", error);
+        println!("{:#}", error);
         let event = Event::default()
             .event("error")
             .json_data(json!({
