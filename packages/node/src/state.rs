@@ -10,6 +10,7 @@ use futures_util::{Stream, StreamExt};
 use luminary_core::{LuminaryEngine, LuminaryProject, LuminaryProjectList};
 use luminary_macros::wrap_err;
 use serde_json::json;
+use sqlx::SqlitePool;
 use tokio::sync::{RwLock, RwLockWriteGuard, broadcast};
 
 /// Shared state for the Luminary Node.
@@ -23,15 +24,19 @@ pub struct LuminaryState {
 
     /// The Luminary Engine, which manages containers and their state.
     pub engine: LuminaryEngine,
+
+    /// The SQLx connection pool for database access.
+    pub pool: SqlitePool,
 }
 
 impl LuminaryState {
     /// Creates a new LuminaryState with default values.
     #[wrap_err("Failed to create LuminaryState")]
-    pub fn create() -> Result<Self> {
+    pub fn create(pool: SqlitePool) -> Result<Self> {
         Ok(Self {
-            engine: LuminaryEngine::create()?,
             channel: LuminaryStateChannel::new(),
+            engine: LuminaryEngine::create()?,
+            pool,
         })
     }
 
