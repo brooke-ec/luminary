@@ -81,6 +81,7 @@ impl AuthnBackend for LuminaryAuthentication {
 }
 
 // I really don't like that I have to define this error type, but axum-login can't use eyre's error type
+/// Errors that can occur during authentication.
 #[derive(Debug, thiserror::Error)]
 pub enum AuthError {
     #[error(transparent)]
@@ -90,12 +91,14 @@ pub enum AuthError {
     TaskJoin(#[from] tokio::task::JoinError),
 }
 
+/// Stores the credentials a user would use to log in.
 #[derive(Debug, Clone)]
 pub struct LuminaryUserCredentials {
     username: String,
     password: String,
 }
 
+/// Represents a user in the Luminary system. This is the type that will be stored in the database and used for authentication.
 #[derive(Clone, FromRow)]
 pub struct LuminaryUser {
     id: Uuid,
