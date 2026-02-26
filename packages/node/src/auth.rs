@@ -1,107 +1,134 @@
-//! Handles authentication for the Luminary Node, including session management and user authentication.
+//! Handles authentication for the Luminary Node, including bearer token management and user authentication.
 
 use std::fmt::Debug;
 
-use axum_login::{
-    AuthManagerLayer, AuthManagerLayerBuilder, AuthUser, AuthnBackend,
-    tower_sessions::{ExpiredDeletion, SessionManagerLayer, cookie},
-};
 use eyre::{Context, Result};
+use log::error;
 use password_auth::verify_password;
+use salvo::prelude::*;
+use serde::Deserialize;
 use sqlx::{SqlitePool, prelude::FromRow};
-use tower_sessions_sqlx_store::SqliteStore;
 use uuid::Uuid;
 
-/// Acts as the authentication backend for the Luminary Node, handling user authentication and session management.
+/// Acts as the authentication backend for the Luminary Node, handling user authentication and bearer token management.
 #[derive(Debug, Clone)]
 pub struct LuminaryAuthentication {
     pool: SqlitePool,
 }
 
 impl LuminaryAuthentication {
-    pub async fn setup(pool: SqlitePool) -> Result<AuthManagerLayer<LuminaryAuthentication, SqliteStore>> {
-        // Set up session store and start background task to delete expired sessions
-        let session_store = SqliteStore::new(pool.clone());
-        session_store
-            .migrate()
+    /// Creates a new authentication handler backed by the given database pool.
+    pub fn new(pool: SqlitePool) -> Self {
+        Self { pool }
+    }
+
+    /// Authenticates a user with the given credentials and returns a bearer token on success.
+    pub async fn login(&self, credentials: LuminaryUserCredentials) -> Result<Option<String>> {
+        let user: Option<LuminaryUser> = sqlx::query_as("SELECT * FROM [user] WHERE [username] = ?")
+            .bind(&credentials.username)
+            .fetch_optional(&self.pool)
             .await
-            .wrap_err("Failed to migrate sessions table")?;
+            .wrap_err("Failed to query for user")?;
 
-        tokio::spawn(
-            session_store
-                .clone()
-                .continuously_delete_expired(std::time::Duration::from_secs(60)),
-        );
-
-        // Set up session layer
-        let session_layer = SessionManagerLayer::new(session_store)
-            .with_expiry(axum_login::tower_sessions::Expiry::OnInactivity(
-                cookie::time::Duration::minutes(30),
-            ))
-            .with_secure(false);
-
-        // Auth service
-        let backend = Self { pool: pool };
-        let auth_layer = AuthManagerLayerBuilder::new(backend, session_layer).build();
-
-        return Ok(auth_layer);
-    }
-}
-
-// Taken from https://github.com/maxcountryman/axum-login/blob/main/examples/sqlite/src/users.rs
-impl AuthnBackend for LuminaryAuthentication {
-    type Credentials = LuminaryUserCredentials;
-    type User = LuminaryUser;
-    type Error = AuthError;
-
-    async fn authenticate(&self, credentials: Self::Credentials) -> Result<Option<Self::User>, Self::Error> {
-        let user: Option<Self::User> = sqlx::query_as("select * from users where username = ? ")
-            .bind(credentials.username)
-            .fetch_optional(&self.pool)
-            .await?;
-
-        // Verifying the password is blocking and potentially slow, so we'll do so via
-        // `spawn_blocking`.
-        tokio::task::spawn_blocking(|| {
-            // We're using password-based authentication--this works by comparing our form
-            // input with an argon2 password hash.
-            Ok(user.filter(|user| verify_password(credentials.password, &user.password).is_ok()))
+        // Verifying the password is blocking and potentially slow, so run on a separate thread
+        let user = tokio::task::spawn_blocking(move || {
+            user.filter(|user| verify_password(&credentials.password, &user.password).is_ok())
         })
-        .await?
+        .await
+        .wrap_err("Password verification task failed")?;
+
+        // Terminate early if the user doesn't exist or the password is wrong
+        let user = match user {
+            None => return Ok(None),
+            Some(u) => u,
+        };
+
+        // Generate a bearer token and persist it
+        let token = Uuid::new_v4().to_string();
+        sqlx::query("INSERT INTO [session] ([token], [user_agent], [user]) VALUES (?, ?, ?)")
+            .bind(&token)
+            .bind("todo") // todo: capture user agent from request and store it here
+            .bind(&user.uuid)
+            .execute(&self.pool)
+            .await
+            .wrap_err("Failed to create session")?;
+
+        return Ok(Some(token));
     }
 
-    async fn get_user(&self, user_id: &axum_login::UserId<Self>) -> Result<Option<Self::User>, Self::Error> {
-        let user = sqlx::query_as("select * from users where id = ?")
-            .bind(user_id)
-            .fetch_optional(&self.pool)
-            .await?;
+    /// Logs a token out by deleting it from the database, invalidating it
+    pub async fn logout(&self, token: &str) -> Result<()> {
+        sqlx::query("DELETE FROM [session] WHERE [token] = ?")
+            .bind(token)
+            .execute(&self.pool)
+            .await
+            .wrap_err("Failed to delete session")?;
 
-        Ok(user)
+        return Ok(());
+    }
+
+    /// Find a user from their bearer token, or [None] if the token is invalid.
+    async fn get_user_by_token(&self, token: &str) -> Result<Option<LuminaryUser>> {
+        let user = sqlx::query_as(
+            "SELECT [user].* FROM [user] INNER JOIN [session] ON [user].[uuid] = [session].[user] WHERE [session].[token] = ?",
+        )
+        .bind(token)
+        .fetch_optional(&self.pool)
+        .await
+        .wrap_err("Failed to look up session")?;
+
+        return Ok(user);
     }
 }
 
-// I really don't like that I have to define this error type, but axum-login can't use eyre's error type
-/// Errors that can occur during authentication.
-#[derive(Debug, thiserror::Error)]
-pub enum AuthError {
-    #[error(transparent)]
-    Sqlx(#[from] sqlx::Error),
+/// Salvo middleware for validating authentication.
+///
+/// On success the authenticated [`LuminaryUser`] is inserted into the depot under `"user"`.
+#[handler]
+pub async fn protected(req: &mut Request, depot: &mut Depot, res: &mut Response, ctrl: &mut FlowCtrl) {
+    let Some(token) = extract_token(req) else {
+        res.status_code(StatusCode::UNAUTHORIZED);
+        return;
+    };
 
-    #[error(transparent)]
-    TaskJoin(#[from] tokio::task::JoinError),
+    // Obtain auth backend from the depot
+    let auth = depot
+        .obtain::<LuminaryAuthentication>()
+        .expect("Depot partially populated");
+
+    match auth.get_user_by_token(token).await {
+        Ok(Some(user)) => {
+            depot.insert("user", user);
+            ctrl.call_next(req, depot, res).await;
+        }
+        Ok(None) => {
+            res.status_code(StatusCode::UNAUTHORIZED);
+        }
+        Err(error) => {
+            error!("Failed verify token: {error:#}");
+            res.status_code(StatusCode::INTERNAL_SERVER_ERROR);
+        }
+    }
+}
+
+pub fn extract_token(req: &Request) -> Option<&str> {
+    req.headers()
+        .get("authorization")
+        .and_then(|v| v.to_str().ok())
+        .and_then(|v| v.strip_prefix("Bearer "))
 }
 
 /// Stores the credentials a user would use to log in.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize, ToSchema)]
 pub struct LuminaryUserCredentials {
-    username: String,
-    password: String,
+    pub username: String,
+    pub password: String,
 }
 
-/// Represents a user in the Luminary system. This is the type that will be stored in the database and used for authentication.
+/// Represents a user in Luminary Node.
 #[derive(Clone, FromRow)]
 pub struct LuminaryUser {
-    id: Uuid,
+    uuid: Uuid,
     username: String,
     password: String,
 }
@@ -109,21 +136,9 @@ pub struct LuminaryUser {
 impl Debug for LuminaryUser {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("LuminaryUser")
-            .field("id", &self.id)
+            .field("id", &self.uuid)
             .field("username", &self.username)
             .field("password", &"***")
             .finish()
-    }
-}
-
-impl AuthUser for LuminaryUser {
-    type Id = Uuid;
-
-    fn id(&self) -> Self::Id {
-        return self.id;
-    }
-
-    fn session_auth_hash(&self) -> &[u8] {
-        return self.password.as_bytes();
     }
 }

@@ -2,12 +2,15 @@
 
 use salvo::{Depot, Response, Router, oapi::endpoint, sse};
 
-use crate::state::LuminaryStateChannel;
+use crate::{auth::protected, state::LuminaryStateChannel};
+
+mod auth;
 
 pub fn router() -> Router {
     return Router::with_path("/api")
+        .push(auth::router())
         .push(Router::with_path("ping").get(ping))
-        .push(Router::with_path("subscribe").get(subscribe));
+        .push(Router::with_path("subscribe").hoop(protected).get(subscribe));
 }
 
 /// A simple endpoint to test if the server is running.
@@ -17,12 +20,15 @@ async fn ping() -> &'static str {
 }
 
 /// Subscribes to a stream of updates to the global app state, including error messages and project changes.
-#[endpoint(responses((
-    body = String,
-    status_code = 200,
-    content_type = "text/event-stream",
-    description = "A stream of updates to the app state in the form of Server-Sent Events",
-)))]
+#[endpoint(
+    security(["bearer" = []]),
+    responses((
+        body = String,
+        status_code = 200,
+        content_type = "text/event-stream",
+        description = "A stream of updates to the app state in the form of Server-Sent Events",
+    ))
+)]
 async fn subscribe(res: &mut Response, depot: &mut Depot) {
     let channel = depot
         .obtain::<LuminaryStateChannel>()

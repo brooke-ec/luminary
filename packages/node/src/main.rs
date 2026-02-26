@@ -5,16 +5,18 @@ use eyre::{Context, Result};
 use log::debug;
 use luminary_core::LuminaryEngine;
 use luminary_macros::wrap_err;
+use salvo::oapi::SecurityScheme;
+use salvo::oapi::security::{Http, HttpAuthScheme};
 use salvo::prelude::*;
 use sqlx::{SqlitePool, sqlite::SqliteConnectOptions};
 use tracing_subscriber::EnvFilter;
 
-use crate::state::LuminaryStateChannel;
+use crate::{auth::LuminaryAuthentication, state::LuminaryStateChannel};
 
 const DATABASE: &str = "luminary.db";
 
 mod api;
-// mod auth;
+mod auth;
 mod state;
 
 #[tokio::main]
@@ -44,15 +46,18 @@ async fn setup() -> Result<Router> {
     let engine = LuminaryEngine::setup()?;
 
     // Set up the affix state with all dependencies
-    let affix = affix_state::inject(pool)
-        .inject(engine.clone())
-        .inject(LuminaryStateChannel::setup(engine).await?);
+    let affix = affix_state::inject(LuminaryStateChannel::setup(engine.clone()).await?)
+        .inject(LuminaryAuthentication::new(pool.clone()))
+        .inject(engine)
+        .inject(pool);
 
     // Set up the app router
     let router = Router::new().hoop(affix).push(api::router());
 
     // Generate OpenAPI documentation and add it to the router
-    let doc = OpenApi::new("Luminary Node API", env!("CARGO_PKG_VERSION")).merge_router(&router);
+    let doc = OpenApi::new("Luminary Node API", env!("CARGO_PKG_VERSION"))
+        .add_security_scheme("bearer", SecurityScheme::Http(Http::new(HttpAuthScheme::Bearer)))
+        .merge_router(&router);
     let router = router.unshift(doc.into_router("/api-doc/openapi.json"));
 
     return Ok(router);
