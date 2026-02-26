@@ -40,6 +40,7 @@ async fn main() -> Result<()> {
     return Ok(());
 }
 
+/// Sets up the app router and all dependencies.
 #[wrap_err("Crashed while setting up")]
 async fn setup() -> Result<Router> {
     let pool = setup_database().await?;
@@ -63,6 +64,7 @@ async fn setup() -> Result<Router> {
     return Ok(router);
 }
 
+/// Sets up the SQLite database, running any pending migrations.
 async fn setup_database() -> Result<SqlitePool> {
     // Connect to the database
     let options = SqliteConnectOptions::default()

@@ -4,6 +4,7 @@ use std::fmt::Debug;
 
 use eyre::{Context, Result};
 use log::error;
+use luminary_macros::obtain;
 use password_auth::verify_password;
 use salvo::prelude::*;
 use serde::Deserialize;
@@ -84,6 +85,19 @@ impl LuminaryAuthentication {
 /// Salvo middleware for validating authentication.
 ///
 /// On success the authenticated [`LuminaryUser`] is inserted into the depot under `"user"`.
+///
+/// # Examples
+/// ```
+/// use salvo::{Router, oapi::endpoint};
+/// use crate::auth::protected;
+///
+/// let router = Router::new().hoop(protected).get(protected_handler);
+///
+/// #[endpoint]
+/// async fn protected_handler() -> &'static str {
+///    "You are authenticated!"
+/// }
+/// ```
 #[handler]
 pub async fn protected(req: &mut Request, depot: &mut Depot, res: &mut Response, ctrl: &mut FlowCtrl) {
     let Some(token) = extract_token(req) else {
@@ -92,9 +106,7 @@ pub async fn protected(req: &mut Request, depot: &mut Depot, res: &mut Response,
     };
 
     // Obtain auth backend from the depot
-    let auth = depot
-        .obtain::<LuminaryAuthentication>()
-        .expect("Depot partially populated");
+    let auth = obtain!(LuminaryAuthentication);
 
     match auth.get_user_by_token(token).await {
         Ok(Some(user)) => {

@@ -30,7 +30,6 @@ salvo = { version = "0.89.1", features = [
 sqlx = { version = "0.8.6", features = [
     "runtime-tokio",
     "sqlite",
-    "macros",
     "migrate",
     "uuid",
 ] }

@@ -6,6 +6,7 @@ use crate::{auth::protected, state::LuminaryStateChannel};
 
 mod auth;
 
+/// Returns a router containing all API endpoints.
 pub fn router() -> Router {
     return Router::with_path("/api")
         .push(auth::router())
@@ -21,7 +22,7 @@ async fn ping() -> &'static str {
 
 /// Subscribes to a stream of updates to the global app state, including error messages and project changes.
 #[endpoint(
-    security(["bearer" = []]),
+    security(["bearer" = ["bearer"]]),
     responses((
         body = String,
         status_code = 200,
