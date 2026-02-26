@@ -9,6 +9,7 @@ use bollard::{
 use docker_compose_types::Compose;
 use eyre::{Result, WrapErr};
 use futures_util::{StreamExt, stream::BoxStream};
+use log::debug;
 use luminary_macros::wrap_err;
 use tokio::fs::{self, File};
 
@@ -45,6 +46,8 @@ impl LuminaryEngine {
         let mut filters = HashMap::new();
         filters.insert("type", vec!["container"]);
         let options = EventsOptionsBuilder::default().filters(&filters).build();
+
+        debug!("Subscribing to Docker events for project updates");
 
         return self
             .docker

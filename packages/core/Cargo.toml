@@ -1,15 +1,16 @@
 [package]
 name = "luminary-core"
-edition = "2024"
+version = { workspace = true }
+edition = { workspace = true }
 
 [dependencies]
 tokio = { workspace = true, features = ["process", "fs"] }
-specta = { version = "1.0", features = ["functions"] }
 bollard = { version = "0.20", features = ["chrono"] }
 luminary-macros = { path = "../macros" }
 futures-util = { workspace = true }
 docker-compose-types = "0.22"
 serde = { workspace = true }
 eyre = { workspace = true }
+log = { workspace = true }
 serde-saphyr = "0.0"
 envy = "0.4"

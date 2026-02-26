@@ -1,6 +1,7 @@
 [package]
 name = "luminary-macros"
-edition = "2021"
+version = { workspace = true }
+edition = { workspace = true }
 
 [dependencies]
 syn = { version = "2.0", features = ["full"] }

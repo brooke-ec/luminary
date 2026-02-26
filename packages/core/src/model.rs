@@ -3,13 +3,12 @@
 use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
-use specta::Type;
 
 /// A type alias for a collection of Luminary projects, keyed by project name.
 pub type LuminaryProjectList = HashMap<String, LuminaryProject>;
 
 /// Represents a Luminary project, consisting of a docker compose project.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Type)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct LuminaryProject {
     pub name: String,
@@ -18,7 +17,7 @@ pub struct LuminaryProject {
 }
 
 /// Represents a service within a Luminary project.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Type)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct LuminaryService {
     pub name: String,
@@ -27,7 +26,7 @@ pub struct LuminaryService {
 
 /// Represents the various possible activity statuses of a Luminary service.
 /// Variants are ordered from lowest (Exited) to highest (Healthy).
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Type)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(rename_all = "camelCase")]
 pub enum LuminaryStatus {
     /// Represents a service that has exited (usually due to an error).

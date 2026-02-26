@@ -1,17 +1,31 @@
 //! Contains all the routes for Luminary Node's API.
 
-use crate::state::LuminaryState;
-use axum::Router;
-use axum::extract::State;
-use axum::routing::get;
+use salvo::{Depot, Response, Router, oapi::endpoint, sse};
 
-pub fn router() -> Router<LuminaryState> {
-    Router::new()
-        .route("/ping", get(|| async { "pong" }))
-        .route("/subscribe", get(subscribe))
-        .nest("/projects/", Router::new())
+use crate::state::LuminaryStateChannel;
+
+pub fn router() -> Router {
+    return Router::with_path("/api")
+        .push(Router::with_path("ping").get(ping))
+        .push(Router::with_path("subscribe").get(subscribe));
 }
 
-async fn subscribe(state: State<LuminaryState>) -> impl axum::response::IntoResponse {
-    state.channel.sse().await
+/// A simple endpoint to test if the server is running.
+#[endpoint]
+async fn ping() -> &'static str {
+    "pong"
+}
+
+/// Subscribes to a stream of updates to the global app state, including error messages and project changes.
+#[endpoint(responses((
+    body = String,
+    status_code = 200,
+    content_type = "text/event-stream",
+    description = "A stream of updates to the app state in the form of Server-Sent Events",
+)))]
+async fn subscribe(res: &mut Response, depot: &mut Depot) {
+    let channel = depot
+        .obtain::<LuminaryStateChannel>()
+        .expect("Depot partially populated");
+    sse::stream(res, channel.stream().await);
 }

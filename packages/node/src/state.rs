@@ -3,16 +3,13 @@
 use std::{convert::Infallible, sync::Arc};
 
 use async_stream::stream;
-use axum::{
-    extract::FromRef,
-    response::{Sse, sse::Event},
-};
 use eyre::{Context, Result};
 use futures_util::{Stream, StreamExt};
+use log::error;
 use luminary_core::{LuminaryEngine, LuminaryProject, LuminaryProjectList};
 use luminary_macros::wrap_err;
+use salvo::sse::SseEvent;
 use serde_json::json;
-use sqlx::SqlitePool;
 use tokio::sync::{RwLock, RwLockWriteGuard, broadcast};
 
 /// Shared state for the Luminary Node.
@@ -20,25 +17,25 @@ use tokio::sync::{RwLock, RwLockWriteGuard, broadcast};
 /// This is cloned for each request as children are
 /// individually reference counted, making it a very cheap operation.
 #[derive(Debug, Clone)]
-pub struct LuminaryState {
-    /// A channel of container updates used for global events.
-    pub channel: LuminaryStateChannel,
-
+pub struct LuminaryStateChannel {
     /// The Luminary Engine, which manages containers and their state.
-    pub engine: LuminaryEngine,
+    engine: LuminaryEngine,
 
-    /// The SQLx connection pool for database access.
-    pub pool: SqlitePool,
+    /// A channel for sending state updates to users.
+    channel: broadcast::Sender<Result<SseEvent, Infallible>>,
+
+    /// The internal state of the channel, used to generate diffs for updates.
+    state: Arc<RwLock<(LuminaryProjectList, serde_json::Value)>>,
 }
 
-impl LuminaryState {
+impl LuminaryStateChannel {
     /// Creates a new LuminaryState with default values, and starts the state worker.
     #[wrap_err("Failed to create LuminaryState")]
-    pub async fn setup(pool: SqlitePool) -> Result<Self> {
+    pub async fn setup(engine: LuminaryEngine) -> Result<Self> {
         let state = Self {
-            channel: LuminaryStateChannel::new(),
-            engine: LuminaryEngine::create()?,
-            pool,
+            state: Arc::new(RwLock::new((LuminaryProjectList::new(), json!({})))),
+            channel: broadcast::channel(64).0,
+            engine,
         };
 
         state.clone().spawn_worker().await?;
@@ -54,13 +51,14 @@ impl LuminaryState {
 
             while let Some(result) = reciever.next().await {
                 // Flatten errors and report them
-                if let Err(e) = self.channel.worker_iteration(result).await {
-                    self.channel.error(e);
+                if let Err(e) = self.worker_iteration(result).await {
+                    self.error(e);
                 }
             }
 
             // This should only happen if the user is meddling with stuff
-            panic!("Connection to Docker Engine lost");
+            error!("Connection to Docker Engine lost, panicing");
+            panic!();
         });
 
         return Ok(());
@@ -73,48 +71,19 @@ impl LuminaryState {
     #[wrap_err("Failed to refresh LuminaryState")]
     pub async fn refresh(&self) -> Result<()> {
         let list = self.engine.list_projects().await?;
-        let mut guard = self.channel.state.write().await;
+        let mut guard = self.state.write().await;
         *guard = (list, json!({}));
-        self.channel.send_changes(guard)?;
+        self.send_changes(guard)?;
 
         return Ok(());
-    }
-}
-
-impl FromRef<LuminaryState> for LuminaryEngine {
-    fn from_ref(state: &LuminaryState) -> Self {
-        return state.engine.clone();
-    }
-}
-
-/// Represents the main channel for sending updates to the frontend.
-///
-/// This is implemented with a broadcast channel, which allows for multiple subscribers to receive updates without needing to manage individual connections.
-/// This channel sends diffs, which are generated using an internal state to track how each emission changes the document.
-#[derive(Debug, Clone)]
-pub struct LuminaryStateChannel {
-    channel: broadcast::Sender<Result<Event, Infallible>>,
-    state: Arc<RwLock<(LuminaryProjectList, serde_json::Value)>>,
-}
-
-impl LuminaryStateChannel {
-    /// Creates a new LuminaryStateChannel with default values.
-    ///
-    /// This will initialise the channel with an empty project list, use [LuminaryState::refresh]
-    /// or [LuminaryState::spawn_worker] to update it with the current state of the engine.
-    fn new() -> Self {
-        return Self {
-            channel: broadcast::channel(64).0,
-            state: Arc::new(RwLock::new((LuminaryProjectList::new(), json!({})))),
-        };
     }
 
     /// Sends a [eyre::Report] to all subscribers.
     fn error(&self, error: eyre::Report) {
-        println!("{:#}", error);
-        let event = Event::default()
-            .event("error")
-            .json_data(json!({
+        error!("Global error sent to clients: {error:#}");
+        let event = SseEvent::default()
+            .name("error")
+            .json(json!({
                 "error": format!("{error:#}")
             }))
             .expect("Failed to serialise error event"); // This should never fail as the data is already a json value
@@ -146,27 +115,27 @@ impl LuminaryStateChannel {
     }
 
     /// Generates a Server-Sent Event containing a JSON Patch diff between two states.
-    fn generate_event(left: &serde_json::Value, right: &serde_json::Value) -> Result<Event, Infallible> {
+    fn generate_event(left: &serde_json::Value, right: &serde_json::Value) -> Result<SseEvent, Infallible> {
         let diff = json_patch::diff(&left, &right);
-        let event = Event::default()
-            .event("patch")
-            .json_data(diff)
+        let event = SseEvent::default()
+            .name("patch")
+            .json(diff)
             .expect("Failed to serialse JSON patch"); // This should never fail as we've already serialised the data to a json value
 
         return Ok(event);
     }
 
     /// Creates a Server-Sent Event stream for clients to subscribe to.
-    pub async fn sse(&self) -> Sse<impl Stream<Item = Result<Event, Infallible>> + use<>> {
+    pub async fn stream(&self) -> impl Stream<Item = Result<SseEvent, Infallible>> + use<> {
         let event = LuminaryStateChannel::generate_event(&json!({}), &self.state.read().await.1);
         let mut reciever = self.channel.subscribe();
 
-        return Sse::new(stream! {
+        return stream! {
             yield event; // Send the initial state as an event immediately upon connection
 
             loop {
                 yield reciever.recv().await.expect("LuminaryStateChannel closed");
             }
-        });
+        };
     }
 }
