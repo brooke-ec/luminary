@@ -12,6 +12,17 @@ macro_rules! obtain {
     };
 }
 
+#[macro_export]
+macro_rules! get_user {
+    ($depot:expr) => {
+        $depot
+            .get::<crate::auth::LuminaryUser>("user")
+            .ok()
+            .and_then(|v| Some(v))
+            .expect("User can not be obtained from a unprotected endpoint.")
+    };
+}
+
 pub trait IntoStatusError<T> {
     fn into_500(self) -> Result<T, StatusError>;
 }
