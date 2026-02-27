@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "-- Insert default admin user\nINSERT\n    OR IGNORE INTO [user] ([uuid], [username], [password])\nVALUES\n    (\n        '00000000-0000-0000-0000-000000000001',\n        'admin',\n        '$argon2id$v=19$m=19456,t=2,p=1$Xes8LlbqVF5gTPFcpRUEWg$GFFfOvfIRWsLe2xDrvdnV1RB/876svMPntndRYrFe8s'\n    );",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "31e135e405b3be64d1e083f6a844ffce4b5dbc6218a230929b02ea75ba268579"
+}

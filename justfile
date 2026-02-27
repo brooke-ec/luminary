@@ -13,7 +13,7 @@ install:
     cargo install cargo-watch --locked
     cargo install sqlx-cli --locked
 
-export DATABASE_URL := "sqlite://" + justfile_dir() + "/liminary.db"
+export DATABASE_URL := "sqlite://" + justfile_dir() + "/luminary.db"
 
 [working-directory('packages/node')]
 prepare:

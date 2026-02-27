@@ -1,8 +1,7 @@
 //! The main entry point for the Luminary Node, which serves as the backend for the Luminary Panel.
 
-use dotenv::dotenv;
 use eyre::{Context, Result};
-use log::debug;
+use log::{debug, info};
 use luminary_core::LuminaryEngine;
 use luminary_macros::wrap_err;
 use salvo::oapi::SecurityScheme;
@@ -22,7 +21,7 @@ mod util;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    dotenv().ok();
+    dotenvy::dotenv()?;
 
     // Set up logging
     tracing_subscriber::fmt()
@@ -83,16 +82,12 @@ async fn setup_database() -> Result<SqlitePool> {
         .await
         .wrap_err("Could not migrate database")?;
 
+    // Populates the database with fake data for testing and development purposes.
     #[cfg(debug_assertions)]
-    migrate_debug(&pool).await?;
+    {
+        info!("Populating database with debug data...");
+        sqlx::query_file!("./debug.sql").execute(&pool).await?;
+    }
 
     return Ok(pool);
-}
-
-#[cfg(debug_assertions)]
-#[wrap_err("Crashed while running debug migrations")]
-async fn migrate_debug(pool: &SqlitePool) -> Result<()> {
-    sqlx::query_file!("./debug.sql").execute(pool).await?;
-
-    return Ok(());
 }

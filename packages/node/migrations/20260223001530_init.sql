@@ -1,3 +1,4 @@
+-- Create user table
 CREATE TABLE [user] (
     [uuid] TEXT NOT NULL,
     [username] TEXT NOT NULL UNIQUE,
@@ -5,6 +6,7 @@ CREATE TABLE [user] (
     PRIMARY KEY ([uuid])
 );
 
+-- Create session table
 CREATE TABLE [session] (
     [token] TEXT NOT NULL,
     [user] TEXT NOT NULL,

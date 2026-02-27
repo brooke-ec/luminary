@@ -12,7 +12,6 @@ use rand_chacha::{
 use salvo::prelude::*;
 use serde::Deserialize;
 use sqlx::{SqlitePool, prelude::FromRow};
-use uuid::Uuid;
 
 use crate::obtain;
 
@@ -30,11 +29,14 @@ impl LuminaryAuthentication {
 
     /// Authenticates a user with the given credentials and returns a bearer token on success.
     pub async fn login(&self, credentials: LuminaryUserCredentials) -> Result<Option<String>> {
-        let user: Option<LuminaryUser> = sqlx::query_as("SELECT * FROM [user] WHERE [username] = ?")
-            .bind(&credentials.username)
-            .fetch_optional(&self.pool)
-            .await
-            .wrap_err("Failed to query for user")?;
+        let user = sqlx::query_as!(
+            LuminaryUser,
+            "SELECT * FROM [user] WHERE [username] = ?",
+            credentials.username
+        )
+        .fetch_optional(&self.pool)
+        .await
+        .wrap_err("Failed to query for user")?;
 
         // Verifying the password is blocking and pretty slow (~600ms), so run on a separate thread
         let user = tokio::task::spawn_blocking(move || {
@@ -55,21 +57,22 @@ impl LuminaryAuthentication {
         let token = hex::encode(token_bytes);
 
         // Store the token in the database, associated with the user
-        sqlx::query("INSERT INTO [session] ([token], [user_agent], [user]) VALUES (?, ?, ?)")
-            .bind(&token)
-            .bind("todo") // todo: capture user agent from request and store it here
-            .bind(&user.uuid)
-            .execute(&self.pool)
-            .await
-            .wrap_err("Failed to create session")?;
+        sqlx::query!(
+            "INSERT INTO [session] ([token], [user_agent], [user]) VALUES (?, ?, ?)",
+            token,
+            "todo", // todo: capture user agent from request and store it here
+            user.uuid
+        )
+        .execute(&self.pool)
+        .await
+        .wrap_err("Failed to create session")?;
 
         return Ok(Some(token));
     }
 
     /// Logs a token out by deleting it from the database, invalidating it
     pub async fn logout(&self, token: &str) -> Result<()> {
-        sqlx::query("DELETE FROM [session] WHERE [token] = ?")
-            .bind(token)
+        sqlx::query!("DELETE FROM [session] WHERE [token] = ?", token)
             .execute(&self.pool)
             .await
             .wrap_err("Failed to delete session")?;
@@ -79,10 +82,10 @@ impl LuminaryAuthentication {
 
     /// Find a user from their bearer token, or [None] if the token is invalid.
     async fn get_user_by_token(&self, token: &str) -> Result<Option<LuminaryUser>> {
-        let user = sqlx::query_as(
-            "SELECT [user].* FROM [user] INNER JOIN [session] ON [user].[uuid] = [session].[user] WHERE [session].[token] = ?",
+        let user = sqlx::query_as!(
+            LuminaryUser,
+            "SELECT [user].* FROM [user] INNER JOIN [session] ON [user].[uuid] = [session].[user] WHERE [session].[token] = ?", token
         )
-        .bind(token)
         .fetch_optional(&self.pool)
         .await
         .wrap_err("Failed to look up session")?;
@@ -149,7 +152,7 @@ pub struct LuminaryUserCredentials {
 /// Represents a user in Luminary Node.
 #[derive(Clone, FromRow)]
 pub struct LuminaryUser {
-    uuid: Uuid,
+    uuid: String,
     username: String,
     password: String,
 }
