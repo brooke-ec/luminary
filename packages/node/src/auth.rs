@@ -6,6 +6,10 @@ use eyre::{Context, Result};
 use log::error;
 use luminary_macros::obtain;
 use password_auth::verify_password;
+use rand_chacha::{
+    ChaCha12Rng,
+    rand_core::{RngCore, SeedableRng},
+};
 use salvo::prelude::*;
 use serde::Deserialize;
 use sqlx::{SqlitePool, prelude::FromRow};
@@ -44,8 +48,12 @@ impl LuminaryAuthentication {
             Some(u) => u,
         };
 
-        // Generate a bearer token and persist it
-        let token = Uuid::new_v4().to_string();
+        // Generate a secure bearer token using ChaCha12
+        let mut token_bytes = [0u8; 32];
+        ChaCha12Rng::from_entropy().fill_bytes(&mut token_bytes);
+        let token = hex::encode(token_bytes);
+
+        // Store the token in the database, associated with the user
         sqlx::query("INSERT INTO [session] ([token], [user_agent], [user]) VALUES (?, ?, ?)")
             .bind(&token)
             .bind("todo") // todo: capture user agent from request and store it here
