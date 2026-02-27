@@ -1,6 +1,6 @@
 CREATE TABLE [user] (
     [uuid] TEXT NOT NULL,
-    [username] TEXT NOT NULL,
+    [username] TEXT NOT NULL UNIQUE,
     [password] TEXT NOT NULL,
     PRIMARY KEY ([uuid])
 );

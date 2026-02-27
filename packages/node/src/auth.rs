@@ -36,7 +36,7 @@ impl LuminaryAuthentication {
             .await
             .wrap_err("Failed to query for user")?;
 
-        // Verifying the password is blocking and potentially slow, so run on a separate thread
+        // Verifying the password is blocking and pretty slow (~600ms), so run on a separate thread
         let user = tokio::task::spawn_blocking(move || {
             user.filter(|user| verify_password(&credentials.password, &user.password).is_ok())
         })
