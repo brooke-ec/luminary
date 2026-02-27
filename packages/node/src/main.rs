@@ -55,12 +55,18 @@ async fn setup() -> Result<Router> {
     // Set up the app router
     let router = Router::new().hoop(affix).push(api::router());
 
-    // Generate OpenAPI documentation and add it to the router
-    let doc = OpenApi::new("Luminary Node API", env!("CARGO_PKG_VERSION"))
-        .add_security_scheme("bearer", SecurityScheme::Http(Http::new(HttpAuthScheme::Bearer)))
-        .merge_router(&router);
+    // Write OpenAPI documentation to file for the panel to consume
+    #[cfg(debug_assertions)]
+    {
+        let openapi = OpenApi::new("Luminary Node API", env!("CARGO_PKG_VERSION"))
+            .add_security_scheme("bearer", SecurityScheme::Http(Http::new(HttpAuthScheme::Bearer)))
+            .merge_router(&router);
 
-    let router = router.unshift(doc.into_router("/api-doc/openapi.json"));
+        std::fs::write(
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../panel/static/openapi.json"),
+            openapi.to_pretty_json()?,
+        )?;
+    }
 
     return Ok(router);
 }
