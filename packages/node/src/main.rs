@@ -83,5 +83,16 @@ async fn setup_database() -> Result<SqlitePool> {
         .await
         .wrap_err("Could not migrate database")?;
 
+    #[cfg(debug_assertions)]
+    migrate_debug(&pool).await?;
+
     return Ok(pool);
+}
+
+#[cfg(debug_assertions)]
+#[wrap_err("Crashed while running debug migrations")]
+async fn migrate_debug(pool: &SqlitePool) -> Result<()> {
+    sqlx::query_file!("./debug.sql").execute(pool).await?;
+
+    return Ok(());
 }

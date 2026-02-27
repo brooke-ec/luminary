@@ -11,3 +11,11 @@ _dev_web:
 install:
     cd packages/panel; pnpm install
     cargo install cargo-watch --locked
+    cargo install sqlx-cli --locked
+
+export DATABASE_URL := "sqlite://" + justfile_dir() + "/liminary.db"
+
+[working-directory('packages/node')]
+prepare:
+    cargo sqlx database setup
+    cargo sqlx prepare 
