@@ -21,7 +21,7 @@ pub fn router() -> Router {
 /// Reads username and password from the request body, and returns an authentication token if the credentials are valid.
 #[endpoint]
 async fn login(depot: &mut Depot, body: JsonBody<LuminaryUserCredentials>) -> Result<String, StatusError> {
-    let auth = obtain!(LuminaryAuthentication);
+    let auth = obtain!(depot, LuminaryAuthentication);
 
     return match auth.login(body.into_inner()).await {
         Ok(Some(token)) => Ok(token),
@@ -37,7 +37,7 @@ async fn login(depot: &mut Depot, body: JsonBody<LuminaryUserCredentials>) -> Re
 /// Logs out the current user, invalidating their authentication token.
 #[endpoint]
 async fn logout(req: &mut Request, depot: &mut Depot) -> Result<(), StatusError> {
-    let auth = obtain!(LuminaryAuthentication);
+    let auth = obtain!(depot, LuminaryAuthentication);
 
     let Some(token) = extract_token(req) else {
         return Err(StatusError::unauthorized().brief("Missing or invalid authorization token"));

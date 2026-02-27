@@ -106,7 +106,7 @@ pub async fn protected(req: &mut Request, depot: &mut Depot, res: &mut Response,
     };
 
     // Obtain auth backend from the depot
-    let auth = obtain!(LuminaryAuthentication);
+    let auth = obtain!(depot, LuminaryAuthentication);
 
     match auth.get_user_by_token(token).await {
         Ok(Some(user)) => {

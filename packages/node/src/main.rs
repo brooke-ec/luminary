@@ -59,6 +59,7 @@ async fn setup() -> Result<Router> {
     let doc = OpenApi::new("Luminary Node API", env!("CARGO_PKG_VERSION"))
         .add_security_scheme("bearer", SecurityScheme::Http(Http::new(HttpAuthScheme::Bearer)))
         .merge_router(&router);
+
     let router = router.unshift(doc.into_router("/api-doc/openapi.json"));
 
     return Ok(router);
