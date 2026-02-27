@@ -18,6 +18,7 @@ const DATABASE: &str = "luminary.db";
 mod api;
 mod auth;
 mod state;
+mod util;
 
 #[tokio::main]
 async fn main() -> Result<()> {

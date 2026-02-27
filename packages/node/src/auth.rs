@@ -4,7 +4,6 @@ use std::fmt::Debug;
 
 use eyre::{Context, Result};
 use log::error;
-use luminary_macros::obtain;
 use password_auth::verify_password;
 use rand_chacha::{
     ChaCha12Rng,
@@ -14,6 +13,8 @@ use salvo::prelude::*;
 use serde::Deserialize;
 use sqlx::{SqlitePool, prelude::FromRow};
 use uuid::Uuid;
+
+use crate::obtain;
 
 /// Acts as the authentication backend for the Luminary Node, handling user authentication and bearer token management.
 #[derive(Debug, Clone)]

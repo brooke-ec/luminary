@@ -80,11 +80,11 @@ impl LuminaryStateChannel {
 
     /// Sends a [eyre::Report] to all subscribers.
     fn error(&self, error: eyre::Report) {
-        error!("Global error sent to clients: {error:#}");
+        error!("Global error sent to clients: {error:?}");
         let event = SseEvent::default()
             .name("error")
             .json(json!({
-                "error": format!("{error:#}")
+                "error": format!("{error:?}")
             }))
             .expect("Failed to serialise error event"); // This should never fail as the data is already a json value
         self.channel.send(Ok(event)).ok(); // This will only error if there are no active subscribers, so we can safely ignore it

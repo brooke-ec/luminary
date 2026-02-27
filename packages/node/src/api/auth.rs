@@ -1,15 +1,17 @@
 //! A module containing all api endpoints related to authentication.
 
 use eyre::Result;
-use log::error;
-use luminary_macros::obtain;
 use salvo::{
     Depot, Request, Router, Writer,
     http::StatusError,
     oapi::{endpoint, extract::JsonBody},
 };
 
-use crate::auth::{LuminaryAuthentication, LuminaryUserCredentials, extract_token};
+use crate::{
+    auth::{LuminaryAuthentication, LuminaryUserCredentials, extract_token},
+    obtain,
+    util::IntoStatusError,
+};
 
 /// Returns a router containing all authentication-related endpoints.
 pub fn router() -> Router {
@@ -23,14 +25,9 @@ pub fn router() -> Router {
 async fn login(depot: &mut Depot, body: JsonBody<LuminaryUserCredentials>) -> Result<String, StatusError> {
     let auth = obtain!(depot, LuminaryAuthentication);
 
-    return match auth.login(body.into_inner()).await {
-        Ok(Some(token)) => Ok(token),
-        Ok(None) => Err(StatusError::forbidden().brief("Invalid username or password")),
-        Err(error) => {
-            error!("Login failed: {error:#}");
-            Err(StatusError::internal_server_error()
-                .brief("An error occurred while processing the login request"))
-        }
+    return match auth.login(body.into_inner()).await.into_500()? {
+        Some(token) => Ok(token),
+        None => Err(StatusError::forbidden().brief("Invalid username or password")),
     };
 }
 
@@ -43,11 +40,5 @@ async fn logout(req: &mut Request, depot: &mut Depot) -> Result<(), StatusError>
         return Err(StatusError::unauthorized().brief("Missing or invalid authorization token"));
     };
 
-    return match auth.logout(token).await {
-        Ok(()) => Ok(()),
-        Err(error) => {
-            error!("Logout failed: {error:#}");
-            Err(StatusError::internal_server_error().brief("An error occurred while logging out"))
-        }
-    };
+    return auth.logout(token).await.into_500();
 }
