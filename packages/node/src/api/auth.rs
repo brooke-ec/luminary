@@ -4,8 +4,10 @@ use eyre::Result;
 use salvo::{
     Depot, Request, Router, Writer,
     http::StatusError,
-    oapi::{endpoint, extract::JsonBody},
+    oapi::{ToSchema, endpoint, extract::JsonBody},
+    writing::Json,
 };
+use serde::Serialize;
 
 use crate::{
     auth::{LuminaryAuthentication, LuminaryUserCredentials, extract_token},
@@ -22,13 +24,21 @@ pub fn router() -> Router {
 
 /// Reads username and password from the request body, and returns an authentication token if the credentials are valid.
 #[endpoint]
-async fn login(depot: &mut Depot, body: JsonBody<LuminaryUserCredentials>) -> Result<String, StatusError> {
+async fn login(
+    depot: &mut Depot,
+    body: JsonBody<LuminaryUserCredentials>,
+) -> Result<Json<LoginResponse>, StatusError> {
     let auth = obtain!(depot, LuminaryAuthentication);
 
     return match auth.login(body.into_inner()).await.into_500()? {
-        Some(token) => Ok(token),
+        Some(token) => Ok(Json(LoginResponse { token })),
         None => Err(StatusError::forbidden().brief("Invalid username or password")),
     };
+}
+
+#[derive(Debug, Clone, Serialize, ToSchema)]
+struct LoginResponse {
+    token: String,
 }
 
 /// Logs out the current user, invalidating their authentication token.

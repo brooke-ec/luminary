@@ -1,2 +1,18 @@
-<h1>Welcome to SvelteKit</h1>
-<p>Visit <a href="https://svelte.dev/docs/kit">svelte.dev/docs/kit</a> to read the documentation</p>
+<script lang="ts">
+	import type { paths } from "$lib/openapi";
+	import createClient from "openapi-fetch";
+
+	const client = createClient<paths>({ baseUrl: "./" });
+	const login = client.POST("/api/auth/login", {
+		body: {
+			username: "admin",
+			password: "password",
+		},
+	});
+</script>
+
+{#await login}
+	Loading...
+{:then response}
+	{response.data?.token}
+{/await}

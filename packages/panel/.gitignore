@@ -8,6 +8,10 @@ node_modules
 /.svelte-kit
 /build
 
+# Generated
+src/lib/openapi.json
+src/lib/openapi.ts
+
 # OS
 .DS_Store
 Thumbs.db

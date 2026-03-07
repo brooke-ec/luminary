@@ -2,7 +2,7 @@
 dev: _dev_web _dev_node
 
 _dev_node:
-    cargo watch -x run
+    cargo watch -w packages/node -x run
 
 [working-directory('packages/panel')]
 _dev_web:

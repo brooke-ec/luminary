@@ -63,7 +63,7 @@ async fn setup() -> Result<Router> {
             .merge_router(&router);
 
         std::fs::write(
-            concat!(env!("CARGO_MANIFEST_DIR"), "/../panel/static/openapi.json"),
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../panel/src/lib/openapi.json"),
             openapi.to_pretty_json()?,
         )?;
     }
