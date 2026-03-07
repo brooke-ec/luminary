@@ -2,15 +2,36 @@
 
 use std::{convert::Infallible, sync::Arc};
 
+use crate::core::{LuminaryEngine, LuminaryProject, LuminaryProjectList};
 use async_stream::stream;
 use eyre::{Context, Result};
 use futures_util::{Stream, StreamExt};
 use log::error;
-use luminary_core::{LuminaryEngine, LuminaryProject, LuminaryProjectList};
 use luminary_macros::wrap_err;
-use salvo::sse::SseEvent;
+use salvo::{
+    Depot, Response,
+    oapi::endpoint,
+    sse::{self, SseEvent},
+};
 use serde_json::json;
 use tokio::sync::{RwLock, RwLockWriteGuard, broadcast};
+
+/// Subscribes to a stream of updates to the global app state, including error messages and project changes.
+#[endpoint(
+    security(["bearer" = []]),
+    responses((
+        body = String,
+        status_code = 200,
+        content_type = "text/event-stream",
+        description = "A stream of updates to the app state in the form of Server-Sent Events",
+    ))
+)]
+pub async fn subscribe(res: &mut Response, depot: &mut Depot) {
+    let channel = depot
+        .obtain::<LuminaryStateChannel>()
+        .expect("Depot partially populated");
+    sse::stream(res, channel.stream().await);
+}
 
 /// Shared state for the Luminary Node.
 ///

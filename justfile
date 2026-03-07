@@ -4,9 +4,8 @@ dev: _dev_web _dev_node
 _dev_node:
     cargo watch -w packages/node -x run
 
-[working-directory('packages/panel')]
 _dev_web:
-    pnpm vite dev
+    pnpm -r dev
 
 install:
     cd packages/panel; pnpm install

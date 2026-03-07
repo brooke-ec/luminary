@@ -1836,22 +1836,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "112b39cec0b298b6c1999fee3e31427f74f676e4cb9879ed1a121b43661a4154"
 
 [[package]]
-name = "luminary-core"
-version = "0.1.0"
-dependencies = [
- "bollard",
- "docker-compose-types",
- "envy",
- "eyre",
- "futures-util",
- "log",
- "luminary-macros",
- "serde",
- "serde-saphyr",
- "tokio",
-]
-
-[[package]]
 name = "luminary-macros"
 version = "0.1.0"
 dependencies = [
@@ -1865,18 +1849,21 @@ name = "luminary-node"
 version = "0.1.0"
 dependencies = [
  "async-stream",
+ "bollard",
+ "docker-compose-types",
  "dotenvy",
+ "envy",
  "eyre",
  "futures-util",
  "hex",
  "json-patch",
  "log",
- "luminary-core",
  "luminary-macros",
  "password-auth",
  "rand_chacha 0.3.1",
  "salvo",
  "serde",
+ "serde-saphyr",
  "serde_json",
  "sqlx",
  "tokio",

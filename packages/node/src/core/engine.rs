@@ -7,7 +7,7 @@ use eyre::{Context, Result};
 use luminary_macros::wrap_err;
 use tokio::process::Command;
 
-use crate::configuration::LuminaryConfiguration;
+use crate::core::configuration::LuminaryConfiguration;
 
 /// The core engine of the Luminary application, containing shared state and configuration.
 #[derive(Debug, Clone)]

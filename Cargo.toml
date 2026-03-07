@@ -1,14 +1,7 @@
 [workspace]
 resolver = "3"
-members = ["packages/core", "packages/macros", "packages/node"]
+members = ["packages/node"]
 
 [workspace.package]
 version = "0.1.0"
 edition = "2024"
-
-[workspace.dependencies]
-futures-util = "0.3"
-log = "0.4.29"
-tokio = "1.49"
-serde = "1.0"
-eyre = "0.6"

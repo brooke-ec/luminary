@@ -13,7 +13,7 @@ use log::debug;
 use luminary_macros::wrap_err;
 use tokio::fs::{self, File};
 
-use crate::{
+use crate::core::{
     LuminaryEngine,
     model::{LuminaryProject, LuminaryProjectList, LuminaryService, LuminaryStatus},
 };
