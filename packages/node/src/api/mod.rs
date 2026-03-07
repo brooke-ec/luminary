@@ -7,15 +7,12 @@ use sqlx::{SqlitePool, sqlite::SqliteConnectOptions};
 
 use crate::{
     DATABASE,
-    api::{
-        auth::{LuminaryAuthentication, protected},
-        state::{LuminaryStateChannel, subscribe},
-    },
+    api::{auth::LuminaryAuthentication, realtime::LuminaryStateChannel},
     core::LuminaryEngine,
 };
 
 mod auth;
-pub mod state;
+pub mod realtime;
 
 /// Sets up the app router and all dependencies.
 #[wrap_err("Crashed while setting up")]
@@ -33,8 +30,8 @@ pub async fn setup() -> Result<Router> {
     let router = Router::new().hoop(affix).push(
         Router::with_path("/api")
             .push(auth::router())
-            .push(Router::with_path("ping").get(ping))
-            .push(Router::with_path("subscribe").hoop(protected).get(subscribe)),
+            .push(realtime::router())
+            .push(Router::with_path("ping").get(ping)),
     );
 
     // Write OpenAPI documentation to file for the panel to consume

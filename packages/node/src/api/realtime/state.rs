@@ -1,4 +1,6 @@
-//! The main state management for the Luminary Node
+//! Realtime updates for global app state.
+//!
+//! This will be subscribed to by all clients.
 
 use std::{convert::Infallible, sync::Arc};
 
@@ -8,32 +10,11 @@ use eyre::{Context, Result};
 use futures_util::{Stream, StreamExt};
 use log::error;
 use luminary_macros::wrap_err;
-use salvo::{
-    Depot, Response,
-    oapi::endpoint,
-    sse::{self, SseEvent},
-};
+use salvo::sse::SseEvent;
 use serde_json::json;
 use tokio::sync::{RwLock, RwLockWriteGuard, broadcast};
 
-/// Subscribes to a stream of updates to the global app state, including error messages and project changes.
-#[endpoint(
-    security(["bearer" = []]),
-    responses((
-        body = String,
-        status_code = 200,
-        content_type = "text/event-stream",
-        description = "A stream of updates to the app state in the form of Server-Sent Events",
-    ))
-)]
-pub async fn subscribe(res: &mut Response, depot: &mut Depot) {
-    let channel = depot
-        .obtain::<LuminaryStateChannel>()
-        .expect("Depot partially populated");
-    sse::stream(res, channel.stream().await);
-}
-
-/// Shared state for the Luminary Node.
+/// Provides a stream of updates to the global app state.
 ///
 /// This is cloned for each request as children are
 /// individually reference counted, making it a very cheap operation.
