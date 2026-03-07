@@ -27,30 +27,33 @@ pub fn router() -> Router {
 async fn login(
     depot: &mut Depot,
     body: JsonBody<LuminaryUserCredentials>,
-) -> Result<Json<LoginResponse>, StatusError> {
+) -> Result<Json<TokenResponse>, StatusError> {
     let auth = obtain!(depot, LuminaryAuthentication);
 
     return match auth.login(body.into_inner()).await.into_500()? {
-        Some(token) => Ok(Json(LoginResponse { token })),
+        Some(token) => Ok(Json(TokenResponse { token })),
         None => Err(StatusError::forbidden().brief("Invalid username or password")),
     };
 }
 
 #[derive(Debug, Clone, Serialize, ToSchema)]
-struct LoginResponse {
+struct TokenResponse {
     token: String,
 }
 
 /// Logs out the current user, invalidating their authentication token.
 #[endpoint]
-async fn logout(req: &mut Request, depot: &mut Depot) -> Result<(), StatusError> {
+async fn logout(req: &mut Request, depot: &mut Depot) -> Result<Json<TokenResponse>, StatusError> {
     let auth = obtain!(depot, LuminaryAuthentication);
 
     let Some(token) = extract_token(req) else {
         return Err(StatusError::unauthorized().brief("Missing or invalid authorization token"));
     };
 
-    return auth.logout(token).await.into_500();
+    auth.logout(token).await.into_500()?;
+    return Ok(Json(TokenResponse {
+        token: token.to_string(),
+    }));
 }
 
 /// Acts as the authentication backend for the Luminary Node, handling user authentication and bearer token management.
