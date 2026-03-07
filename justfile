@@ -16,5 +16,6 @@ export DATABASE_URL := "sqlite://" + justfile_dir() + "/luminary.db"
 
 [working-directory('packages/node')]
 prepare:
+    rm -R -f .sqlx
     cargo sqlx database setup
     cargo sqlx prepare 
