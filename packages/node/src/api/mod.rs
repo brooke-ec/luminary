@@ -7,7 +7,10 @@ use sqlx::{SqlitePool, sqlite::SqliteConnectOptions};
 
 use crate::{
     DATABASE,
-    api::{auth::LuminaryAuthentication, realtime::LuminaryStateChannel},
+    api::{
+        auth::LuminaryAuthentication,
+        realtime::{LuminaryLogsChannel, LuminaryStateChannel},
+    },
     core::LuminaryEngine,
 };
 
@@ -23,6 +26,7 @@ pub async fn setup() -> Result<Router> {
     // Set up the affix state with all dependencies
     let affix = affix_state::inject(LuminaryStateChannel::setup(engine.clone()).await?)
         .inject(LuminaryAuthentication::new(pool.clone()))
+        .inject(LuminaryLogsChannel::new(engine.clone()))
         .inject(engine)
         .inject(pool);
 

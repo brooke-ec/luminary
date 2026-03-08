@@ -45,7 +45,7 @@ impl LuminaryEngine {
 
                 let mut filters = HashMap::new();
                 filters.insert("type", vec!["container".to_string()]);
-                filters.insert("label", vec![format!("{}={}", COMPOSE_PROJECT_LABEL, name)]);
+                filters.insert("label", vec![format!("{}={}", COMPOSE_PROJECT_LABEL, &name)]);
                 let options = EventsOptionsBuilder::default().filters(&filters).build();
                 let mut events = self.docker.events(Some(options));
                 loop {

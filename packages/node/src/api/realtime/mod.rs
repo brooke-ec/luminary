@@ -1,17 +1,16 @@
 //! Manages real-time updates
 
-use std::convert::Infallible;
-
-use crate::{api::auth::protected, core::LuminaryEngine, obtain};
-use futures_util::StreamExt;
+use crate::{api::auth::protected, obtain};
 use salvo::{
-    Depot, Response, Router,
-    oapi::endpoint,
-    sse::{self, SseEvent},
+    Depot, Response, Router, Writer,
+    oapi::{endpoint, extract::QueryParam},
+    sse,
 };
 
+pub use logs::LuminaryLogsChannel;
 pub use state::LuminaryStateChannel;
 
+mod logs;
 mod state;
 
 /// Returns a router containing all realtime-related endpoints.
@@ -43,19 +42,10 @@ pub async fn state_subscribe(res: &mut Response, depot: &mut Depot) {
         body = String,
         status_code = 200,
         content_type = "text/event-stream",
-        description = "A stream bytes encoding the given project's logs",
+        description = "A stream of base64-encoded log chunks for the given project, in the form of Server-Sent Events",
     ))
 )]
-pub async fn logs_subscribe(res: &mut Response, depot: &mut Depot) {
-    let engine = obtain!(depot, LuminaryEngine).clone();
-
-    sse::stream(
-        res,
-        async_stream::stream! {
-            let mut stream = engine.stream_logs("metube".to_string());
-            while let Some(item) = stream.next().await {
-                yield Ok::<SseEvent, Infallible>(SseEvent::default().text(String::from_utf8_lossy(&item.unwrap())));
-            }
-        },
-    );
+pub async fn logs_subscribe(project: QueryParam<String, true>, res: &mut Response, depot: &mut Depot) {
+    let channel = obtain!(depot, LuminaryLogsChannel);
+    sse::stream(res, channel.subscribe(project.into_inner()).await);
 }

@@ -1849,6 +1849,7 @@ name = "luminary-node"
 version = "0.1.0"
 dependencies = [
  "async-stream",
+ "base64",
  "bollard",
  "bytes",
  "docker-compose-types",

@@ -31,7 +31,7 @@ pub struct LuminaryStateChannel {
 }
 
 impl LuminaryStateChannel {
-    /// Creates a new LuminaryState with default values, and starts the state worker.
+    /// Creates a new LuminaryLogsChannel with the given LuminaryEngine.
     #[wrap_err("Failed to create LuminaryState")]
     pub async fn setup(engine: LuminaryEngine) -> Result<Self> {
         let state = Self {
