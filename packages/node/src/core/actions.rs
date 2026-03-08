@@ -1,15 +1,25 @@
+use std::collections::HashMap;
+
 use eyre::{Result, bail};
 use futures_util::{Stream, StreamExt};
 
-use crate::core::{LuminaryAction, LuminaryEngine};
+use crate::core::{LuminaryAction, LuminaryEngine, LuminaryProject, LuminaryStatus};
 
 impl LuminaryEngine {
     async fn set_action(&self, project: &str, action: LuminaryAction) -> bool {
         let mut actions = self.actions.write().await;
+
+        let _ = self.actions_channel.send(LuminaryProject {
+            name: project.to_string(),
+            status: LuminaryStatus::Down,
+            action,
+            services: HashMap::new(),
+        });
+
         return match action {
-            LuminaryAction::Idle => actions.remove(project),
-            action => actions.insert(project.to_string(), action),
-        } != None;
+            LuminaryAction::Idle => actions.remove(project).is_some(),
+            _ => actions.insert(project.to_string(), action.clone()).is_some(),
+        };
     }
 
     pub(super) async fn get_action(&self, project: &str) -> LuminaryAction {

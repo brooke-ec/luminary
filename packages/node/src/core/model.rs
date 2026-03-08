@@ -58,7 +58,7 @@ impl LuminaryStatus {
 }
 
 /// Represents the current action running on a Luminary project.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, ToSchema)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, ToSchema)]
 pub enum LuminaryAction {
     Idle,
     Restarting,

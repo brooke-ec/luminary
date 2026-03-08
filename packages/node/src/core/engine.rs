@@ -8,9 +8,13 @@ use bytes::Bytes;
 use eyre::{Context, Result, bail};
 use futures_util::{StreamExt, stream::BoxStream};
 use luminary_macros::wrap_err;
-use tokio::{io::AsyncReadExt, process::Command, sync::RwLock};
+use tokio::{
+    io::AsyncReadExt,
+    process::Command,
+    sync::{RwLock, broadcast},
+};
 
-use crate::core::{LuminaryAction, configuration::LuminaryConfiguration};
+use crate::core::{LuminaryAction, LuminaryProject, configuration::LuminaryConfiguration};
 
 /// The core engine of the Luminary application, containing shared state and configuration.
 #[derive(Debug, Clone)]
@@ -18,11 +22,14 @@ pub struct LuminaryEngine {
     /// A map of project names to their currently processing action.
     ///
     /// Projects should be removed instead of being set to [LuminaryAction::Idle] when no action is being performed.
-    pub actions: Arc<RwLock<HashMap<String, LuminaryAction>>>,
+    pub(super) actions: Arc<RwLock<HashMap<String, LuminaryAction>>>,
+    /// Broadcast channel for notifying subscribers of action changes.
+    pub(super) actions_channel: broadcast::Sender<LuminaryProject>,
+
     /// The configuration for Luminary Engine, loaded from environment variables.
     pub configuration: Arc<LuminaryConfiguration>,
     /// The Docker client instance for interacting with the Docker engine.
-    pub(crate) docker: Docker,
+    pub(super) docker: Docker,
 }
 
 impl LuminaryEngine {
@@ -34,6 +41,7 @@ impl LuminaryEngine {
 
         return Ok(Self {
             actions: Arc::new(RwLock::new(HashMap::new())),
+            actions_channel: broadcast::channel(16).0,
             configuration,
             docker,
         });

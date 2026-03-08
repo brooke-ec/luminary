@@ -89,27 +89,36 @@ impl LuminaryEngine {
 
         debug!("Subscribing to Docker events for project updates");
 
-        return self
-            .docker
-            .events(Some(options))
-            .filter_map(move |event| async {
-                match event.wrap_err("Failed to receive Docker event") {
-                    Err(err) => Some(Err(err)),
-                    Ok(event) => {
-                        if let Some(actor) = event.actor
-                            && let Some(action) = event.action
-                            && let Some(labels) = actor.attributes
-                            && let Some(status) = self.parse_action(action.clone())
-                            && let Some(project) = self.parse_labels(status, labels).await
-                        {
-                            return Some(Ok(project));
-                        } else {
-                            return None;
-                        }
+        let docker_stream = self.docker.events(Some(options)).filter_map(move |event| async {
+            match event.wrap_err("Failed to receive Docker event") {
+                Err(err) => Some(Err(err)),
+                Ok(event) => {
+                    if let Some(actor) = event.actor
+                        && let Some(action) = event.action
+                        && let Some(labels) = actor.attributes
+                        && let Some(status) = self.parse_action(action.clone())
+                        && let Some(project) = self.parse_labels(status, labels).await
+                    {
+                        return Some(Ok(project));
+                    } else {
+                        return None;
                     }
                 }
-            })
-            .boxed();
+            }
+        });
+
+        let mut action_rx = self.actions_channel.subscribe();
+        let action_stream = async_stream::stream! {
+            loop {
+                match action_rx.recv().await {
+                    Ok(project) => yield Ok(project),
+                    Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => continue,
+                    Err(tokio::sync::broadcast::error::RecvError::Closed) => break,
+                }
+            }
+        };
+
+        return futures_util::stream::select(docker_stream, action_stream).boxed();
     }
 
     /// Lists all Luminary projects by combining data from both the filesystem and Docker engine.
@@ -268,6 +277,7 @@ impl LuminaryProject {
                 existing.services.insert(service_name, service);
             }
 
+            existing.action = self.action;
             existing.status = LuminaryStatus::min(existing.services.values().map(|s| s.status));
         } else {
             list.insert(self.name.clone(), self);
