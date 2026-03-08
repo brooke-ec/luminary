@@ -7,11 +7,10 @@ use std::{collections::HashMap, convert::Infallible, sync::Arc};
 use base64::prelude::*;
 use bytes::BytesMut;
 use futures_util::{Stream, StreamExt};
-use log::error;
 use salvo::sse::SseEvent;
 use tokio::sync::{Mutex, RwLock, broadcast};
 
-use crate::core::LuminaryEngine;
+use crate::{api::realtime::LuminaryStateChannel, core::LuminaryEngine};
 
 type LogChannelEntry = (
     broadcast::Sender<Result<SseEvent, Infallible>>,
@@ -23,9 +22,13 @@ type LogChannelEntry = (
 ///
 /// This channel lazily spawns a worker for each project when a a client subscribes.
 /// Similarly, it terminates the worker when there are no more subscribers, avoiding unnecessary resource usage.
+///
+/// This is cloned for each request as children are
+/// individually reference counted, making it a very cheap operation.
 #[derive(Debug, Clone)]
 pub struct LuminaryLogsChannel {
     engine: LuminaryEngine,
+    state: LuminaryStateChannel,
     channels: Arc<
         // Using a mutex here, as unlike LuminaryStateChannel there will be multiple writers
         Mutex<HashMap<String, LogChannelEntry>>,
@@ -34,9 +37,10 @@ pub struct LuminaryLogsChannel {
 
 impl LuminaryLogsChannel {
     /// Creates a new LuminaryLogsChannel with the given LuminaryEngine.
-    pub fn new(engine: LuminaryEngine) -> Self {
+    pub fn new(engine: LuminaryEngine, state: LuminaryStateChannel) -> Self {
         Self {
             engine,
+            state,
             channels: Arc::new(Mutex::new(HashMap::new())),
         }
     }
@@ -90,7 +94,7 @@ impl LuminaryLogsChannel {
                         break;
                     }
                 } else if let Err(e) = result {
-                    error!("Error streaming logs for project {}: {}", project, e);
+                    this.state.error(e); // Forward error to global state channel
                 }
             }
 

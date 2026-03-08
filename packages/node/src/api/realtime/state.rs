@@ -83,7 +83,7 @@ impl LuminaryStateChannel {
     }
 
     /// Sends a [eyre::Report] to all subscribers.
-    fn error(&self, error: eyre::Report) {
+    pub fn error(&self, error: eyre::Report) {
         error!("Global error sent to clients: {error:?}");
         let event = SseEvent::default()
             .name("error")
