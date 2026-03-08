@@ -2,6 +2,8 @@
 //!
 //! This will be subscribed to by all clients.
 
+// Concept adapted and inspired by: https://gist.github.com/sangelxyz/fe47e931f3536289a798eea7b5d21184
+
 use std::{convert::Infallible, sync::Arc};
 
 use crate::core::{LuminaryEngine, LuminaryProject, LuminaryProjectList};

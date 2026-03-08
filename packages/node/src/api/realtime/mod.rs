@@ -1,11 +1,7 @@
 //! Manages real-time updates
 
 use crate::{api::auth::protected, obtain};
-use salvo::{
-    Depot, Response, Router, Writer,
-    oapi::{endpoint, extract::QueryParam},
-    sse,
-};
+use salvo::{Depot, Response, Router, oapi::endpoint, sse};
 
 pub use logs::LuminaryLogsChannel;
 pub use state::LuminaryStateChannel;
@@ -45,7 +41,7 @@ pub async fn state_subscribe(res: &mut Response, depot: &mut Depot) {
         description = "A stream of base64-encoded log chunks for the given project, in the form of Server-Sent Events",
     ))
 )]
-pub async fn logs_subscribe(project: QueryParam<String, true>, res: &mut Response, depot: &mut Depot) {
+pub async fn logs_subscribe(res: &mut Response, depot: &mut Depot) {
     let channel = obtain!(depot, LuminaryLogsChannel);
-    sse::stream(res, channel.subscribe(project.into_inner()).await);
+    sse::stream(res, channel.subscribe("metube".to_string()).await);
 }

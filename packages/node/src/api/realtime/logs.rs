@@ -1,14 +1,23 @@
 //! Manages real-time log streaming.
 
+// Concept adapted and inspired by: https://gist.github.com/sangelxyz/fe47e931f3536289a798eea7b5d21184
+
 use std::{collections::HashMap, convert::Infallible, sync::Arc};
 
 use base64::prelude::*;
+use bytes::BytesMut;
 use futures_util::{Stream, StreamExt};
 use log::error;
 use salvo::sse::SseEvent;
-use tokio::sync::{Mutex, broadcast};
+use tokio::sync::{Mutex, RwLock, broadcast};
 
 use crate::core::LuminaryEngine;
+
+type LogChannelEntry = (
+    broadcast::Sender<Result<SseEvent, Infallible>>,
+    // Using an Arc here to allow the worker to keep a reference to the log buffer
+    Arc<RwLock<BytesMut>>,
+);
 
 /// Manages the streaming of project logs to subscribed clients.
 ///
@@ -17,8 +26,10 @@ use crate::core::LuminaryEngine;
 #[derive(Debug, Clone)]
 pub struct LuminaryLogsChannel {
     engine: LuminaryEngine,
-    // Using a mutex here, as unlike LuminaryStateChannel there will be multiple writers
-    channels: Arc<Mutex<HashMap<String, broadcast::Sender<Result<SseEvent, Infallible>>>>>,
+    channels: Arc<
+        // Using a mutex here, as unlike LuminaryStateChannel there will be multiple writers
+        Mutex<HashMap<String, LogChannelEntry>>,
+    >,
 }
 
 impl LuminaryLogsChannel {
@@ -37,21 +48,20 @@ impl LuminaryLogsChannel {
         &self,
         project: String,
     ) -> impl Stream<Item = Result<SseEvent, Infallible>> + use<> {
-        let receiver = {
-            let mut channels = self.channels.lock().await;
-
-            if let Some(sender) = channels.get(&project) {
-                sender.subscribe()
-            } else {
-                let (sender, reciever) = broadcast::channel(64);
-                channels.insert(project.clone(), sender.clone());
-                self.spawn_worker(project, sender);
-                reciever
-            }
-        };
+        // Obtain entry for the project, creating a new one if neccessary
+        let (sender, buffer) = self
+            .channels
+            .lock()
+            .await
+            .entry(project.clone())
+            .or_insert_with(|| self.spawn_worker(project.clone()))
+            .clone();
 
         async_stream::stream! {
-            let mut receiver = receiver;
+            // Send previous logs in buffer to bring client up to date
+            yield LuminaryLogsChannel::create_event(&buffer.read().await);
+            let mut receiver = sender.subscribe();
+
             loop {
                 match receiver.recv().await {
                     Ok(event) => yield event,
@@ -63,30 +73,35 @@ impl LuminaryLogsChannel {
     }
 
     /// Spawns a background worker that listens for logs from the Luminary Engine and sends them to clients.
-    fn spawn_worker(&self, project: String, sender: broadcast::Sender<Result<SseEvent, Infallible>>) {
+    fn spawn_worker(&self, project: String) -> LogChannelEntry {
         let this = self.clone();
+
+        let entry = (broadcast::channel(64).0, Arc::new(RwLock::new(BytesMut::new())));
+        let (sender, buffer) = entry.clone();
 
         tokio::spawn(async move {
             let mut stream = this.engine.stream_logs(project.clone());
 
             while let Some(result) = stream.next().await {
-                match result {
-                    Ok(bytes) => {
-                        let encoded = BASE64_STANDARD.encode(&bytes);
-                        let event = SseEvent::default().text(encoded);
-
-                        // If there are no subscribers break, and cleanup
-                        if sender.send(Ok(event)).is_err() {
-                            break;
-                        }
+                if let Ok(bytes) = result {
+                    // Append new logs to the buffer and notify subscribers
+                    buffer.write().await.extend_from_slice(&bytes);
+                    if sender.send(LuminaryLogsChannel::create_event(&bytes)).is_err() {
+                        break;
                     }
-                    Err(e) => {
-                        error!("Error streaming logs for {project}: {e:?}");
-                    }
+                } else if let Err(e) = result {
+                    error!("Error streaming logs for project {}: {}", project, e);
                 }
             }
 
             this.channels.lock().await.remove(&project);
         });
+
+        return entry;
+    }
+
+    fn create_event(bytes: &[u8]) -> Result<SseEvent, Infallible> {
+        let encoded = BASE64_STANDARD.encode(bytes);
+        return Ok(SseEvent::default().text(encoded));
     }
 }
