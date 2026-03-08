@@ -1,5 +1,6 @@
 //! The core library for Luminary, containing all logic related to managing projects and interacting with the Docker engine.
 
+mod actions;
 mod configuration;
 mod engine;
 mod model;

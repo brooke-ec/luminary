@@ -100,7 +100,7 @@ impl LuminaryEngine {
                             && let Some(action) = event.action
                             && let Some(labels) = actor.attributes
                             && let Some(status) = self.parse_action(action.clone())
-                            && let Some(project) = self.parse_labels(status, labels)
+                            && let Some(project) = self.parse_labels(status, labels).await
                         {
                             return Some(Ok(project));
                         } else {
@@ -142,7 +142,10 @@ impl LuminaryEngine {
                 if path.exists() {
                     let file = File::open(path).await.wrap_err("Failed to open compose file")?;
                     let compose: Compose = serde_saphyr::from_reader(file.into_std().await)?;
-                    projects.insert(project_name.clone(), self.parse_compose(project_name, compose));
+                    projects.insert(
+                        project_name.clone(),
+                        self.parse_compose(project_name, compose).await,
+                    );
                 }
             }
         }
@@ -154,30 +157,30 @@ impl LuminaryEngine {
     #[wrap_err("Failed to list projects from docker engine")]
     async fn list_from_docker(&self) -> Result<LuminaryProjectList> {
         let options = ListContainersOptionsBuilder::default().all(true).build();
-        let projects = self
+        let containers = self
             .docker
             .list_containers(Some(options))
             .await
-            .wrap_err("Failed to fetch containers from docker engine")?
-            .iter_mut()
-            .fold(LuminaryProjectList::new(), |mut acc, container| {
-                if let Some(labels) = container.labels.take() {
-                    if let Some(project) = self.parse_labels(self.parse_state(container.state), labels) {
-                        project.merge_into(&mut acc);
-                    }
-                }
+            .wrap_err("Failed to fetch containers from docker engine")?;
 
-                return acc;
-            });
+        let mut projects = LuminaryProjectList::new();
+        for mut container in containers {
+            if let Some(labels) = container.labels.take() {
+                if let Some(project) = self.parse_labels(self.parse_state(container.state), labels).await {
+                    project.merge_into(&mut projects);
+                }
+            }
+        }
 
         return Ok(projects);
     }
 
     /// Parses a given compose file into a LuminaryProject struct, initializing all services with a default status of "Down".
-    fn parse_compose(&self, name: String, compose: Compose) -> LuminaryProject {
+    async fn parse_compose(&self, name: String, compose: Compose) -> LuminaryProject {
         LuminaryProject {
-            name,
+            action: self.get_action(&name).await,
             status: LuminaryStatus::Down,
+            name,
             services: compose
                 .services
                 .0
@@ -195,8 +198,8 @@ impl LuminaryEngine {
         }
     }
 
-    /// Lists all Luminary projects by querying the Docker engine for containers with specific labels.
-    fn parse_labels(
+    /// Parses Docker container labels into a LuminaryProject, if the required labels are present.
+    async fn parse_labels(
         &self,
         status: LuminaryStatus,
         mut labels: HashMap<String, String>,
@@ -207,6 +210,7 @@ impl LuminaryEngine {
             && Path::new(&dir).starts_with(&self.configuration.project_directory)
         {
             return Some(LuminaryProject {
+                action: self.get_action(&project).await,
                 name: project,
                 status,
                 services: HashMap::from([(

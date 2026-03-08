@@ -14,6 +14,7 @@ use crate::{
     core::LuminaryEngine,
 };
 
+mod actions;
 mod auth;
 pub mod realtime;
 
@@ -35,6 +36,7 @@ pub async fn setup() -> Result<Router> {
     let router = Router::new().hoop(affix).push(
         Router::with_path("/api")
             .push(auth::router())
+            .push(actions::router())
             .push(realtime::router())
             .push(Router::with_path("ping").get(ping)),
     );
