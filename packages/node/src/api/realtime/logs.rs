@@ -100,6 +100,7 @@ impl LuminaryLogsChannel {
         return entry;
     }
 
+    /// Creates a Server-Sent Event from a chunk of log bytes.
     fn create_event(bytes: &[u8]) -> Result<SseEvent, Infallible> {
         let encoded = BASE64_STANDARD.encode(bytes);
         return Ok(SseEvent::default().text(encoded));
