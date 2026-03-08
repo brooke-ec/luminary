@@ -6,6 +6,7 @@ use bollard::{
     query_parameters::{EventsOptionsBuilder, ListContainersOptionsBuilder},
     secret::ContainerSummaryStateEnum,
 };
+use bytes::Bytes;
 use docker_compose_types::Compose;
 use eyre::{Result, WrapErr};
 use futures_util::{StreamExt, stream::BoxStream};
@@ -25,6 +26,41 @@ const COMPOSE_SERVICE_LABEL: &str = "com.docker.compose.service";
 const COMPOSE_FILENAME: &str = "compose.yml";
 
 impl LuminaryEngine {
+    pub fn logs(&self, name: String) -> BoxStream<'_, Result<Bytes>> {
+        return async_stream::stream! {
+            loop {
+                // Spawn docker compose process, yielding logs as they are recieved
+                match self.cli(&name, ["logs", "-f"]) {
+                    Err(err) => yield Err(err),
+                    Ok(mut stream) => while let Some(result) = stream.next().await {
+                        yield result;
+                    },
+                }
+
+                // If the process exits, wait for an event from the project before triggering a retry
+                debug!("Docker compose logs process exited, waiting for event to trigger retry...");
+
+                let mut filters = HashMap::new();
+                filters.insert("type", vec!["container".to_string()]);
+                filters.insert("label", vec![format!("{}={}", COMPOSE_PROJECT_LABEL, name)]);
+                let options = EventsOptionsBuilder::default().filters(&filters).build();
+                let mut events = self.docker.events(Some(options));
+                while let Some(item) = events.next().await {
+                    match item.wrap_err("Failed to receive Docker event") {
+                        Err(err) => yield Err(err),
+                        Ok(e) => {
+                            if let Some(LuminaryStatus::Running) = e.action.and_then(|a| self.parse_action(a)) {
+                                debug!("Received event indicating project is running, restarting logs stream...");
+                                break;
+                            }
+                        },
+                    }
+                }
+            }
+        }
+        .boxed();
+    }
+
     /// Subscribes to Docker events and emits a partial [LuminaryProject] whenever one of its containers changes state.
     ///
     /// Partial projects can be merged into an existing [LuminaryProjectList] using [LuminaryProject::merge_into]
@@ -134,7 +170,7 @@ impl LuminaryEngine {
     }
 
     /// Parses a given compose file into a LuminaryProject struct, initializing all services with a default status of "Down".
-    pub(crate) fn parse_compose(&self, name: String, compose: Compose) -> LuminaryProject {
+    fn parse_compose(&self, name: String, compose: Compose) -> LuminaryProject {
         LuminaryProject {
             name,
             status: LuminaryStatus::Down,
@@ -156,7 +192,7 @@ impl LuminaryEngine {
     }
 
     /// Lists all Luminary projects by querying the Docker engine for containers with specific labels.
-    pub(crate) fn parse_labels(
+    fn parse_labels(
         &self,
         status: LuminaryStatus,
         mut labels: HashMap<String, String>,
@@ -183,7 +219,7 @@ impl LuminaryEngine {
     }
 
     /// Parses a Docker container state into a corresponding LuminaryStatus.
-    pub(crate) fn parse_state(&self, state: Option<ContainerSummaryStateEnum>) -> LuminaryStatus {
+    fn parse_state(&self, state: Option<ContainerSummaryStateEnum>) -> LuminaryStatus {
         return match state {
             Some(ContainerSummaryStateEnum::CREATED) => LuminaryStatus::Loading,
             Some(ContainerSummaryStateEnum::RUNNING) => LuminaryStatus::Running,
@@ -198,7 +234,8 @@ impl LuminaryEngine {
     }
 
     /// Translate a Docker event action into a LuminaryStatus, if possible.
-    pub(crate) fn parse_action(&self, action: String) -> Option<LuminaryStatus> {
+    // Event list taken from https://docs.docker.com/engine/reference/commandline/events/#events-list
+    fn parse_action(&self, action: String) -> Option<LuminaryStatus> {
         return match action.as_str() {
             "create" => Some(LuminaryStatus::Loading),
             "destroy" => Some(LuminaryStatus::Down),

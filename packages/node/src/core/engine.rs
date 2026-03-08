@@ -1,11 +1,14 @@
 //! The core engine of the Luminary application, containing shared state and configuration.
 
-use std::{process::Stdio, sync::Arc};
+use std::{path::Path, process::Stdio, sync::Arc};
 
+use async_stream::stream;
 use bollard::Docker;
+use bytes::Bytes;
 use eyre::{Context, Result};
+use futures_util::{StreamExt, stream::BoxStream};
 use luminary_macros::wrap_err;
-use tokio::process::Command;
+use tokio::{io::AsyncReadExt, process::Command};
 
 use crate::core::configuration::LuminaryConfiguration;
 
@@ -29,19 +32,58 @@ impl LuminaryEngine {
         });
     }
 
-    #[wrap_err("Failed to read from docker compose command line interface")]
-    pub(crate) async fn read_cli(&self, args: Vec<&str>) -> Result<String> {
-        let output = Command::new("docker")
+    /// Spawns a `docker compose` process and returns a stream of raw bytes merging both stdout and stderr
+    #[wrap_err("Failed to spawn docker compose process")]
+    pub(super) fn cli<'a>(
+        &self,
+        name: &'a str,
+        args: impl IntoIterator<Item = &'a str>,
+    ) -> Result<BoxStream<'_, Result<Bytes>>> {
+        let mut child = Command::new("docker")
+            .current_dir(Path::new(&self.configuration.project_directory).join(name))
             .arg("compose")
             .args(args)
             .stdout(Stdio::piped())
-            .stderr(Stdio::null())
+            .stderr(Stdio::piped())
             .spawn()
-            .wrap_err("Failed to spawn child process")?
-            .wait_with_output()
-            .await
-            .wrap_err("Failed to wait on child process")?;
-        let string = String::from_utf8(output.stdout).wrap_err("Invalid UTF-8 from child process")?;
-        return Ok(string);
+            .wrap_err("Failed to spawn docker compose process")?;
+
+        let mut stdout = child.stdout.take().expect("stdout was piped");
+        let mut stderr = child.stderr.take().expect("stderr was piped");
+
+        Ok(stream! {
+            let mut stdout_buf = vec![0u8; 4096];
+            let mut stderr_buf = vec![0u8; 4096];
+            let mut stdout_done = false;
+            let mut stderr_done = false;
+
+            while !stdout_done || !stderr_done {
+                tokio::select! {
+                    result = stdout.read(&mut stdout_buf), if !stdout_done => {
+                        match result {
+                            Ok(0) => stdout_done = true,
+                            Ok(n) => yield Ok(Bytes::copy_from_slice(&stdout_buf[..n])),
+                            Err(e) => {
+                                yield Err(eyre::eyre!(e).wrap_err("Failed to read stdout"));
+                                stdout_done = true;
+                            }
+                        }
+                    }
+                    result = stderr.read(&mut stderr_buf), if !stderr_done => {
+                        match result {
+                            Ok(0) => stderr_done = true,
+                            Ok(n) => yield Ok(Bytes::copy_from_slice(&stderr_buf[..n])),
+                            Err(e) => {
+                                yield Err(eyre::eyre!(e).wrap_err("Failed to read stderr"));
+                                stderr_done = true;
+                            }
+                        }
+                    }
+                }
+            }
+
+            child.wait().await.ok();
+        }
+        .boxed())
     }
 }
