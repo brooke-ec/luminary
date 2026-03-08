@@ -6,6 +6,7 @@ use futures_util::{Stream, StreamExt};
 use crate::core::{LuminaryAction, LuminaryEngine, LuminaryProject, LuminaryStatus};
 
 impl LuminaryEngine {
+    /// Updates the current action for the given project.
     async fn set_action(&self, project: &str, action: LuminaryAction) -> bool {
         let mut actions = self.actions.write().await;
 
@@ -22,6 +23,7 @@ impl LuminaryEngine {
         };
     }
 
+    /// Retrieves the current action for the given project.
     pub(super) async fn get_action(&self, project: &str) -> LuminaryAction {
         self.actions
             .read()
@@ -31,6 +33,7 @@ impl LuminaryEngine {
             .unwrap_or(LuminaryAction::Idle)
     }
 
+    /// Waits for the given stream to complete and sets the project's action to Idle once done.
     fn wait<T>(
         &self,
         project: String,
@@ -43,6 +46,7 @@ impl LuminaryEngine {
         });
     }
 
+    /// Restarts the given project/service.
     pub async fn restart(
         &self,
         project: String,
