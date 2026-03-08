@@ -62,8 +62,15 @@ impl LuminaryLogsChannel {
             .clone();
 
         async_stream::stream! {
-            // Send previous logs in buffer to bring client up to date
-            yield LuminaryLogsChannel::create_event(&buffer.read().await);
+            // Surround with a block to drop read guard after reading buffer
+            {
+                // Send previous logs in buffer to bring client up to date
+                let bytes = &buffer.read().await;
+                if !bytes.is_empty() {
+                    yield LuminaryLogsChannel::create_event(bytes);
+                }
+            }
+
             let mut receiver = sender.subscribe();
 
             loop {
