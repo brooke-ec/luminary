@@ -58,7 +58,7 @@ impl LuminaryStateChannel {
                 }
             }
 
-            // This should only happen if the user is meddling with stuff
+            // Panic here as handling docker connection errors are out of scope
             error!("Connection to Docker Engine lost, panicing");
             panic!();
         });

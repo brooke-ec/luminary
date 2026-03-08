@@ -45,7 +45,8 @@ impl LuminaryEngine {
                 filters.insert("label", vec![format!("{}={}", COMPOSE_PROJECT_LABEL, name)]);
                 let options = EventsOptionsBuilder::default().filters(&filters).build();
                 let mut events = self.docker.events(Some(options));
-                while let Some(item) = events.next().await {
+                loop {
+                    let item = events.next().await.expect("Failed to receive docker event"); // Panic here as handling docker connection errors are out of scope
                     match item.wrap_err("Failed to receive Docker event") {
                         Err(err) => yield Err(err),
                         Ok(e) => {
