@@ -49,7 +49,7 @@ impl LuminaryStateChannel {
     async fn spawn_worker(self) -> Result<()> {
         self.refresh().await?;
         tokio::spawn(async move {
-            let mut reciever = self.engine.stream();
+            let mut reciever = self.engine.stream_updates();
 
             while let Some(result) = reciever.next().await {
                 // Flatten errors and report them

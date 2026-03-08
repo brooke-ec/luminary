@@ -52,7 +52,7 @@ pub async fn logs_subscribe(res: &mut Response, depot: &mut Depot) {
     sse::stream(
         res,
         async_stream::stream! {
-            let mut stream = engine.logs("metube".to_string());
+            let mut stream = engine.stream_logs("metube".to_string());
             while let Some(item) = stream.next().await {
                 yield Ok::<SseEvent, Infallible>(SseEvent::default().text(String::from_utf8_lossy(&item.unwrap())));
             }

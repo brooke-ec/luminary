@@ -26,7 +26,10 @@ const COMPOSE_SERVICE_LABEL: &str = "com.docker.compose.service";
 const COMPOSE_FILENAME: &str = "compose.yml";
 
 impl LuminaryEngine {
-    pub fn logs(&self, name: String) -> BoxStream<'_, Result<Bytes>> {
+    /// Streams the application logs of the given project.
+    ///
+    /// This stream is infinite and will continue yield logs even if the project is restarted.
+    pub fn stream_logs(&self, name: String) -> BoxStream<'_, Result<Bytes>> {
         return async_stream::stream! {
             loop {
                 // Spawn docker compose process, yielding logs as they are recieved
@@ -79,7 +82,7 @@ impl LuminaryEngine {
     ///     println!("{state:#?}");
     /// }
     /// ```
-    pub fn stream(&self) -> BoxStream<'_, Result<LuminaryProject>> {
+    pub fn stream_updates(&self) -> BoxStream<'_, Result<LuminaryProject>> {
         let mut filters = HashMap::new();
         filters.insert("type", vec!["container"]);
         let options = EventsOptionsBuilder::default().filters(&filters).build();
