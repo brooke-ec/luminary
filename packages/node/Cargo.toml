@@ -44,3 +44,4 @@ sqlx = { version = "0.8", features = [
     "migrate",
     "uuid",
 ] }
+multi_index_map = "0.15.1"

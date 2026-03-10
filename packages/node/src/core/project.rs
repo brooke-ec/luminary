@@ -15,8 +15,8 @@ use luminary_macros::wrap_err;
 use tokio::fs::{self, File};
 
 use crate::core::{
-    LuminaryEngine,
-    model::{LuminaryProject, LuminaryProjectList, LuminaryService, LuminaryStatus},
+    LuminaryEngine, LuminaryIdentifier,
+    model::{LuminaryProject, LuminaryService, LuminaryStateList, LuminaryStatus},
 };
 
 const COMPOSE_PROJECT_DIR_LABEL: &str = "com.docker.compose.project.working_dir";
@@ -107,10 +107,10 @@ impl LuminaryEngine {
             }
         });
 
-        let mut action_rx = self.actions_channel.subscribe();
+        let mut action_channel = self.actions_channel.subscribe();
         let action_stream = async_stream::stream! {
             loop {
-                match action_rx.recv().await {
+                match action_channel.recv().await {
                     Ok(project) => yield Ok(project),
                     Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => continue,
                     Err(tokio::sync::broadcast::error::RecvError::Closed) => break,
@@ -123,7 +123,7 @@ impl LuminaryEngine {
 
     /// Lists all Luminary projects by combining data from both the filesystem and Docker engine.
     #[wrap_err("Failed to list projects")]
-    pub async fn list_projects(&self) -> Result<LuminaryProjectList> {
+    pub async fn list_projects(&self) -> Result<LuminaryStateList> {
         let disk_projects = self.list_from_filesystem().await?;
         let mut projects = self.list_from_docker().await?;
 
@@ -136,8 +136,8 @@ impl LuminaryEngine {
 
     /// Lists all Luminary projects found in the configured projects directory.
     #[wrap_err("Failed to list projects from filesystem")]
-    async fn list_from_filesystem(&self) -> Result<LuminaryProjectList> {
-        let mut projects = LuminaryProjectList::new();
+    async fn list_from_filesystem(&self) -> Result<LuminaryStateList> {
+        let mut services = LuminaryStateList::new();
 
         let mut entries = fs::read_dir(&self.configuration.project_directory)
             .await
@@ -151,20 +151,17 @@ impl LuminaryEngine {
                 if path.exists() {
                     let file = File::open(path).await.wrap_err("Failed to open compose file")?;
                     let compose: Compose = serde_saphyr::from_reader(file.into_std().await)?;
-                    projects.insert(
-                        project_name.clone(),
-                        self.parse_compose(project_name, compose).await,
-                    );
+                    services.extend(self.parse_compose(project_name, compose).await);
                 }
             }
         }
 
-        return Ok(projects);
+        return Ok(services);
     }
 
     /// Lists all Luminary projects by querying the Docker engine for containers with specific labels.
     #[wrap_err("Failed to list projects from docker engine")]
-    async fn list_from_docker(&self) -> Result<LuminaryProjectList> {
+    async fn list_from_docker(&self) -> Result<LuminaryStateList> {
         let options = ListContainersOptionsBuilder::default().all(true).build();
         let containers = self
             .docker
@@ -172,7 +169,7 @@ impl LuminaryEngine {
             .await
             .wrap_err("Failed to fetch containers from docker engine")?;
 
-        let mut projects = LuminaryProjectList::new();
+        let mut projects = LuminaryStateList::new();
         for mut container in containers {
             if let Some(labels) = container.labels.take() {
                 if let Some(project) = self.parse_labels(self.parse_state(container.state), labels).await {
@@ -185,26 +182,22 @@ impl LuminaryEngine {
     }
 
     /// Parses a given compose file into a LuminaryProject struct, initializing all services with a default status of "Down".
-    async fn parse_compose(&self, name: String, compose: Compose) -> LuminaryProject {
-        LuminaryProject {
-            action: self.get_action(&name).await,
-            status: LuminaryStatus::Down,
-            name,
-            services: compose
-                .services
-                .0
-                .into_iter()
-                .map(|(name, _)| {
-                    (
-                        name.clone(),
-                        LuminaryService {
-                            status: LuminaryStatus::Down,
-                            name,
-                        },
-                    )
-                })
-                .collect(),
+    async fn parse_compose(&self, name: String, compose: Compose) -> LuminaryStateList {
+        let mut services = LuminaryStateList::new();
+
+        for (service_name, _) in compose.services.0 {
+            let identifier = LuminaryIdentifier::new(name, service_name);
+            services.insert(
+                identifier.clone(),
+                LuminaryService {
+                    action: self.get_action(identifier).await,
+                    status: LuminaryStatus::Down,
+                    identifier,
+                },
+            );
         }
+
+        return services;
     }
 
     /// Parses Docker container labels into a LuminaryProject, if the required labels are present.
@@ -212,23 +205,17 @@ impl LuminaryEngine {
         &self,
         status: LuminaryStatus,
         mut labels: HashMap<String, String>,
-    ) -> Option<LuminaryProject> {
+    ) -> Option<LuminaryService> {
         if let Some(service) = labels.remove(COMPOSE_SERVICE_LABEL)
             && let Some(project) = labels.remove(COMPOSE_PROJECT_LABEL)
             && let Some(dir) = labels.remove(COMPOSE_PROJECT_DIR_LABEL)
             && Path::new(&dir).starts_with(&self.configuration.project_directory)
         {
-            return Some(LuminaryProject {
-                action: self.get_action(&project).await,
-                name: project,
+            let identifier = LuminaryIdentifier::new(project, service);
+            return Some(LuminaryService {
+                action: self.get_action(&identifier).await,
+                identifier,
                 status,
-                services: HashMap::from([(
-                    service.clone(),
-                    LuminaryService {
-                        name: service,
-                        status,
-                    },
-                )]),
             });
         }
 
@@ -271,7 +258,7 @@ impl LuminaryEngine {
 
 impl LuminaryProject {
     /// Merges this project into the provided list, combining with existing services.
-    pub fn merge_into(self, list: &mut LuminaryProjectList) {
+    pub fn merge_into(self, list: &mut LuminaryStateList) {
         if let Some(existing) = list.get_mut(&self.name) {
             for (service_name, service) in self.services {
                 existing.services.insert(service_name, service);

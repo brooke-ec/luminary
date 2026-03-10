@@ -1,6 +1,6 @@
 //! The core engine of the Luminary application, containing shared state and configuration.
 
-use std::{collections::HashMap, path::Path, process::Stdio, sync::Arc};
+use std::{path::Path, process::Stdio, sync::Arc};
 
 use async_stream::stream;
 use bollard::Docker;
@@ -14,20 +14,20 @@ use tokio::{
     sync::{RwLock, broadcast},
 };
 
-use crate::core::{LuminaryAction, LuminaryProject, configuration::LuminaryConfiguration};
+use crate::core::{LuminaryService, LuminaryStateList, configuration::LuminaryConfiguration};
 
 /// The core engine of the Luminary application, containing shared state and configuration.
 #[derive(Debug, Clone)]
 pub struct LuminaryEngine {
-    /// A map of project names to their currently processing action.
-    ///
-    /// Projects should be removed instead of being set to [LuminaryAction::Idle] when no action is being performed.
-    pub(super) actions: Arc<RwLock<HashMap<String, LuminaryAction>>>,
-    /// Broadcast channel for notifying subscribers of action changes.
-    pub(super) actions_channel: broadcast::Sender<LuminaryProject>,
+    /// The canonical list of services for this instance of [LuminaryEngine].
+    pub(super) state: Arc<RwLock<LuminaryStateList>>,
+
+    /// A channel for broadcasting state changes to listeners.
+    pub channel: broadcast::Sender<LuminaryService>,
 
     /// The configuration for Luminary Engine, loaded from environment variables.
     pub configuration: Arc<LuminaryConfiguration>,
+
     /// The Docker client instance for interacting with the Docker engine.
     pub(super) docker: Docker,
 }
@@ -40,8 +40,8 @@ impl LuminaryEngine {
         let configuration = Arc::new(envy::prefixed("LUMINARY_").from_env::<LuminaryConfiguration>()?);
 
         return Ok(Self {
-            actions: Arc::new(RwLock::new(HashMap::new())),
-            actions_channel: broadcast::channel(16).0,
+            state: Arc::new(RwLock::new(LuminaryStateList::new())),
+            channel: broadcast::channel(64).0,
             configuration,
             docker,
         });

@@ -6,7 +6,7 @@
 
 use std::{convert::Infallible, sync::Arc};
 
-use crate::core::{LuminaryEngine, LuminaryProjectList};
+use crate::core::{LuminaryEngine, LuminaryStateList};
 use async_stream::stream;
 use eyre::{Context, Result};
 use futures_util::{Stream, StreamExt};
@@ -18,7 +18,7 @@ use tokio::sync::{RwLock, broadcast};
 
 #[derive(Debug)]
 struct StateSnapshot {
-    projects: LuminaryProjectList,
+    projects: LuminaryStateList,
     serialised: serde_json::Value,
 }
 
@@ -46,7 +46,7 @@ impl LuminaryStateChannel {
             channel: broadcast::channel(64).0,
             engine,
             state: Arc::new(RwLock::new(StateSnapshot {
-                projects: LuminaryProjectList::new(),
+                projects: LuminaryStateList::new(),
                 serialised: json!({}),
             })),
         };

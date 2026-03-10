@@ -582,6 +582,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "convert_case"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "baaaa0ecca5b51987b9423ccdc971514dd8b0bb7b4060b983d3664dad3f1f89f"
+dependencies = [
+ "unicode-segmentation",
+]
+
+[[package]]
 name = "cookie"
 version = "0.18.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1861,6 +1870,7 @@ dependencies = [
  "json-patch",
  "log",
  "luminary-macros",
+ "multi_index_map",
  "password-auth",
  "rand_chacha 0.3.1",
  "salvo",
@@ -1956,6 +1966,30 @@ dependencies = [
  "mime",
  "spin",
  "version_check",
+]
+
+[[package]]
+name = "multi_index_map"
+version = "0.15.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7a6c1f22ca32737a420c91da81efce8e17678eadbe3878d860bee879c0d2c593"
+dependencies = [
+ "multi_index_map_derive",
+ "rustc-hash",
+ "slab",
+]
+
+[[package]]
+name = "multi_index_map_derive"
+version = "0.15.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "12a678f8fa5da39f72d16380791208f8924d3b9f6c5cc5e2a85a62a927402851"
+dependencies = [
+ "convert_case",
+ "proc-macro-error2",
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -4068,6 +4102,12 @@ name = "unicode-properties"
 version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7df058c713841ad818f1dc5d3fd88063241cc61f49f5fbea4b951e8cf5a8d71d"
+
+[[package]]
+name = "unicode-segmentation"
+version = "1.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f6ccf251212114b54433ec949fd6a7841275f9ada20dddd2f29e9ceea4501493"
 
 [[package]]
 name = "unicode-width"
