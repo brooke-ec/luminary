@@ -6,7 +6,7 @@
 
 use std::{convert::Infallible, sync::Arc};
 
-use crate::core::{LuminaryEngine, LuminaryProject, LuminaryProjectList};
+use crate::core::{LuminaryEngine, LuminaryProjectList};
 use async_stream::stream;
 use eyre::{Context, Result};
 use futures_util::{Stream, StreamExt};
@@ -14,7 +14,13 @@ use log::error;
 use luminary_macros::wrap_err;
 use salvo::sse::SseEvent;
 use serde_json::json;
-use tokio::sync::{RwLock, RwLockWriteGuard, broadcast};
+use tokio::sync::{RwLock, broadcast};
+
+#[derive(Debug)]
+struct StateSnapshot {
+    projects: LuminaryProjectList,
+    serialised: serde_json::Value,
+}
 
 /// Provides a stream of updates to the global app state.
 ///
@@ -29,7 +35,7 @@ pub struct LuminaryStateChannel {
     channel: broadcast::Sender<Result<SseEvent, Infallible>>,
 
     /// The internal state of the channel, used to generate diffs for updates.
-    state: Arc<RwLock<(LuminaryProjectList, serde_json::Value)>>,
+    state: Arc<RwLock<StateSnapshot>>,
 }
 
 impl LuminaryStateChannel {
@@ -37,9 +43,12 @@ impl LuminaryStateChannel {
     #[wrap_err("Failed to create LuminaryState")]
     pub async fn setup(engine: LuminaryEngine) -> Result<Self> {
         let state = Self {
-            state: Arc::new(RwLock::new((LuminaryProjectList::new(), json!({})))),
             channel: broadcast::channel(64).0,
             engine,
+            state: Arc::new(RwLock::new(StateSnapshot {
+                projects: LuminaryProjectList::new(),
+                serialised: json!({}),
+            })),
         };
 
         state.clone().spawn_worker().await?;
@@ -55,8 +64,22 @@ impl LuminaryStateChannel {
 
             while let Some(result) = reciever.next().await {
                 // Flatten errors and report them
-                if let Err(e) = self.worker_iteration(result).await {
-                    self.error(e);
+                let project = match result.wrap_err("Failed to receive project update") {
+                    Ok(project) => project,
+                    Err(error) => {
+                        self.error(error);
+                        continue;
+                    }
+                };
+
+                let mut state = self.state.write().await;
+                project.merge_into(&mut state.projects);
+
+                match self.broadcast(&mut state) {
+                    Ok(_) => {}
+                    Err(error) => {
+                        self.error(error.wrap_err("Failed to broadcast project update"));
+                    }
                 }
             }
 
@@ -74,10 +97,9 @@ impl LuminaryStateChannel {
     /// This is because [LuminaryEngine::stream] will theoretically emit all neccesary updates to keep the state in sync.
     #[wrap_err("Failed to refresh LuminaryState")]
     pub async fn refresh(&self) -> Result<()> {
-        let list = self.engine.list_projects().await?;
-        let mut guard = self.state.write().await;
-        *guard = (list, json!({}));
-        self.send_changes(guard)?;
+        let mut state = self.state.write().await;
+        state.projects = self.engine.list_projects().await?;
+        self.broadcast(&mut state)?;
 
         return Ok(());
     }
@@ -94,33 +116,21 @@ impl LuminaryStateChannel {
         self.channel.send(Ok(event)).ok(); // This will only error if there are no active subscribers, so we can safely ignore it
     }
 
-    /// Handles a single iteration of the worker loop, merging changes into the internal state and sending diffs to subscribers.
-    async fn worker_iteration(&self, result: Result<LuminaryProject>) -> Result<()> {
-        let project = result?;
-        let mut guard = self.state.write().await;
-        project.merge_into(&mut guard.0);
-        self.send_changes(guard)?;
-        Ok(())
-    }
-
     /// Sends a diff to all subscribers and updates internal state.
     ///
-    /// Should be called before updating `state.1` with the serialised `state.0`.
-    fn send_changes(
-        &self,
-        mut guard: RwLockWriteGuard<'_, (LuminaryProjectList, serde_json::Value)>,
-    ) -> Result<()> {
-        let current = serde_json::to_value(&guard.0).wrap_err("Failed to serialise project list")?;
-        let event = LuminaryStateChannel::generate_event(&guard.1, &current);
-        guard.1 = current;
+    /// Should be called before updating `state.serialised` with the serialised `state.projects`.
+    fn broadcast(&self, state: &mut StateSnapshot) -> Result<()> {
+        let new = serde_json::to_value(&state.projects).wrap_err("Failed to serialise project list")?;
+        let event = LuminaryStateChannel::generate_event(&state.serialised, &new);
+        state.serialised = new;
 
         self.channel.send(event).ok(); // This will only error if there are no active subscribers, so we can safely ignore it
         return Ok(());
     }
 
     /// Generates a Server-Sent Event containing a JSON Patch diff between two states.
-    fn generate_event(left: &serde_json::Value, right: &serde_json::Value) -> Result<SseEvent, Infallible> {
-        let diff = json_patch::diff(&left, &right);
+    fn generate_event(old: &serde_json::Value, new: &serde_json::Value) -> Result<SseEvent, Infallible> {
+        let diff = json_patch::diff(&old, &new);
         let event = SseEvent::default()
             .name("patch")
             .json(diff)
@@ -131,7 +141,8 @@ impl LuminaryStateChannel {
 
     /// Creates a Server-Sent Event stream for clients to subscribe to.
     pub async fn stream(&self) -> impl Stream<Item = Result<SseEvent, Infallible>> + use<> {
-        let event = LuminaryStateChannel::generate_event(&json!({}), &self.state.read().await.1);
+        // Generate an event with the old state as an empty object (as the client has no state yet)
+        let event = LuminaryStateChannel::generate_event(&json!({}), &self.state.read().await.serialised);
         let mut reciever = self.channel.subscribe();
 
         return stream! {
