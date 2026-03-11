@@ -14,7 +14,7 @@ impl LuminaryEngine {
         action: LuminaryAction,
     ) -> Result<()> {
         // Get list of targets to update
-        let mut project_list = self.state.write().await;
+        let mut project_list = self.list.write().await;
         let targets = match project_list.get_mut(&project) {
             None => bail!("Unknown project '{}'", project),
             Some(service_list) => match service {

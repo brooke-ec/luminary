@@ -98,7 +98,7 @@ impl LuminaryStateChannel {
     #[wrap_err("Failed to refresh LuminaryState")]
     pub async fn refresh(&self) -> Result<()> {
         let mut state = self.state.write().await;
-        state.projects = self.engine.list_projects().await?;
+        state.projects = self.engine.refresh().await?;
         self.broadcast(&mut state)?;
 
         return Ok(());

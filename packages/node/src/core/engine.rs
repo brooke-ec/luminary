@@ -20,7 +20,7 @@ use crate::core::{LuminaryService, LuminaryStateList, configuration::LuminaryCon
 #[derive(Debug, Clone)]
 pub struct LuminaryEngine {
     /// The canonical list of services for this instance of [LuminaryEngine].
-    pub(super) state: Arc<RwLock<LuminaryStateList>>,
+    pub(super) list: Arc<RwLock<LuminaryStateList>>,
 
     /// A channel for broadcasting state changes to listeners.
     pub channel: broadcast::Sender<LuminaryService>,
@@ -40,7 +40,7 @@ impl LuminaryEngine {
         let configuration = Arc::new(envy::prefixed("LUMINARY_").from_env::<LuminaryConfiguration>()?);
 
         return Ok(Self {
-            state: Arc::new(RwLock::new(LuminaryStateList::new())),
+            list: Arc::new(RwLock::new(LuminaryStateList::new())),
             channel: broadcast::channel(64).0,
             configuration,
             docker,
