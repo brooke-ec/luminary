@@ -22,7 +22,7 @@ pub mod realtime;
 #[wrap_err("Crashed while setting up")]
 pub async fn setup() -> Result<Router> {
     let pool = setup_database().await?;
-    let engine = LuminaryEngine::setup()?;
+    let engine = LuminaryEngine::setup().await?;
     let state = LuminaryStateChannel::setup(engine.clone()).await?;
 
     // Set up the affix state with all dependencies

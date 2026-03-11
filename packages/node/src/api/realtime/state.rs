@@ -6,20 +6,52 @@
 
 use std::{convert::Infallible, sync::Arc};
 
-use crate::core::{LuminaryEngine, LuminaryStateList};
-use async_stream::stream;
-use eyre::{Context, Result};
-use futures_util::{Stream, StreamExt};
+use crate::core::LuminaryEngine;
+use crate::obtain;
+use eyre::Result;
 use log::error;
 use luminary_macros::wrap_err;
-use salvo::sse::SseEvent;
+use salvo::{
+    Depot, Response,
+    oapi::endpoint,
+    sse::{self, SseEvent},
+};
 use serde_json::json;
 use tokio::sync::{RwLock, broadcast};
 
-#[derive(Debug)]
-struct StateSnapshot {
-    projects: LuminaryStateList,
-    serialised: serde_json::Value,
+/// Subscribes to a stream of updates of global app state, including error messages and project changes.
+#[endpoint(
+    security(["bearer" = []]),
+    responses((
+        body = String,
+        status_code = 200,
+        content_type = "text/event-stream",
+        description = "A stream of JSON patches representing updates to the global app state, in the form of Server-Sent Events",
+    ))
+)]
+pub async fn state_subscribe(res: &mut Response, depot: &mut Depot) {
+    let channel = obtain!(depot, LuminaryStateChannel).clone();
+
+    sse::stream(
+        res,
+        async_stream::stream! {
+            let mut reciever = channel.channel.subscribe();
+            yield LuminaryStateChannel::generate_patch(&json!({}), &*channel.snapshot.read().await);
+            core::mem::drop(channel);
+
+            loop {
+                let event = match reciever.recv().await {
+                    Ok(event) => event,
+                    Err(err) => {
+                        error!("Error receiving state update: {:?}", err);
+                        continue;
+                    }
+                };
+
+                yield event;
+            }
+        },
+    );
 }
 
 /// Provides a stream of updates to the global app state.
@@ -34,102 +66,47 @@ pub struct LuminaryStateChannel {
     /// A channel for sending state updates to users.
     channel: broadcast::Sender<Result<SseEvent, Infallible>>,
 
-    /// The internal state of the channel, used to generate diffs for updates.
-    state: Arc<RwLock<StateSnapshot>>,
+    /// A snapshot of the previously serialized state list.
+    snapshot: Arc<RwLock<serde_json::Value>>,
 }
 
 impl LuminaryStateChannel {
     /// Creates a new LuminaryLogsChannel with the given LuminaryEngine.
     #[wrap_err("Failed to create LuminaryState")]
     pub async fn setup(engine: LuminaryEngine) -> Result<Self> {
+        let snapshot = Arc::new(RwLock::new(serde_json::to_value(&*engine.read_list().await)?));
         let state = Self {
             channel: broadcast::channel(64).0,
+            snapshot,
             engine,
-            state: Arc::new(RwLock::new(StateSnapshot {
-                projects: LuminaryStateList::new(),
-                serialised: json!({}),
-            })),
         };
 
-        state.clone().spawn_worker().await?;
+        state.spawn_worker();
         return Ok(state);
     }
 
     /// Spawns a background worker that listens for changes from the Luminary Engine and sends them to clients.
-    #[wrap_err("Failed to spawn state worker")]
-    async fn spawn_worker(self) -> Result<()> {
-        self.refresh().await?;
+    fn spawn_worker(&self) {
+        let this = self.clone();
         tokio::spawn(async move {
-            let mut reciever = self.engine.stream_updates();
+            let mut reciever = this.engine.channel.subscribe();
 
-            while let Some(result) = reciever.next().await {
-                // Flatten errors and report them
-                let project = match result.wrap_err("Failed to receive project update") {
-                    Ok(project) => project,
-                    Err(error) => {
-                        self.error(error);
-                        continue;
-                    }
+            loop {
+                // Wait for the next state update and generate a patch
+                let new = match reciever.recv().await.map(|state| serde_json::to_value(&state)) {
+                    Ok(Ok(state)) => state,
+                    _ => continue,
                 };
 
-                let mut state = self.state.write().await;
-                project.merge_into(&mut state.projects);
-
-                match self.broadcast(&mut state) {
-                    Ok(_) => {}
-                    Err(error) => {
-                        self.error(error.wrap_err("Failed to broadcast project update"));
-                    }
-                }
+                let mut old = this.snapshot.write().await;
+                this.channel.send(Self::generate_patch(&old, &new)).ok(); // This will only error if there are no active subscribers, so we can safely ignore it
+                *old = new;
             }
-
-            // Panic here as handling docker connection errors are out of scope
-            error!("Connection to Docker Engine lost, panicing");
-            panic!();
         });
-
-        return Ok(());
-    }
-
-    /// Synchronises [LuminaryStateChannel]'s internal state with the current state of the Luminary Engine.
-    ///
-    /// This should only need to be called, when needing to update from disk.
-    /// This is because [LuminaryEngine::stream] will theoretically emit all neccesary updates to keep the state in sync.
-    #[wrap_err("Failed to refresh LuminaryState")]
-    pub async fn refresh(&self) -> Result<()> {
-        let mut state = self.state.write().await;
-        state.projects = self.engine.refresh().await?;
-        self.broadcast(&mut state)?;
-
-        return Ok(());
-    }
-
-    /// Sends a [eyre::Report] to all subscribers.
-    pub fn error(&self, error: eyre::Report) {
-        error!("Global error sent to clients: {error:?}");
-        let event = SseEvent::default()
-            .name("error")
-            .json(json!({
-                "error": format!("{error:?}")
-            }))
-            .expect("Failed to serialise error event"); // This should never fail as the data is already a json value
-        self.channel.send(Ok(event)).ok(); // This will only error if there are no active subscribers, so we can safely ignore it
-    }
-
-    /// Sends a diff to all subscribers and updates internal state.
-    ///
-    /// Should be called before updating `state.serialised` with the serialised `state.projects`.
-    fn broadcast(&self, state: &mut StateSnapshot) -> Result<()> {
-        let new = serde_json::to_value(&state.projects).wrap_err("Failed to serialise project list")?;
-        let event = LuminaryStateChannel::generate_event(&state.serialised, &new);
-        state.serialised = new;
-
-        self.channel.send(event).ok(); // This will only error if there are no active subscribers, so we can safely ignore it
-        return Ok(());
     }
 
     /// Generates a Server-Sent Event containing a JSON Patch diff between two states.
-    fn generate_event(old: &serde_json::Value, new: &serde_json::Value) -> Result<SseEvent, Infallible> {
+    fn generate_patch(old: &serde_json::Value, new: &serde_json::Value) -> Result<SseEvent, Infallible> {
         let diff = json_patch::diff(&old, &new);
         let event = SseEvent::default()
             .name("patch")
@@ -139,18 +116,15 @@ impl LuminaryStateChannel {
         return Ok(event);
     }
 
-    /// Creates a Server-Sent Event stream for clients to subscribe to.
-    pub async fn stream(&self) -> impl Stream<Item = Result<SseEvent, Infallible>> + use<> {
-        // Generate an event with the old state as an empty object (as the client has no state yet)
-        let event = LuminaryStateChannel::generate_event(&json!({}), &self.state.read().await.serialised);
-        let mut reciever = self.channel.subscribe();
-
-        return stream! {
-            yield event; // Send the initial state as an event immediately upon connection
-
-            loop {
-                yield reciever.recv().await.expect("LuminaryStateChannel closed");
-            }
-        };
+    /// Sends a [eyre::Report] to all subscribers.
+    pub fn send_error(&self, error: eyre::Report) {
+        error!("Global error sent to clients: {error:?}");
+        let event = SseEvent::default()
+            .name("error")
+            .json(json!({
+                "error": format!("{error:?}")
+            }))
+            .expect("Failed to serialise error event"); // This should never fail as the data is already a json value
+        self.channel.send(Ok(event)).ok(); // This will only error if there are no active subscribers, so we can safely ignore it
     }
 }

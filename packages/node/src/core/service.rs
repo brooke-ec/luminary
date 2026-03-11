@@ -76,7 +76,7 @@ impl LuminaryEngine {
                 let mut stream = this.docker.events(Some(options));
 
                 while let Some(event) = stream.next().await {
-                    match event.wrap_err("Failed to receive Docker event") {
+                    match event {
                         Err(err) => error!("Error receiving Docker event: {:?}", err),
                         Ok(event) => {
                             if let Some(actor) = event.actor

@@ -101,7 +101,7 @@ impl LuminaryLogsChannel {
                         break;
                     }
                 } else if let Err(e) = result {
-                    this.state.error(e); // Forward error to global state channel
+                    this.state.send_error(e); // Forward error to global state channel
                 }
             }
 

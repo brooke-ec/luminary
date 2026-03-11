@@ -48,6 +48,7 @@ impl LuminaryEngine {
 
         // Spawn worker task to monitor events from Docker
         instance.spawn_worker().await;
+        instance.refresh().await?;
         return Ok(instance);
     }
 
