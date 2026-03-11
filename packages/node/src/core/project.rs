@@ -86,8 +86,20 @@ impl LuminaryEngine {
     #[wrap_err("Failed to list projects")]
     pub async fn refresh(&self) -> Result<()> {
         let mut list = self.list.write().await;
+
+        for project in list.values_mut() {
+            for service in project.services.values_mut() {
+                service.stale = true;
+            }
+        }
+
         self.load_from_docker(&mut list).await?;
         self.load_from_filesystem(&mut list).await?;
+
+        list.retain(|_, project| {
+            project.services.retain(|_, service| !service.stale);
+            return !project.services.is_empty();
+        });
 
         return Ok(());
     }
@@ -132,6 +144,7 @@ impl LuminaryEngine {
                         project.services.insert(
                             service_name.clone(),
                             LuminaryService {
+                                stale: false,
                                 action: existing.map(|s| s.action).unwrap_or(LuminaryAction::Idle),
                                 status: existing.map(|s| s.status).unwrap_or(LuminaryStatus::Down),
                                 identifier: LuminaryIdentifier::new(project_name.clone(), service_name),
@@ -176,6 +189,7 @@ impl LuminaryEngine {
                             action: existing.map(|s| s.action).unwrap_or(LuminaryAction::Idle),
                             identifier: LuminaryIdentifier::new(project_name, service_name),
                             status: Self::parse_state(container.state),
+                            stale: false,
                         },
                     );
                 }

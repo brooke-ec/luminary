@@ -58,6 +58,9 @@ pub struct LuminaryService {
     pub status: LuminaryStatus,
     /// The current action being performed on this service
     pub action: LuminaryAction,
+    /// Wether this service is stale, meaning that it was removed in the recent refresh.
+    #[serde(skip)]
+    pub stale: bool,
 }
 
 /// The unique identifier for a Luminary service, consisting of its project and service names.
