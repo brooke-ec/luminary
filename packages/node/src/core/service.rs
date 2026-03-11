@@ -10,7 +10,7 @@ use bytes::Bytes;
 use docker_compose_types::Compose;
 use eyre::{Result, WrapErr};
 use futures_util::{StreamExt, stream::BoxStream};
-use log::debug;
+use log::{debug, error};
 use luminary_macros::wrap_err;
 use tokio::fs::{self, File};
 
@@ -65,21 +65,34 @@ impl LuminaryEngine {
         .boxed();
     }
 
-    /// Subscribes to Docker events and emits a partial [LuminaryProject] whenever one of its containers changes state.
-    ///
-    /// Partial projects can be merged into an existing [LuminaryProjectList] using [LuminaryProject::merge_into]
-    pub fn stream_updates(&self) -> BoxStream<'_, Result<LuminaryService>> {
-        let mut reciever = self.channel.subscribe();
-        return async_stream::stream! {
+    pub(super) async fn spawn_worker(&self) {
+        let this = self.clone();
+        let mut filters = HashMap::new();
+        filters.insert("type", vec!["container"]);
+
+        tokio::spawn(async move {
             loop {
-                match reciever.recv().await {
-                    Ok(project) => yield Ok(project),
-                    Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => continue,
-                    Err(tokio::sync::broadcast::error::RecvError::Closed) => break,
+                let options = EventsOptionsBuilder::default().filters(&filters).build();
+                let mut stream = this.docker.events(Some(options));
+
+                while let Some(event) = stream.next().await {
+                    match event.wrap_err("Failed to receive Docker event") {
+                        Err(err) => error!("Error receiving Docker event: {:?}", err),
+                        Ok(event) => {
+                            if let Some(actor) = event.actor
+                                && let Some(action) = event.action
+                                && let Some(labels) = actor.attributes
+                                && let Some(status) = Self::parse_action(action.clone())
+                            {
+                                let mut list = this.list.write().await;
+                                this.merge_service(status, labels, &mut list);
+                                this.broadcast(list.clone()).await;
+                            }
+                        }
+                    }
                 }
             }
-        }
-        .boxed();
+        });
     }
 
     /// Lists all Luminary projects by combining data from both the filesystem and Docker engine.
@@ -101,6 +114,7 @@ impl LuminaryEngine {
             return !project.services.is_empty();
         });
 
+        self.broadcast(list.clone()).await;
         return Ok(());
     }
 
@@ -169,34 +183,43 @@ impl LuminaryEngine {
             .wrap_err("Failed to fetch containers from docker engine")?;
 
         for mut container in containers {
-            if let Some(mut labels) = container.labels.take() {
-                if let Some(service_name) = labels.remove(COMPOSE_SERVICE_LABEL)
-                    && let Some(project_name) = labels.remove(COMPOSE_PROJECT_LABEL)
-                    && let Some(dir) = labels.remove(COMPOSE_PROJECT_DIR_LABEL)
-                    && Path::new(&dir).starts_with(&self.configuration.project_directory)
-                {
-                    let project = list
-                        .entry(project_name.clone())
-                        .or_insert_with(|| LuminaryProject {
-                            name: project_name.clone(),
-                            services: HashMap::new(),
-                        });
-
-                    let existing = project.services.get(&service_name);
-                    project.services.insert(
-                        service_name.clone(),
-                        LuminaryService {
-                            action: existing.map(|s| s.action).unwrap_or(LuminaryAction::Idle),
-                            identifier: LuminaryIdentifier::new(project_name, service_name),
-                            status: Self::parse_state(container.state),
-                            stale: false,
-                        },
-                    );
-                }
+            if let Some(labels) = container.labels.take() {
+                self.merge_service(Self::parse_state(container.state), labels, list);
             }
         }
 
         return Ok(());
+    }
+
+    fn merge_service(
+        &self,
+        status: LuminaryStatus,
+        mut labels: HashMap<String, String>,
+        list: &mut LuminaryStateList,
+    ) {
+        if let Some(service_name) = labels.remove(COMPOSE_SERVICE_LABEL)
+            && let Some(project_name) = labels.remove(COMPOSE_PROJECT_LABEL)
+            && let Some(dir) = labels.remove(COMPOSE_PROJECT_DIR_LABEL)
+            && Path::new(&dir).starts_with(&self.configuration.project_directory)
+        {
+            let project = list
+                .entry(project_name.clone())
+                .or_insert_with(|| LuminaryProject {
+                    name: project_name.clone(),
+                    services: HashMap::new(),
+                });
+
+            let existing = project.services.get(&service_name);
+            project.services.insert(
+                service_name.clone(),
+                LuminaryService {
+                    action: existing.map(|s| s.action).unwrap_or(LuminaryAction::Idle),
+                    identifier: LuminaryIdentifier::new(project_name, service_name),
+                    stale: false,
+                    status,
+                },
+            );
+        }
     }
 
     /// Parses a Docker container state into a corresponding LuminaryStatus.

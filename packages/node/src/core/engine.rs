@@ -11,10 +11,10 @@ use luminary_macros::wrap_err;
 use tokio::{
     io::AsyncReadExt,
     process::Command,
-    sync::{RwLock, broadcast},
+    sync::{RwLock, RwLockReadGuard, broadcast},
 };
 
-use crate::core::{LuminaryService, LuminaryStateList, configuration::LuminaryConfiguration};
+use crate::core::{LuminaryStateList, configuration::LuminaryConfiguration};
 
 /// The core engine of the Luminary application, containing shared state and configuration.
 #[derive(Debug, Clone)]
@@ -23,7 +23,7 @@ pub struct LuminaryEngine {
     pub(super) list: Arc<RwLock<LuminaryStateList>>,
 
     /// A channel for broadcasting state changes to listeners.
-    pub channel: broadcast::Sender<LuminaryService>,
+    pub channel: broadcast::Sender<LuminaryStateList>,
 
     /// The configuration for Luminary Engine, loaded from environment variables.
     pub configuration: Arc<LuminaryConfiguration>,
@@ -35,16 +35,33 @@ pub struct LuminaryEngine {
 impl LuminaryEngine {
     /// Initializes a new instance of the Engine struct, loading configuration from environment variables and connecting to the Docker engine.
     #[wrap_err("Failed to create LuminaryEngine")]
-    pub fn setup() -> Result<Self> {
+    pub async fn setup() -> Result<Self> {
         let docker = Docker::connect_with_defaults().wrap_err("Failed to connect to docker engine.")?;
         let configuration = Arc::new(envy::prefixed("LUMINARY_").from_env::<LuminaryConfiguration>()?);
 
-        return Ok(Self {
+        let instance = Self {
             list: Arc::new(RwLock::new(LuminaryStateList::new())),
             channel: broadcast::channel(64).0,
             configuration,
             docker,
-        });
+        };
+
+        // Spawn worker task to monitor events from Docker
+        instance.spawn_worker().await;
+        return Ok(instance);
+    }
+
+    /// Get a immutable reference to the current list of projects and services.
+    pub async fn read_list<'a>(&'a self) -> RwLockReadGuard<'a, LuminaryStateList> {
+        return self.list.read().await;
+    }
+
+    /// Broadcasts the given state change to all listeners.
+    pub(super) async fn broadcast(&self, list: LuminaryStateList) {
+        if self.channel.receiver_count() > 0 {
+            // This will only error if there are no receivers, so we can safely ignore it.
+            let _ = self.channel.send(list.clone());
+        }
     }
 
     /// Spawns a `docker compose` process and returns a stream of raw bytes merging both stdout and stderr

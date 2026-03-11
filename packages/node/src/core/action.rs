@@ -40,13 +40,9 @@ impl LuminaryEngine {
         // Set the action for all targets
         for target in targets {
             target.action = action;
-
-            // Update the state for any listeners
-            if self.channel.receiver_count() > 0 {
-                let _ = self.channel.send(target.clone()); // This will only error if there are no receivers, so we can safely ignore it.
-            }
         }
 
+        self.broadcast(project_list.clone()).await;
         return Ok(());
     }
 
