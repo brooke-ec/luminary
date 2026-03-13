@@ -122,6 +122,7 @@ impl LuminaryStatus {
 
 /// Represents the current action running on a Luminary project.
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, ToSchema)]
+#[serde(rename_all = "camelCase")]
 pub enum LuminaryAction {
     Idle,
     Restarting,
