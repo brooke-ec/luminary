@@ -1,0 +1,18 @@
+type: http_request
+model: http_request
+id: rq_iR3xCtqz47
+createdAt: 2026-03-13T14:51:00.774380458
+updatedAt: 2026-03-13T15:04:04.659597955
+workspaceId: wk_EsNSpdfnEe
+folderId: fl_6yTxas67yQ
+authentication: {}
+authenticationType: null
+body: {}
+bodyType: null
+description: ''
+headers: []
+method: GET
+name: App Subscribe
+sortPriority: 0.0
+url: ${[ BASE_URL ]}/realtime/app
+urlParameters: []

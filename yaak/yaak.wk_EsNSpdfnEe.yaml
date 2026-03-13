@@ -1,0 +1,17 @@
+type: workspace
+model: workspace
+id: wk_EsNSpdfnEe
+createdAt: 2026-03-13T14:34:38.945957053
+updatedAt: 2026-03-13T14:55:43.631081942
+authentication:
+  disabled: false
+  token: ${[ TOKEN ]}
+authenticationType: bearer
+description: Yaak workspace for the Luminary Node.
+headers: []
+name: Luminary
+encryptionKeyChallenge: null
+settingValidateCertificates: true
+settingFollowRedirects: true
+settingRequestTimeout: 0
+settingDnsOverrides: []

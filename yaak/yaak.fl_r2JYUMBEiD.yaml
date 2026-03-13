@@ -1,0 +1,13 @@
+type: folder
+model: folder
+id: fl_r2JYUMBEiD
+createdAt: 2026-03-13T15:04:08.814504962
+updatedAt: 2026-03-13T15:22:29.675994089
+workspaceId: wk_EsNSpdfnEe
+folderId: null
+authentication: {}
+authenticationType: null
+description: ''
+headers: []
+name: Authemtication
+sortPriority: 1000.0

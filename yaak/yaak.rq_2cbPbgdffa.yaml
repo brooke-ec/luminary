@@ -1,0 +1,18 @@
+type: http_request
+model: http_request
+id: rq_2cbPbgdffa
+createdAt: 2026-03-13T15:21:22.738014417
+updatedAt: 2026-03-13T15:21:52.347218251
+workspaceId: wk_EsNSpdfnEe
+folderId: fl_r2JYUMBEiD
+authentication: {}
+authenticationType: null
+body: {}
+bodyType: null
+description: ''
+headers: []
+method: POST
+name: Logout
+sortPriority: 0.0
+url: ${[ BASE_URL ]}/auth/logout
+urlParameters: []

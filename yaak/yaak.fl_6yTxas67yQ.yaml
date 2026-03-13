@@ -1,0 +1,13 @@
+type: folder
+model: folder
+id: fl_6yTxas67yQ
+createdAt: 2026-03-13T15:03:58.312051721
+updatedAt: 2026-03-13T15:22:29.711897359
+workspaceId: wk_EsNSpdfnEe
+folderId: null
+authentication: {}
+authenticationType: null
+description: ''
+headers: []
+name: Realtime
+sortPriority: 2000.0
