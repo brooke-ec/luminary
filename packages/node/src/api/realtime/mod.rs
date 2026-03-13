@@ -1,13 +1,12 @@
 //! Manages real-time updates
 
 use crate::{
-    api::{auth::protected, realtime::state::state_subscribe},
+    api::{auth::protected, realtime::state::state_events},
     obtain,
 };
 use salvo::{Depot, Response, Router, oapi::endpoint, sse};
 
 pub use logs::LuminaryLogsChannel;
-pub use state::LuminaryStateChannel;
 
 mod logs;
 mod state;
@@ -16,7 +15,7 @@ mod state;
 pub fn router() -> Router {
     return Router::with_path("/realtime")
         .hoop(protected)
-        .push(Router::with_path("app").get(state_subscribe))
+        .push(Router::with_path("app").get(state_events))
         .push(Router::with_path("logs").get(logs_subscribe));
 }
 

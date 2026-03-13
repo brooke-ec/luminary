@@ -7,10 +7,11 @@ use std::{collections::HashMap, convert::Infallible, sync::Arc};
 use base64::prelude::*;
 use bytes::BytesMut;
 use futures_util::{Stream, StreamExt};
+use log::error;
 use salvo::sse::SseEvent;
 use tokio::sync::{Mutex, RwLock, broadcast};
 
-use crate::{api::realtime::LuminaryStateChannel, core::LuminaryEngine};
+use crate::core::LuminaryEngine;
 
 type LogChannelEntry = (
     broadcast::Sender<Result<SseEvent, Infallible>>,
@@ -28,7 +29,6 @@ type LogChannelEntry = (
 #[derive(Debug, Clone)]
 pub struct LuminaryLogsChannel {
     engine: LuminaryEngine,
-    state: LuminaryStateChannel,
     channels: Arc<
         // Using a mutex here, as unlike LuminaryStateChannel there will be multiple writers
         Mutex<HashMap<String, LogChannelEntry>>,
@@ -37,10 +37,9 @@ pub struct LuminaryLogsChannel {
 
 impl LuminaryLogsChannel {
     /// Creates a new LuminaryLogsChannel with the given LuminaryEngine.
-    pub fn new(engine: LuminaryEngine, state: LuminaryStateChannel) -> Self {
+    pub fn new(engine: LuminaryEngine) -> Self {
         Self {
             engine,
-            state,
             channels: Arc::new(Mutex::new(HashMap::new())),
         }
     }
@@ -101,7 +100,7 @@ impl LuminaryLogsChannel {
                         break;
                     }
                 } else if let Err(e) = result {
-                    this.state.send_error(e); // Forward error to global state channel
+                    error!("Error streaming logs for project {}: {:?}", project, e);
                 }
             }
 

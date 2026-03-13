@@ -57,7 +57,10 @@ impl LuminaryEngine {
         let this = self.clone();
         return tokio::spawn(async move {
             while let Some(_) = stream.next().await {}
-            this.set_action(project, service, LuminaryAction::Idle).await;
+            match this.set_action(project, service, LuminaryAction::Idle).await {
+                Err(e) => log::error!("Failed to reset action: {:?}", e),
+                Ok(_) => (),
+            }
         });
     }
 
