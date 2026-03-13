@@ -3,7 +3,7 @@
 use eyre::Result;
 use log::debug;
 use salvo::prelude::*;
-use tracing_subscriber::EnvFilter;
+use tracing_subscriber::{EnvFilter, filter::LevelFilter};
 
 const DATABASE: &str = "luminary.db";
 
@@ -17,7 +17,11 @@ async fn main() -> Result<()> {
 
     // Set up logging
     tracing_subscriber::fmt()
-        .with_env_filter(EnvFilter::from_default_env())
+        .with_env_filter(
+            EnvFilter::builder()
+                .with_default_directive(LevelFilter::INFO.into())
+                .from_env()?,
+        )
         .init();
 
     // Set up the app and dependencies

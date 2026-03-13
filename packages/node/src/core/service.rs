@@ -10,7 +10,7 @@ use bytes::Bytes;
 use docker_compose_types::Compose;
 use eyre::{Result, WrapErr};
 use futures_util::{StreamExt, stream::BoxStream};
-use log::{debug, error};
+use log::{debug, error, warn};
 use luminary_macros::wrap_err;
 use tokio::fs::{self, File};
 
@@ -32,6 +32,7 @@ impl LuminaryEngine {
     pub fn stream_logs(&self, name: String) -> BoxStream<'_, Result<Bytes>> {
         return async_stream::stream! {
             loop {
+                debug!("Starting logs stream for project '{}'...", name);
                 // Spawn docker compose process, yielding logs as they are recieved
                 match self.cli(&name, ["logs", "-f"]) {
                     Err(err) => yield Err(err),
@@ -41,7 +42,7 @@ impl LuminaryEngine {
                 }
 
                 // If the process exits, wait for an event from the project before triggering a retry
-                debug!("Docker compose logs process exited, waiting for event to trigger retry...");
+                warn!("Docker compose logs process exited, waiting for event to trigger retry...");
 
                 let mut filters = HashMap::new();
                 filters.insert("type", vec!["container".to_string()]);
@@ -72,6 +73,7 @@ impl LuminaryEngine {
 
         tokio::spawn(async move {
             loop {
+                debug!("Starting Docker event listener");
                 let options = EventsOptionsBuilder::default().filters(&filters).build();
                 let mut stream = this.docker.events(Some(options));
 
@@ -91,6 +93,9 @@ impl LuminaryEngine {
                         }
                     }
                 }
+
+                warn!("Docker event stream ended, restarting...");
+                tokio::time::sleep(std::time::Duration::from_secs(1)).await;
             }
         });
     }
