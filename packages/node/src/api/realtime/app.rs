@@ -19,7 +19,7 @@ use salvo::{
 };
 use serde_json::json;
 
-/// Subscribes to a stream of updates of global app state, including error messages and project changes.
+/// Subscribes to a stream of app events, including log messages and changes to global app state, sent as Server-Sent Events.
 #[endpoint(
     security(["bearer" = []]),
     responses((
@@ -36,6 +36,7 @@ pub async fn app_subscribe(res: &mut Response, depot: &mut Depot) {
     sse::stream(res, select(log_events(layer), state_events(engine).await));
 }
 
+/// A stream of [SseEvent]s representing app log messages.
 pub fn log_events(layer: &BroadcastLayer) -> impl Stream<Item = Result<SseEvent, Infallible>> + use<> {
     return layer.subscribe().filter_map(|log| async move {
         let event = SseEvent::default()
@@ -51,6 +52,7 @@ pub fn log_events(layer: &BroadcastLayer) -> impl Stream<Item = Result<SseEvent,
     });
 }
 
+/// A stream of [SseEvent]s representing changes to global app state, in the form of JSON Patch diffs.
 pub async fn state_events(
     engine: &LuminaryEngine,
 ) -> impl Stream<Item = Result<SseEvent, Infallible>> + use<> {

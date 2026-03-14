@@ -22,6 +22,7 @@ macro_rules! obtain {
     };
 }
 
+/// A simple macro to obtain the currently authenticated user from the depot.
 #[macro_export]
 macro_rules! get_user {
     ($depot:expr) => {
@@ -49,6 +50,7 @@ impl<T> IntoStatusError<T> for eyre::Result<T> {
     }
 }
 
+/// Represents a single log message.
 #[derive(Default, Serialize, Clone, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct LogMessage {
@@ -72,12 +74,14 @@ pub struct BroadcastLayer {
 }
 
 impl BroadcastLayer {
+    /// Creates a new [BroadcastLayer] with default values.
     pub fn new() -> Self {
         Self {
             channel: broadcast::channel(64).0,
         }
     }
 
+    /// Creates a stream of [LogMessage]s for clients to read from.
     pub fn subscribe<'a>(&'_ self) -> BoxStream<'a, LogMessage> {
         let mut reciever = self.channel.subscribe();
 

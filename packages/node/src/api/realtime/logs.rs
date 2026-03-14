@@ -14,6 +14,7 @@ use salvo::{
 
 use crate::{core::LuminaryEngine, obtain};
 
+/// Subscribes to a stream of log messages for a given project, sent as Server-Sent Events.
 #[endpoint(
     security(["bearer" = []]),
     responses((
