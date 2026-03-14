@@ -3,7 +3,9 @@
 use eyre::Result;
 use log::debug;
 use salvo::prelude::*;
-use tracing_subscriber::{EnvFilter, filter::LevelFilter};
+use tracing_subscriber::{
+    EnvFilter, Layer, filter::LevelFilter, layer::SubscriberExt, util::SubscriberInitExt,
+};
 
 const DATABASE: &str = "luminary.db";
 
@@ -16,17 +18,21 @@ async fn main() -> Result<()> {
     dotenvy::dotenv()?;
 
     // Set up logging
-    tracing_subscriber::fmt()
-        .with_env_filter(
-            EnvFilter::builder()
-                .with_default_directive(LevelFilter::INFO.into())
-                .from_env()?,
-        )
+    let broadcast_layer = util::BroadcastLayer::new();
+    let fmt_layer = tracing_subscriber::fmt::layer().with_filter(
+        EnvFilter::builder()
+            .with_default_directive(LevelFilter::INFO.into())
+            .from_env()?,
+    );
+
+    tracing_subscriber::registry()
+        .with(broadcast_layer.clone().with_filter(LevelFilter::WARN))
+        .with(fmt_layer)
         .init();
 
     // Set up the app and dependencies
     let listener = TcpListener::new("0.0.0.0:9000").bind().await;
-    let router = api::setup().await?;
+    let router = api::setup(broadcast_layer).await?;
 
     // Log router structure for debugging
     debug!("Router structure: {router:?}");

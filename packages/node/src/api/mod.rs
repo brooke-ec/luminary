@@ -9,6 +9,7 @@ use crate::{
     DATABASE,
     api::{auth::LuminaryAuthentication, realtime::LuminaryLogsChannel},
     core::LuminaryEngine,
+    util::BroadcastLayer,
 };
 
 mod actions;
@@ -17,7 +18,7 @@ pub mod realtime;
 
 /// Sets up the app router and all dependencies.
 #[wrap_err("Crashed while setting up")]
-pub async fn setup() -> Result<Router> {
+pub async fn setup(logs: BroadcastLayer) -> Result<Router> {
     let pool = setup_database().await?;
     let engine = LuminaryEngine::setup().await?;
 
@@ -25,6 +26,7 @@ pub async fn setup() -> Result<Router> {
     let affix = affix_state::inject(LuminaryAuthentication::new(pool.clone()))
         .inject(LuminaryLogsChannel::new(engine.clone()))
         .inject(engine)
+        .inject(logs)
         .inject(pool);
 
     // Set up the app router

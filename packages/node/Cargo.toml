@@ -36,6 +36,8 @@ tokio = { version = "1.49", features = [
 tracing-subscriber = { version = "0.3.22", features = [
     "env-filter",
     "tracing-log",
+    "fmt",
+    "ansi",
 ] }
 
 sqlx = { version = "0.8", features = [
@@ -45,3 +47,4 @@ sqlx = { version = "0.8", features = [
     "uuid",
 ] }
 multi_index_map = "0.15.1"
+tracing = "0.1.44"

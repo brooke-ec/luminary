@@ -42,7 +42,7 @@ impl LuminaryEngine {
                 }
 
                 // If the process exits, wait for an event from the project before triggering a retry
-                warn!("Docker compose logs process exited, waiting for event to trigger retry...");
+                debug!("Docker compose logs process exited, waiting for event to trigger retry...");
 
                 let mut filters = HashMap::new();
                 filters.insert("type", vec!["container".to_string()]);
