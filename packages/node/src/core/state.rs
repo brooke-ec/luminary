@@ -14,7 +14,7 @@ use luminary_macros::wrap_err;
 use tokio::fs::{self, File};
 
 use crate::core::{
-    LuminaryAction, LuminaryEngine, LuminaryIdentifier,
+    LuminaryAction, LuminaryEngine, LuminaryIdentifier, LuminaryServiceList,
     model::{LuminaryProject, LuminaryService, LuminaryStateList, LuminaryStatus},
 };
 
@@ -190,7 +190,7 @@ impl LuminaryEngine {
                 .entry(project_name.clone())
                 .or_insert_with(|| LuminaryProject {
                     name: project_name.clone(),
-                    services: HashMap::new(),
+                    services: LuminaryServiceList::new(),
                 });
 
             let existing = project.services.get(&service_name);

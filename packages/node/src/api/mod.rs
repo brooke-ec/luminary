@@ -34,19 +34,24 @@ pub async fn setup(pool: SqlitePool, logs: BroadcastLayer) -> Result<Router> {
     // Write OpenAPI documentation to file for the panel to consume
     #[cfg(debug_assertions)]
     {
+        use log::info;
         use salvo::oapi::{
-            OpenApi, SecurityScheme,
+            OpenApi, SecurityScheme, ToSchema,
             security::{Http, HttpAuthScheme},
         };
 
-        let openapi = OpenApi::new("Luminary Node API", env!("CARGO_PKG_VERSION"))
+        info!("Generating OpenAPI documentation...");
+
+        let mut openapi = OpenApi::new("Luminary Node API", env!("CARGO_PKG_VERSION"))
             .add_security_scheme("bearer", SecurityScheme::Http(Http::new(HttpAuthScheme::Bearer)))
             .merge_router(&router);
 
-        std::fs::write(
-            concat!(env!("CARGO_MANIFEST_DIR"), "/../panel/src/lib/openapi.json"),
-            openapi.to_pretty_json()?,
-        )?;
+        // Ensure custom core schemas are registered for SSE documentation.
+        crate::core::LuminaryStateList::to_schema(&mut openapi.components);
+
+        let location = concat!(env!("CARGO_MANIFEST_DIR"), "/../panel/src/lib/openapi.json");
+        std::fs::write(location, openapi.to_pretty_json()?)?;
+        info!("OpenAPI documentation written to {}", location);
     }
 
     return Ok(router);

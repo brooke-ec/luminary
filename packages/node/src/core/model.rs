@@ -1,14 +1,22 @@
 //! This module defines the core data models used within the Luminary application.
 
-use std::{collections::HashMap, fmt::Display, sync::Arc};
+use std::{fmt::Display, sync::Arc};
 
 use bytes::{Bytes, BytesMut};
+use luminary_macros::hashmap_schema;
 use salvo::oapi::ToSchema;
 use serde::{Serialize, ser::SerializeStruct};
 use tokio::sync::{RwLock, broadcast};
 
-/// A type alias for a collection of Luminary services, keyed by project name.
-pub type LuminaryStateList = HashMap<String, LuminaryProject>;
+/// A collection of Luminary projects, keyed by project name.
+#[hashmap_schema]
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct LuminaryStateList<String, LuminaryProject>;
+
+/// A collection of Luminary services, keyed by service name.
+#[hashmap_schema]
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct LuminaryServiceList<String, LuminaryService>;
 
 /// Represents a Luminary project, consisting of a docker compose project.
 ///
@@ -18,7 +26,7 @@ pub struct LuminaryProject {
     /// The name of this project
     pub name: String,
     /// A map of the services that make up this projects
-    pub services: HashMap<String, LuminaryService>,
+    pub services: LuminaryServiceList,
 }
 
 impl LuminaryProject {
