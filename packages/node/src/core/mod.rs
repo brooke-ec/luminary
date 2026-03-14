@@ -4,7 +4,7 @@ mod action;
 mod configuration;
 mod engine;
 mod model;
-mod service;
+mod state;
 
 pub use engine::LuminaryEngine;
 pub use model::*;

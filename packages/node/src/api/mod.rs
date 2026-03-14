@@ -1,12 +1,11 @@
 //! Contains all the routes for Luminary Node's API.
 
-use eyre::{Context, Result};
+use eyre::Result;
 use luminary_macros::wrap_err;
 use salvo::{Router, affix_state, oapi::endpoint};
-use sqlx::{SqlitePool, sqlite::SqliteConnectOptions};
+use sqlx::SqlitePool;
 
 use crate::{
-    DATABASE,
     api::{auth::LuminaryAuthentication, realtime::LuminaryLogsChannel},
     core::LuminaryEngine,
     util::BroadcastLayer,
@@ -18,8 +17,7 @@ pub mod realtime;
 
 /// Sets up the app router and all dependencies.
 #[wrap_err("Crashed while setting up")]
-pub async fn setup(logs: BroadcastLayer) -> Result<Router> {
-    let pool = setup_database().await?;
+pub async fn setup(pool: SqlitePool, logs: BroadcastLayer) -> Result<Router> {
     let engine = LuminaryEngine::setup().await?;
 
     // Set up the affix state with all dependencies
@@ -57,35 +55,6 @@ pub async fn setup(logs: BroadcastLayer) -> Result<Router> {
     }
 
     return Ok(router);
-}
-
-/// Sets up the SQLite database, running any pending migrations.
-async fn setup_database() -> Result<SqlitePool> {
-    // Connect to the database
-    let options = SqliteConnectOptions::default()
-        .create_if_missing(true)
-        .filename(DATABASE);
-
-    let pool = SqlitePool::connect_with(options)
-        .await
-        .wrap_err("Could not connect to database")?;
-
-    // Run migrations
-    sqlx::migrate!("./migrations")
-        .run(&pool)
-        .await
-        .wrap_err("Could not migrate database")?;
-
-    // Populates the database with fake data for testing and development purposes.
-    #[cfg(debug_assertions)]
-    {
-        use log::info;
-
-        info!("Populating database with debug data...");
-        sqlx::query_file!("./debug.sql").execute(&pool).await?;
-    }
-
-    return Ok(pool);
 }
 
 /// A simple endpoint to test if the server is running.
