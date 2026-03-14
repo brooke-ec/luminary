@@ -5,11 +5,7 @@ use luminary_macros::wrap_err;
 use salvo::{Router, affix_state, oapi::endpoint};
 use sqlx::SqlitePool;
 
-use crate::{
-    api::{auth::LuminaryAuthentication, realtime::LuminaryLogsChannel},
-    core::LuminaryEngine,
-    util::BroadcastLayer,
-};
+use crate::{api::auth::LuminaryAuthentication, core::LuminaryEngine, util::BroadcastLayer};
 
 mod actions;
 mod auth;
@@ -22,7 +18,6 @@ pub async fn setup(pool: SqlitePool, logs: BroadcastLayer) -> Result<Router> {
 
     // Set up the affix state with all dependencies
     let affix = affix_state::inject(LuminaryAuthentication::new(pool.clone()))
-        .inject(LuminaryLogsChannel::new(engine.clone()))
         .inject(engine)
         .inject(logs)
         .inject(pool);

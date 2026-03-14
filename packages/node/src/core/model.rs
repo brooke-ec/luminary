@@ -1,9 +1,11 @@
 //! This module defines the core data models used within the Luminary application.
 
-use std::{collections::HashMap, fmt::Display};
+use std::{collections::HashMap, fmt::Display, sync::Arc};
 
+use bytes::{Bytes, BytesMut};
 use salvo::oapi::ToSchema;
 use serde::{Serialize, ser::SerializeStruct};
+use tokio::sync::{RwLock, broadcast};
 
 /// A type alias for a collection of Luminary services, keyed by project name.
 pub type LuminaryStateList = HashMap<String, LuminaryProject>;
@@ -109,6 +111,7 @@ pub enum LuminaryStatus {
     /// Represents a service that is running and online.
     Running,
 
+    #[allow(unused)]
     /// Represents a service that is actively passing health checks.
     Healthy,
 }
@@ -126,4 +129,13 @@ impl LuminaryStatus {
 pub enum LuminaryAction {
     Idle,
     Restarting,
+}
+
+/// Stores the log channel and buffer for a project.
+/// This is created lazily when a client subscribes to logs for a project.
+#[derive(Debug, Clone)]
+pub struct ProjectLogChannel {
+    pub channel: broadcast::Sender<Bytes>,
+    // Using an Arc here to allow the worker to keep a reference to the log buffer
+    pub buffer: Arc<RwLock<BytesMut>>,
 }

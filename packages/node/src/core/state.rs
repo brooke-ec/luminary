@@ -6,10 +6,9 @@ use bollard::{
     query_parameters::{EventsOptionsBuilder, ListContainersOptionsBuilder},
     secret::ContainerSummaryStateEnum,
 };
-use bytes::Bytes;
 use docker_compose_types::Compose;
 use eyre::{Result, WrapErr};
-use futures_util::{StreamExt, stream::BoxStream};
+use futures_util::StreamExt;
 use log::{debug, error, warn};
 use luminary_macros::wrap_err;
 use tokio::fs::{self, File};
@@ -26,47 +25,7 @@ const COMPOSE_SERVICE_LABEL: &str = "com.docker.compose.service";
 const COMPOSE_FILENAME: &str = "compose.yml";
 
 impl LuminaryEngine {
-    /// Streams the application logs of the given project.
-    ///
-    /// This stream is infinite and will continue yield logs even if the project is restarted.
-    pub fn stream_logs(&self, name: String) -> BoxStream<'_, Result<Bytes>> {
-        return async_stream::stream! {
-            loop {
-                debug!("Starting logs stream for project '{}'...", name);
-                // Spawn docker compose process, yielding logs as they are recieved
-                match self.cli(&name, ["logs", "-f"]) {
-                    Err(err) => yield Err(err),
-                    Ok(mut stream) => while let Some(result) = stream.next().await {
-                        yield result;
-                    },
-                }
-
-                // If the process exits, wait for an event from the project before triggering a retry
-                debug!("Docker compose logs process exited, waiting for event to trigger retry...");
-
-                let mut filters = HashMap::new();
-                filters.insert("type", vec!["container".to_string()]);
-                filters.insert("label", vec![format!("{}={}", COMPOSE_PROJECT_LABEL, &name)]);
-                let options = EventsOptionsBuilder::default().filters(&filters).build();
-                let mut events = self.docker.events(Some(options));
-                loop {
-                    let item = events.next().await.expect("Failed to receive docker event"); // Panic here as handling docker connection errors are out of scope
-                    match item.wrap_err("Failed to receive Docker event") {
-                        Err(err) => yield Err(err),
-                        Ok(e) => {
-                            if let Some(LuminaryStatus::Running) = e.action.and_then(|a| Self::parse_action(a)) {
-                                debug!("Received event indicating project is running, restarting logs stream...");
-                                break;
-                            }
-                        },
-                    }
-                }
-            }
-        }
-        .boxed();
-    }
-
-    pub(super) async fn spawn_worker(&self) {
+    pub(super) async fn spawn_state_worker(&self) {
         let this = self.clone();
         let mut filters = HashMap::new();
         filters.insert("type", vec!["container"]);
@@ -86,7 +45,7 @@ impl LuminaryEngine {
                                 && let Some(labels) = actor.attributes
                                 && let Some(status) = Self::parse_action(action.clone())
                             {
-                                let mut list = this.list.write().await;
+                                let mut list = this.state.write().await;
                                 this.merge_service(status, labels, &mut list);
                                 this.broadcast(list.clone()).await;
                             }
@@ -103,7 +62,7 @@ impl LuminaryEngine {
     /// Lists all Luminary projects by combining data from both the filesystem and Docker engine.
     #[wrap_err("Failed to list projects")]
     pub async fn refresh(&self) -> Result<()> {
-        let mut list = self.list.write().await;
+        let mut list = self.state.write().await;
 
         for project in list.values_mut() {
             for service in project.services.values_mut() {
@@ -258,5 +217,41 @@ impl LuminaryEngine {
             "oom" => Some(LuminaryStatus::Exited),
             _ => None,
         };
+    }
+
+    /// Waits until a given project or service reaches the desired status by listening to Docker events.
+    pub(super) async fn wait_until(
+        &self,
+        project: &String,
+        service: Option<&String>,
+        desired: LuminaryStatus,
+    ) -> Result<()> {
+        // Set up filters based on arguments
+        let mut filters = HashMap::new();
+        filters.insert("type", vec!["container".to_string()]);
+        filters.insert("label", vec![format!("{}={}", COMPOSE_PROJECT_LABEL, &project)]);
+        if let Some(service) = service {
+            filters.insert("label", vec![format!("{}={}", COMPOSE_SERVICE_LABEL, &service)]);
+        }
+
+        let options = EventsOptionsBuilder::default().filters(&filters).build();
+        let mut events = self.docker.events(Some(options));
+
+        // Outer loop to restart event stream if it ends unexpectedly
+        loop {
+            // Inner loop to wait for desired event
+            loop {
+                if let Some(true) = match events.next().await {
+                    Some(Err(err)) => return Err(eyre::eyre!("Failed to receive Docker event: {:?}", err)),
+                    Some(Ok(e)) => e.action.and_then(|a| Self::parse_action(a)).map(|a| a == desired),
+                    None => break, // Break inner loop to restart event stream if it ends unexpectedly
+                } {
+                    return Ok(());
+                }
+            }
+
+            warn!("Docker event stream ended, restarting...");
+            tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+        }
     }
 }

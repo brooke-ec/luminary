@@ -3,6 +3,7 @@
 mod action;
 mod configuration;
 mod engine;
+mod logs;
 mod model;
 mod state;
 

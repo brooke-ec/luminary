@@ -63,7 +63,7 @@ pub fn log_events(layer: BroadcastLayer) -> impl Stream<Item = Result<SseEvent, 
 pub async fn state_events(engine: LuminaryEngine) -> impl Stream<Item = Result<SseEvent, Infallible>> {
     return async_stream::stream! {
         let mut result = Some(serde_json::to_value(&*engine.read_list().await));
-        let mut reciever = engine.channel.subscribe();
+        let mut reciever = engine.state_channel.subscribe();
         let mut old = json!({});
 
         loop {

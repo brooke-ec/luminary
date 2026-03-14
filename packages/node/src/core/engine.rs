@@ -1,6 +1,6 @@
 //! The core engine of the Luminary application, containing shared state and configuration.
 
-use std::{path::Path, process::Stdio, sync::Arc};
+use std::{collections::HashMap, path::Path, process::Stdio, sync::Arc};
 
 use async_stream::stream;
 use bollard::Docker;
@@ -11,19 +11,22 @@ use luminary_macros::wrap_err;
 use tokio::{
     io::AsyncReadExt,
     process::Command,
-    sync::{RwLock, RwLockReadGuard, broadcast},
+    sync::{Mutex, RwLock, RwLockReadGuard, broadcast},
 };
 
-use crate::core::{LuminaryStateList, configuration::LuminaryConfiguration};
+use crate::core::{LuminaryStateList, ProjectLogChannel, configuration::LuminaryConfiguration};
 
 /// The core engine of the Luminary application, containing shared state and configuration.
 #[derive(Debug, Clone)]
 pub struct LuminaryEngine {
     /// The canonical list of services for this instance of [LuminaryEngine].
-    pub(super) list: Arc<RwLock<LuminaryStateList>>,
+    pub(super) state: Arc<RwLock<LuminaryStateList>>,
 
     /// A channel for broadcasting state changes to listeners.
-    pub channel: broadcast::Sender<LuminaryStateList>,
+    pub state_channel: broadcast::Sender<LuminaryStateList>,
+
+    /// A map of log channels for each project, keyed by project name. This is lazily populated when clients subscribe to logs for a project.
+    pub(super) log_channels: Arc<Mutex<HashMap<String, ProjectLogChannel>>>,
 
     /// The configuration for Luminary Engine, loaded from environment variables.
     pub configuration: Arc<LuminaryConfiguration>,
@@ -40,28 +43,29 @@ impl LuminaryEngine {
         let configuration = Arc::new(envy::prefixed("LUMINARY_").from_env::<LuminaryConfiguration>()?);
 
         let instance = Self {
-            list: Arc::new(RwLock::new(LuminaryStateList::new())),
-            channel: broadcast::channel(64).0,
+            state: Arc::new(RwLock::new(LuminaryStateList::new())),
+            log_channels: Arc::new(Mutex::new(HashMap::new())),
+            state_channel: broadcast::channel(64).0,
             configuration,
             docker,
         };
 
         // Spawn worker task to monitor events from Docker
-        instance.spawn_worker().await;
+        instance.spawn_state_worker().await;
         instance.refresh().await?;
         return Ok(instance);
     }
 
     /// Get a immutable reference to the current list of projects and services.
     pub async fn read_list<'a>(&'a self) -> RwLockReadGuard<'a, LuminaryStateList> {
-        return self.list.read().await;
+        return self.state.read().await;
     }
 
     /// Broadcasts the given state change to all listeners.
     pub(super) async fn broadcast(&self, list: LuminaryStateList) {
-        if self.channel.receiver_count() > 0 {
+        if self.state_channel.receiver_count() > 0 {
             // This will only error if there are no receivers, so we can safely ignore it.
-            let _ = self.channel.send(list.clone());
+            let _ = self.state_channel.send(list.clone());
         }
     }
 
