@@ -1,5 +1,6 @@
 use std::fmt;
 
+use futures_util::{StreamExt, stream::BoxStream};
 use log::error;
 use salvo::{http::StatusError, oapi::ToSchema};
 use serde::Serialize;
@@ -66,19 +67,32 @@ impl Visit for LogMessage {
 /// A custom tracing layer that broadcasts log messages to a tokio broadcast channel.
 /// This is used to send log messages to the frontend in real-time.
 #[derive(Clone, Debug)]
-pub(crate) struct BroadcastLayer {
+pub struct BroadcastLayer {
     channel: broadcast::Sender<LogMessage>,
 }
 
 impl BroadcastLayer {
-    pub(crate) fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             channel: broadcast::channel(64).0,
         }
     }
 
-    pub(crate) fn subscribe(&self) -> broadcast::Receiver<LogMessage> {
-        self.channel.subscribe()
+    pub fn subscribe<'a>(&'_ self) -> BoxStream<'a, LogMessage> {
+        let mut reciever = self.channel.subscribe();
+
+        return async_stream::stream! {
+            loop {
+                match reciever.recv().await {
+                    Ok(message) => yield message,
+                    Err(err) => {
+                        error!("Error receiving log message: {:?}", err);
+                        continue;
+                    }
+                };
+            }
+        }
+        .boxed();
     }
 }
 

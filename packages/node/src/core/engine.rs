@@ -11,7 +11,7 @@ use luminary_macros::wrap_err;
 use tokio::{
     io::AsyncReadExt,
     process::Command,
-    sync::{Mutex, RwLock, RwLockReadGuard, broadcast},
+    sync::{Mutex, RwLock, broadcast},
 };
 
 use crate::core::{LuminaryStateList, ProjectLogChannel, configuration::LuminaryConfiguration};
@@ -23,7 +23,7 @@ pub struct LuminaryEngine {
     pub(super) state: Arc<RwLock<LuminaryStateList>>,
 
     /// A channel for broadcasting state changes to listeners.
-    pub state_channel: broadcast::Sender<LuminaryStateList>,
+    pub(super) state_channel: broadcast::Sender<LuminaryStateList>,
 
     /// A map of log channels for each project, keyed by project name. This is lazily populated when clients subscribe to logs for a project.
     pub(super) log_channels: Arc<Mutex<HashMap<String, ProjectLogChannel>>>,
@@ -54,11 +54,6 @@ impl LuminaryEngine {
         instance.spawn_state_worker().await;
         instance.refresh().await?;
         return Ok(instance);
-    }
-
-    /// Get a immutable reference to the current list of projects and services.
-    pub async fn read_list<'a>(&'a self) -> RwLockReadGuard<'a, LuminaryStateList> {
-        return self.state.read().await;
     }
 
     /// Broadcasts the given state change to all listeners.

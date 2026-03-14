@@ -9,8 +9,8 @@ use std::convert::Infallible;
 use crate::obtain;
 use crate::{core::LuminaryEngine, util::BroadcastLayer};
 use eyre::Result;
-use futures_util::Stream;
 use futures_util::stream::select;
+use futures_util::{Stream, StreamExt};
 use log::error;
 use salvo::{
     Depot, Response,
@@ -30,58 +30,45 @@ use serde_json::json;
     ))
 )]
 pub async fn app_subscribe(res: &mut Response, depot: &mut Depot) {
-    let engine = obtain!(depot, LuminaryEngine).clone();
-    let layer = obtain!(depot, BroadcastLayer).clone();
+    let engine = obtain!(depot, LuminaryEngine);
+    let layer = obtain!(depot, BroadcastLayer);
 
     sse::stream(res, select(log_events(layer), state_events(engine).await));
 }
 
-pub fn log_events(layer: BroadcastLayer) -> impl Stream<Item = Result<SseEvent, Infallible>> {
-    let mut reciever = layer.subscribe();
+pub fn log_events(layer: &BroadcastLayer) -> impl Stream<Item = Result<SseEvent, Infallible>> + use<> {
+    return layer.subscribe().filter_map(|log| async move {
+        let event = SseEvent::default()
+            .name("log")
+            .json(&log)
+            .map_err(|err| {
+                error!("Error serialising log message: {:?}", err);
+                err
+            })
+            .ok()?;
+
+        return Some(Ok(event));
+    });
+}
+
+pub async fn state_events(
+    engine: &LuminaryEngine,
+) -> impl Stream<Item = Result<SseEvent, Infallible>> + use<> {
+    let mut stream = engine.state_subscribe().await;
+    let mut old = json!({});
 
     return async_stream::stream! {
-        loop {
-            let result = match reciever.recv().await {
-                Ok(message) => SseEvent::default().name("log").json(message),
-                Err(err) => {
-                    error!("Error receiving log message: {:?}", err);
-                    continue;
-                }
-            };
-
-            yield match result {
-                Ok(event) => Ok(event),
+        while let Some(state) = stream.next().await {
+            let new = match serde_json::to_value(&state) {
+                Ok(event) => event,
                 Err(err) => {
                     error!("Error serialising log message: {:?}", err);
                     continue;
                 }
             };
-        }
-    };
-}
 
-pub async fn state_events(engine: LuminaryEngine) -> impl Stream<Item = Result<SseEvent, Infallible>> {
-    return async_stream::stream! {
-        let mut result = Some(serde_json::to_value(&*engine.read_list().await));
-        let mut reciever = engine.state_channel.subscribe();
-        let mut old = json!({});
-
-        loop {
-            match result.take().expect("Result should be Some at the this point") {
-                Err(err) => error!("Error serialising state: {:?}", err),
-                Ok(new) => {
-                    yield generate_patch(&old, &new);
-                    old = new;
-                }
-            }
-
-            result = match reciever.recv().await {
-                Ok(event) => Some(serde_json::to_value(event)),
-                Err(err) => {
-                    error!("Error receiving state update: {:?}", err);
-                    continue;
-                }
-            };
+            yield generate_patch(&old, &new);
+            old = new;
         }
     };
 }

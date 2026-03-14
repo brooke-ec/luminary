@@ -25,7 +25,7 @@ use crate::{core::LuminaryEngine, obtain};
 )]
 pub async fn logs_subscribe(res: &mut Response, depot: &mut Depot) {
     let engine = obtain!(depot, LuminaryEngine);
-    let mut stream = engine.subscribe("metube".to_string()).await;
+    let mut stream = engine.logs_subscribe("metube".to_string()).await;
 
     sse::stream(
         res,

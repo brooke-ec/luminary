@@ -8,7 +8,7 @@ use bollard::{
 };
 use docker_compose_types::Compose;
 use eyre::{Result, WrapErr};
-use futures_util::StreamExt;
+use futures_util::{StreamExt, stream::BoxStream};
 use log::{debug, error, warn};
 use luminary_macros::wrap_err;
 use tokio::fs::{self, File};
@@ -25,6 +25,26 @@ const COMPOSE_SERVICE_LABEL: &str = "com.docker.compose.service";
 const COMPOSE_FILENAME: &str = "compose.yml";
 
 impl LuminaryEngine {
+    pub async fn state_subscribe<'a>(&'_ self) -> BoxStream<'a, LuminaryStateList> {
+        let mut reciever = self.state_channel.subscribe();
+        let initial = self.state.read().await.clone();
+
+        return async_stream::stream! {
+            yield initial;
+
+            loop {
+                match reciever.recv().await {
+                    Ok(list) => yield list,
+                    Err(err) => {
+                        error!("Error receiving state update: {:?}", err);
+                        continue;
+                    }
+                };
+            }
+        }
+        .boxed();
+    }
+
     pub(super) async fn spawn_state_worker(&self) {
         let this = self.clone();
         let mut filters = HashMap::new();

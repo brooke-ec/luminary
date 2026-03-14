@@ -8,7 +8,7 @@ use tokio::sync::{RwLock, broadcast};
 
 impl LuminaryEngine {
     /// Creates a stream of [Bytes] for clients to subscribe to.
-    pub async fn subscribe<'a>(&'_ self, project: String) -> BoxStream<'a, Bytes> {
+    pub async fn logs_subscribe<'a>(&'_ self, project: String) -> BoxStream<'a, Bytes> {
         // Obtain entry for the project, creating a new one if neccessary
         let ProjectLogChannel { channel, buffer } = self
             .log_channels
