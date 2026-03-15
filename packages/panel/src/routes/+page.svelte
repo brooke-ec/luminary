@@ -14,5 +14,5 @@
 {#await login}
 	Loading...
 {:then response}
-	{response.data?.token}
+	{response.data?.data}
 {/await}
