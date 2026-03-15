@@ -32,7 +32,7 @@ fn register_or_merge(operation: &mut Operation, schema: RefOr<Schema>) {
 
     operation.responses.insert(
         "200",
-        salvo::oapi::Response::new("Response").add_content(
+        salvo::oapi::Response::new("Either LuminarySuccess Response or LuminaryFailResponse").add_content(
             "application/json",
             salvo::oapi::Content::new(OneOf::new().item(schema)),
         ),

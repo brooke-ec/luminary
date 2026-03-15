@@ -31,22 +31,7 @@ pub async fn setup(pool: SqlitePool, logs: BroadcastLayer) -> Result<Router> {
         .inject(pool);
 
     // Set up the app router
-    let router = Router::new().hoop(affix).push(
-        Router::with_path("/api")
-            .push(Router::with_path("ping").get(ping))
-            .push(auth::router())
-            .push(
-                Router::new()
-                    .hoop(protected)
-                    .push(Router::with_path("realtime").get(app_subscribe))
-                    .push(
-                        Router::with_path("/project/{project}")
-                            .push(Router::with_path("logs").get(logs_subscribe))
-                            .push(actions::router())
-                            .push(Router::with_path("service/{service}").push(actions::router())),
-                    ),
-            ),
-    );
+    let router = router().hoop(affix);
 
     // Write OpenAPI documentation to file for the panel to consume
     #[cfg(debug_assertions)]
@@ -72,6 +57,28 @@ pub async fn setup(pool: SqlitePool, logs: BroadcastLayer) -> Result<Router> {
     }
 
     return Ok(router);
+}
+
+fn router() -> Router {
+    return Router::new().push(
+        Router::with_path("/api")
+            .push(Router::with_path("ping").get(ping))
+            .push(auth::router())
+            .push(
+                Router::new()
+                    .hoop(protected)
+                    .push(Router::with_path("realtime").get(app_subscribe))
+                    .push(
+                        Router::with_path("/project/{project}")
+                            .push(Router::with_path("logs").get(logs_subscribe))
+                            .push(Router::with_path("restart").get(actions::restart_project))
+                            .push(
+                                Router::with_path("service/{service}")
+                                    .push(Router::with_path("restart").get(actions::restart_service)),
+                            ),
+                    ),
+            ),
+    );
 }
 
 /// A simple endpoint to test if the server is running.

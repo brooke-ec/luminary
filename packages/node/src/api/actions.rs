@@ -1,22 +1,34 @@
 //! Manages project actions
 
 use crate::{api::response::LuminaryResponse, core::LuminaryEngine, obtain};
-use salvo::{Depot, Request, Router, oapi::endpoint};
+use eyre::ContextCompat;
+use salvo::{Depot, Request, oapi::endpoint};
 
-/// Returns a router containing all action-related endpoints.
-pub fn router() -> Router {
-    return Router::new().push(Router::with_path("restart").post(restart));
-}
-
+/// Restarts the given project and all its services.
 #[endpoint]
-async fn restart(req: &mut Request, depot: &mut Depot) -> LuminaryResponse<()> {
+pub async fn restart_project(req: &mut Request, depot: &mut Depot) -> LuminaryResponse<()> {
     let engine = obtain!(depot, LuminaryEngine);
 
-    let service = req.param::<String>("service");
     let project = req
         .param::<String>("project")
-        .expect("Expected project parameter");
+        .wrap_err("Expected project parameter")?;
 
-    engine.restart(project, service).await?;
+    engine.restart(project, None).await?;
+    return Ok(().into());
+}
+
+/// Restarts the given service of the project.
+#[endpoint]
+pub async fn restart_service(req: &mut Request, depot: &mut Depot) -> LuminaryResponse<()> {
+    let engine = obtain!(depot, LuminaryEngine);
+
+    let service = req
+        .param::<String>("service")
+        .wrap_err("Expected service parameter")?;
+    let project = req
+        .param::<String>("project")
+        .wrap_err("Expected project parameter")?;
+
+    engine.restart(project, Some(service)).await?;
     return Ok(().into());
 }
