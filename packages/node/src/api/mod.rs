@@ -10,6 +10,7 @@ use crate::{api::auth::LuminaryAuthentication, core::LuminaryEngine, logging::Br
 mod actions;
 mod auth;
 pub mod realtime;
+mod response;
 
 /// Sets up the app router and all dependencies.
 #[wrap_err("Crashed while setting up")]

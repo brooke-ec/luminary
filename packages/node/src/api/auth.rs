@@ -2,7 +2,7 @@
 
 use std::fmt::Debug;
 
-use eyre::{Context, Result};
+use eyre::{Context, ContextCompat, Result};
 use log::error;
 use password_auth::verify_password;
 use rand_chacha::{
@@ -10,10 +10,10 @@ use rand_chacha::{
     rand_core::{RngCore, SeedableRng},
 };
 use salvo::{oapi::extract::JsonBody, prelude::*};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use sqlx::{SqlitePool, prelude::FromRow};
 
-use crate::{obtain, util::IntoStatusError};
+use crate::{api::response::LuminaryResponse, obtain};
 
 /// Returns a router containing all authentication-related endpoints.
 pub fn router() -> Router {
@@ -24,36 +24,25 @@ pub fn router() -> Router {
 
 /// Reads username and password from the request body, and returns an authentication token if the credentials are valid.
 #[endpoint]
-async fn login(
-    depot: &mut Depot,
-    body: JsonBody<LuminaryUserCredentials>,
-) -> Result<Json<TokenResponse>, StatusError> {
+async fn login(depot: &mut Depot, body: JsonBody<LuminaryUserCredentials>) -> LuminaryResponse<String> {
     let auth = obtain!(depot, LuminaryAuthentication);
 
-    return match auth.login(body.into_inner()).await.into_500()? {
-        Some(token) => Ok(Json(TokenResponse { token })),
-        None => Err(StatusError::forbidden().brief("Invalid username or password")),
-    };
-}
-
-#[derive(Debug, Clone, Serialize, ToSchema)]
-struct TokenResponse {
-    token: String,
+    let token = auth
+        .login(body.into_inner())
+        .await?
+        .wrap_err("Invalid username or password")?;
+    return Ok(token.into());
 }
 
 /// Logs out the current user, invalidating their authentication token.
 #[endpoint]
-async fn logout(req: &mut Request, depot: &mut Depot) -> Result<Json<TokenResponse>, StatusError> {
+async fn logout(req: &mut Request, depot: &mut Depot) -> LuminaryResponse<()> {
     let auth = obtain!(depot, LuminaryAuthentication);
 
-    let Some(token) = extract_token(req) else {
-        return Err(StatusError::unauthorized().brief("Missing or invalid authorization token"));
-    };
+    let token = extract_token(req).wrap_err("Missing or invalid authorization token")?;
 
-    auth.logout(token).await.into_500()?;
-    return Ok(Json(TokenResponse {
-        token: token.to_string(),
-    }));
+    auth.logout(token).await?;
+    return Ok(().into());
 }
 
 /// Acts as the authentication backend for the Luminary Node, handling user authentication and bearer token management.

@@ -1,7 +1,7 @@
 //! Manages project actions
 
-use crate::{core::LuminaryEngine, obtain, util::IntoStatusError};
-use salvo::{Depot, Router, http::StatusError, oapi::endpoint};
+use crate::{api::response::LuminaryResponse, core::LuminaryEngine, obtain};
+use salvo::{Depot, Router, oapi::endpoint};
 
 use crate::api::auth::protected;
 
@@ -13,9 +13,8 @@ pub fn router() -> Router {
 }
 
 #[endpoint]
-async fn restart(depot: &mut Depot) -> Result<(), StatusError> {
+async fn restart(depot: &mut Depot) -> LuminaryResponse<()> {
     let engine = obtain!(depot, LuminaryEngine);
-    engine.restart("metube".to_string(), None).await.into_500()?;
-
-    return Ok(());
+    engine.restart("metube".to_string(), None).await?;
+    return Ok(().into());
 }

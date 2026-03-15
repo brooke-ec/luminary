@@ -111,8 +111,8 @@ pub fn hashmap_schema(_: TokenStream, item: TokenStream) -> TokenStream {
             fn to_schema(
                 components: &mut salvo::oapi::Components,
             ) -> salvo::oapi::RefOr<::salvo::oapi::schema::Schema> {
-                let name = salvo::oapi::naming::assign_name::<Self>(::std::default::Default::default());
-                let ref_or = salvo::oapi::RefOr::Ref(::salvo::oapi::Ref::new(format!("#/components/schemas/{}", name)));
+                let name = salvo::oapi::naming::assign_name::<Self>(std::default::Default::default());
+                let ref_or = salvo::oapi::RefOr::Ref(salvo::oapi::Ref::new(format!("#/components/schemas/{}", name)));
 
                 if !components.schemas.contains_key(&name) {
                     components.schemas.insert(name.clone(), ref_or.clone());
