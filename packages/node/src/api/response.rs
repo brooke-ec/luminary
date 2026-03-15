@@ -7,8 +7,10 @@ use salvo::oapi::{Components, EndpointOutRegister, Operation, RefOr, ToSchema};
 use salvo::writing::Scribe;
 use serde::Serialize;
 
+/// A unified response type for Luminary API endpoints, consisting of [LuminarySuccessResponse] and [LuminaryFailResponse].
 pub type LuminaryResponse<T> = Result<LuminarySuccessResponse<T>, LuminaryFailResponse>;
 
+/// A successful response containing type `T`.
 #[derive(Debug)]
 pub struct LuminarySuccessResponse<T: Serialize> {
     data: T,
@@ -68,14 +70,23 @@ impl<T: Serialize + Send> Scribe for LuminarySuccessResponse<T> {
 impl<T: Serialize + Send + ToSchema + 'static> EndpointOutRegister for LuminarySuccessResponse<T> {
     fn register(components: &mut Components, operation: &mut Operation) {
         let schema = Self::to_schema(components);
-        operation.responses.insert(
-            "200",
-            salvo::oapi::Response::new("Success response")
-                .add_content("application/json", salvo::oapi::Content::new(schema)),
-        );
+
+        if let Some(RefOr::Type(existing)) = operation.responses.get_mut("200") {
+            if let Some(content) = existing.contents.get_mut("application/json") {
+                let other = std::mem::replace(&mut content.schema, RefOr::Type(Schema::default()));
+                content.schema = OneOf::new().item(other).item(schema).into();
+            }
+        } else {
+            operation.responses.insert(
+                "200",
+                salvo::oapi::Response::new("Response")
+                    .add_content("application/json", salvo::oapi::Content::new(schema)),
+            );
+        }
     }
 }
 
+/// A failed response containing a vec of eyre context layers.
 #[derive(Debug)]
 pub struct LuminaryFailResponse {
     error: Vec<String>,
@@ -133,18 +144,18 @@ impl Scribe for LuminaryFailResponse {
 
 impl EndpointOutRegister for LuminaryFailResponse {
     fn register(components: &mut Components, operation: &mut Operation) {
-        let fail_schema = Self::to_schema(components);
+        let schema = Self::to_schema(components);
 
         if let Some(RefOr::Type(existing)) = operation.responses.get_mut("200") {
             if let Some(content) = existing.contents.get_mut("application/json") {
-                let success_schema = std::mem::replace(&mut content.schema, RefOr::Type(Schema::default()));
-                content.schema = OneOf::new().item(success_schema).item(fail_schema).into();
+                let other = std::mem::replace(&mut content.schema, RefOr::Type(Schema::default()));
+                content.schema = OneOf::new().item(other).item(schema).into();
             }
         } else {
             operation.responses.insert(
                 "200",
                 salvo::oapi::Response::new("Response")
-                    .add_content("application/json", salvo::oapi::Content::new(fail_schema)),
+                    .add_content("application/json", salvo::oapi::Content::new(schema)),
             );
         }
     }
