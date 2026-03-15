@@ -14,7 +14,10 @@ use tokio::{
     sync::{Mutex, RwLock, broadcast},
 };
 
-use crate::core::{LuminaryStateList, ProjectLogChannel, configuration::LuminaryConfiguration};
+use crate::{
+    configuration::LuminaryConfiguration,
+    core::{LuminaryStateList, ProjectLogChannel},
+};
 
 /// The core engine of the Luminary application, containing shared state and configuration.
 #[derive(Debug, Clone)]
@@ -38,9 +41,8 @@ pub struct LuminaryEngine {
 impl LuminaryEngine {
     /// Initializes a new instance of the Engine struct, loading configuration from environment variables and connecting to the Docker engine.
     #[wrap_err("Failed to create LuminaryEngine")]
-    pub async fn setup() -> Result<Self> {
+    pub async fn setup(configuration: Arc<LuminaryConfiguration>) -> Result<Self> {
         let docker = Docker::connect_with_defaults().wrap_err("Failed to connect to docker engine.")?;
-        let configuration = Arc::new(envy::prefixed("LUMINARY_").from_env::<LuminaryConfiguration>()?);
 
         let instance = Self {
             state: Arc::new(RwLock::new(LuminaryStateList::new())),

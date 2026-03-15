@@ -22,9 +22,7 @@ mod response;
 
 /// Sets up the app router and all dependencies.
 #[wrap_err("Crashed while setting up")]
-pub async fn setup(pool: SqlitePool, logs: BroadcastLayer) -> Result<Router> {
-    let engine = LuminaryEngine::setup().await?;
-
+pub async fn setup(engine: LuminaryEngine, pool: SqlitePool, logs: BroadcastLayer) -> Result<Router> {
     // Set up the affix state with all dependencies
     let affix = affix_state::inject(LuminaryAuthentication::new(pool.clone()))
         .inject(engine)

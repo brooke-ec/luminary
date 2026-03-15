@@ -4,7 +4,6 @@ pub const COMPOSE_FILENAME: &str = "compose.yml";
 
 mod action;
 mod compose;
-mod configuration;
 mod engine;
 mod logs;
 mod model;

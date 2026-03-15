@@ -1,5 +1,7 @@
 //! The main entry point for the Luminary Node, which serves as the backend for the Luminary Panel.
 
+use std::sync::Arc;
+
 use eyre::{Context, Result};
 use log::debug;
 use salvo::prelude::*;
@@ -8,9 +10,12 @@ use tracing_subscriber::{
     EnvFilter, Layer, filter::LevelFilter, layer::SubscriberExt, util::SubscriberInitExt,
 };
 
+use crate::{configuration::LuminaryConfiguration, core::LuminaryEngine};
+
 const DATABASE: &str = "luminary.db";
 
 mod api;
+mod configuration;
 mod core;
 mod logging;
 mod util;
@@ -32,9 +37,16 @@ async fn main() -> Result<()> {
         .with(fmt_layer)
         .init();
 
+    // Load configuration
+    #[cfg(debug_assertions)]
+    let configuration = Arc::new(envy::prefixed("LUMINARY_").from_env::<LuminaryConfiguration>()?);
+
     // Set up the app and dependencies
-    let listener = TcpListener::new("0.0.0.0:9000").bind().await;
-    let router = api::setup(setup_database().await?, broadcast_layer).await?;
+    let listener = TcpListener::new(configuration.address.clone()).bind().await;
+    let engine = LuminaryEngine::setup(configuration).await?;
+    let pool = setup_database().await?;
+
+    let router = api::setup(engine, pool, broadcast_layer).await?;
 
     // Log router structure for debugging
     debug!("Router structure: {router:?}");
