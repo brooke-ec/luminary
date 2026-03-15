@@ -1,5 +1,5 @@
 use eyre::{ContextCompat, Result, bail};
-use futures_util::{Stream, StreamExt};
+use futures_util::StreamExt;
 use luminary_macros::wrap_err;
 
 use crate::core::{LuminaryAction, LuminaryEngine};
@@ -47,40 +47,48 @@ impl LuminaryEngine {
         return Ok(());
     }
 
-    /// Waits for the given stream to complete and sets the project's action to Idle once done.
-    /// TODO: Eventually we may want to stream this back to the client instead of just waiting.
-    fn wait<T>(
+    /// A helper function to run a given command for a project and optionally, a specific service within that project.
+    // TODO: Eventually we may want to stream this back to the client instead of just waiting.
+    async fn run(
         &self,
+        action: LuminaryAction,
         project: String,
         service: Option<String>,
-        mut stream: impl Stream<Item = T> + Unpin + Send + 'static,
-    ) -> tokio::task::JoinHandle<()> {
-        let this = self.clone();
-        return tokio::spawn(async move {
-            while let Some(_) = stream.next().await {}
-            match this.set_action(project, service, LuminaryAction::Idle).await {
-                Err(e) => log::error!("Failed to reset action: {:?}", e),
-                Ok(_) => (),
-            }
-        });
-    }
+        mut args: Vec<&str>,
+    ) -> Result<()> {
+        self.set_action(project.clone(), service.clone(), action).await?;
 
-    /// Restarts the given project and optionally, a specific service within that project.
-    #[wrap_err("Failed to restart project/service")]
-    pub async fn restart(
-        &self,
-        project: String,
-        service: Option<String>,
-    ) -> Result<tokio::task::JoinHandle<()>> {
-        self.set_action(project.clone(), service.clone(), LuminaryAction::Restarting)
-            .await?;
-
-        let mut args = vec!["restart"];
         if let Some(service) = &service {
             args.push(service);
         }
 
-        let stream = self.cli(&project, args)?;
-        return Ok(self.wait(project, service, stream));
+        let mut stream = self.cli(&project, args)?;
+        while let Some(_) = stream.next().await {}
+        self.set_action(project, service, LuminaryAction::Idle).await?;
+        return Ok(());
+    }
+
+    /// Restarts the given project and optionally, a specific service within that project.
+    #[wrap_err("Failed to restart project/service")]
+    pub async fn restart(&self, project: String, service: Option<String>) -> Result<()> {
+        self.run(LuminaryAction::Restarting, project, service, vec!["restart"])
+            .await?;
+        Ok(())
+    }
+
+    /// Starts the given project and optionally, a specific service within that project.
+    #[wrap_err("Failed to start project/service")]
+    pub async fn start(&self, project: String, service: Option<String>) -> Result<()> {
+        self.run(LuminaryAction::Starting, project, service, vec!["up", "-d"])
+            .await?;
+        Ok(())
+    }
+
+    /// Stops the given project and optionally, a specific service within that project.
+    #[wrap_err("Failed to stop project/service")]
+    pub async fn stop(&self, project: String, service: Option<String>) -> Result<()> {
+        self.run(LuminaryAction::Stopping, project, service, vec!["down"])
+            .await?;
+        Ok(())
     }
 }

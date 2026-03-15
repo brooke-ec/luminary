@@ -72,9 +72,13 @@ fn router() -> Router {
                         Router::with_path("/project/{project}")
                             .push(Router::with_path("logs").get(logs_subscribe))
                             .push(Router::with_path("restart").post(actions::restart_project))
+                            .push(Router::with_path("start").post(actions::start_project))
+                            .push(Router::with_path("stop").post(actions::stop_project))
                             .push(
                                 Router::with_path("service/{service}")
-                                    .push(Router::with_path("restart").post(actions::restart_service)),
+                                    .push(Router::with_path("restart").post(actions::restart_service))
+                                    .push(Router::with_path("start").post(actions::start_service))
+                                    .push(Router::with_path("stop").post(actions::stop_service)),
                             ),
                     ),
             ),

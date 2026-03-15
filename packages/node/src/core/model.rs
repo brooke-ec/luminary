@@ -159,6 +159,8 @@ impl LuminaryStatus {
 pub enum LuminaryAction {
     Idle,
     Restarting,
+    Stopping,
+    Starting,
 }
 
 /// Stores the log channel and buffer for a project.
