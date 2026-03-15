@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_2S3ic5Ajmy
 createdAt: 2026-03-15T20:09:37.163740804
-updatedAt: 2026-03-15T20:10:12.442754341
+updatedAt: 2026-03-15T21:34:24.431267484
 workspaceId: wk_EsNSpdfnEe
 folderId: fl_6yTxas67yQ
 authentication: {}
@@ -13,6 +13,6 @@ description: ''
 headers: []
 method: POST
 name: Build
-sortPriority: 3000.0030000000006
+sortPriority: 7000.0
 url: ${[ BASE_URL ]}/project/${[ PROJECT_NAME ]}/build
 urlParameters: []

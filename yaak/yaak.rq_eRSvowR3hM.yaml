@@ -1,8 +1,8 @@
 type: http_request
 model: http_request
-id: rq_TLZDEWYkVi
-createdAt: 2026-03-13T15:06:02.172460725
-updatedAt: 2026-03-15T21:34:24.222018909
+id: rq_eRSvowR3hM
+createdAt: 2026-03-15T21:34:22.187625191
+updatedAt: 2026-03-15T21:34:34.135826691
 workspaceId: wk_EsNSpdfnEe
 folderId: fl_6yTxas67yQ
 authentication: {}
@@ -12,7 +12,7 @@ bodyType: null
 description: ''
 headers: []
 method: GET
-name: Logs Subscribe
-sortPriority: 1000.0
-url: ${[ BASE_URL ]}/project/${[ PROJECT_NAME ]}/logs
+name: Get Compose
+sortPriority: 0.0
+url: ${[ BASE_URL ]}/project/${[ PROJECT_NAME ]}/compose
 urlParameters: []

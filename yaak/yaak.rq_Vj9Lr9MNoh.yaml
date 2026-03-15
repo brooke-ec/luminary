@@ -1,0 +1,28 @@
+type: http_request
+model: http_request
+id: rq_Vj9Lr9MNoh
+createdAt: 2026-03-15T21:34:58.108006582
+updatedAt: 2026-03-15T21:39:20.887197249
+workspaceId: wk_EsNSpdfnEe
+folderId: fl_6yTxas67yQ
+authentication: {}
+authenticationType: null
+body:
+  text: |-
+    services:
+      metube:
+        image: ghcr.io/alexta69/metube
+        container_name: metube
+        restart: always
+bodyType: other
+description: ''
+headers:
+- enabled: true
+  name: Content-Type
+  value: text/plain
+  id: uaW29KPUgI
+method: PUT
+name: Put Compose
+sortPriority: 0.001
+url: ${[ BASE_URL ]}/project/${[ PROJECT_NAME ]}/compose
+urlParameters: []
