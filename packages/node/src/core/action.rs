@@ -66,6 +66,7 @@ impl LuminaryEngine {
     }
 
     /// Restarts the given project and optionally, a specific service within that project.
+    #[wrap_err("Failed to restart project/service")]
     pub async fn restart(
         &self,
         project: String,
