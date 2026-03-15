@@ -134,12 +134,12 @@ impl LuminaryEngine {
                         .entry(project_name.clone())
                         .or_insert_with(|| LuminaryProject {
                             name: project_name.clone(),
-                            services: HashMap::new(),
+                            services: LuminaryServiceList::new(),
                         });
 
                     for (service_name, _) in compose.services.0 {
                         let existing = project.services.get(&service_name);
-                        project.services.insert(
+                        project.services.0.insert(
                             service_name.clone(),
                             LuminaryService {
                                 stale: false,
@@ -194,10 +194,13 @@ impl LuminaryEngine {
                 });
 
             let existing = project.services.get(&service_name);
-            project.services.insert(
+            project.services.0.insert(
                 service_name.clone(),
                 LuminaryService {
-                    action: existing.map(|s| s.action).unwrap_or(LuminaryAction::Idle),
+                    action: existing
+                        .as_ref()
+                        .map(|s| s.action)
+                        .unwrap_or(LuminaryAction::Idle),
                     identifier: LuminaryIdentifier::new(project_name, service_name),
                     stale: false,
                     status,

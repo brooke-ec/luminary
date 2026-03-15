@@ -94,13 +94,13 @@ pub fn hashmap_schema(_: TokenStream, item: TokenStream) -> TokenStream {
         impl std::ops::Deref for #ident {
             type Target = std::collections::HashMap<#key, #value>;
 
-            fn deref(&self) -> &Self::Target {
+            fn deref<'a>(&'a self) -> &'a Self::Target {
                 &self.0
             }
         }
 
         impl std::ops::DerefMut for #ident {
-            fn deref_mut(&mut self) -> &mut Self::Target {
+            fn deref_mut<'a>(&'a mut self) -> &'a mut Self::Target {
                 &mut self.0
             }
         }
