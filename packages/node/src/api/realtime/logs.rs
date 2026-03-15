@@ -7,7 +7,7 @@ use std::convert::Infallible;
 use base64::prelude::*;
 use futures_util::StreamExt;
 use salvo::{
-    Depot, Response,
+    Depot, Request, Response,
     oapi::endpoint,
     sse::{self, SseEvent},
 };
@@ -24,9 +24,13 @@ use crate::{core::LuminaryEngine, obtain};
         description = "A stream of base64-encoded log chunks for the given project, in the form of Server-Sent Events",
     ))
 )]
-pub async fn logs_subscribe(res: &mut Response, depot: &mut Depot) {
+pub async fn logs_subscribe(req: &mut Request, res: &mut Response, depot: &mut Depot) {
     let engine = obtain!(depot, LuminaryEngine);
-    let mut stream = engine.logs_subscribe("metube".to_string()).await;
+    let project = req
+        .param::<String>("project")
+        .expect("Expected project parameter");
+
+    let mut stream = engine.logs_subscribe(project).await;
 
     sse::stream(
         res,

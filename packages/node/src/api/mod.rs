@@ -5,7 +5,14 @@ use luminary_macros::wrap_err;
 use salvo::{Router, affix_state, oapi::endpoint};
 use sqlx::SqlitePool;
 
-use crate::{api::auth::LuminaryAuthentication, core::LuminaryEngine, logging::BroadcastLayer};
+use crate::{
+    api::{
+        auth::{LuminaryAuthentication, protected},
+        realtime::{app_subscribe, logs_subscribe},
+    },
+    core::LuminaryEngine,
+    logging::BroadcastLayer,
+};
 
 mod actions;
 mod auth;
@@ -26,10 +33,19 @@ pub async fn setup(pool: SqlitePool, logs: BroadcastLayer) -> Result<Router> {
     // Set up the app router
     let router = Router::new().hoop(affix).push(
         Router::with_path("/api")
+            .push(Router::with_path("ping").get(ping))
             .push(auth::router())
-            .push(actions::router())
-            .push(realtime::router())
-            .push(Router::with_path("ping").get(ping)),
+            .push(
+                Router::new()
+                    .hoop(protected)
+                    .push(Router::with_path("realtime").get(app_subscribe))
+                    .push(
+                        Router::with_path("/project/{project}")
+                            .push(Router::with_path("logs").get(logs_subscribe))
+                            .push(actions::router())
+                            .push(Router::with_path("service/{service}").push(actions::router())),
+                    ),
+            ),
     );
 
     // Write OpenAPI documentation to file for the panel to consume

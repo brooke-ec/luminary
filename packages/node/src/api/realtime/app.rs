@@ -37,7 +37,7 @@ pub async fn app_subscribe(res: &mut Response, depot: &mut Depot) {
 }
 
 /// A stream of [SseEvent]s representing app log messages.
-pub fn log_events(layer: &BroadcastLayer) -> impl Stream<Item = Result<SseEvent, Infallible>> + use<> {
+fn log_events(layer: &BroadcastLayer) -> impl Stream<Item = Result<SseEvent, Infallible>> + use<> {
     return layer.subscribe().filter_map(|log| async move {
         let event = SseEvent::default()
             .name("log")
@@ -53,9 +53,7 @@ pub fn log_events(layer: &BroadcastLayer) -> impl Stream<Item = Result<SseEvent,
 }
 
 /// A stream of [SseEvent]s representing changes to global app state, in the form of JSON Patch diffs.
-pub async fn state_events(
-    engine: &LuminaryEngine,
-) -> impl Stream<Item = Result<SseEvent, Infallible>> + use<> {
+async fn state_events(engine: &LuminaryEngine) -> impl Stream<Item = Result<SseEvent, Infallible>> + use<> {
     let mut stream = engine.state_subscribe().await;
     let mut old = json!({});
 
