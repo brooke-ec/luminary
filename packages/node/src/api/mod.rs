@@ -16,7 +16,8 @@ use crate::{
 
 mod action;
 mod auth;
-pub mod realtime;
+mod compose;
+mod realtime;
 mod response;
 
 /// Sets up the app router and all dependencies.
@@ -72,6 +73,7 @@ fn router() -> Router {
                     .push(Router::with_path("realtime").get(app_subscribe))
                     .push(
                         Router::with_path("/project/{project}")
+                            .push(compose::router())
                             .push(Router::with_path("logs").get(logs_subscribe))
                             .push(Router::with_path("restart").post(action::restart_project))
                             .push(Router::with_path("start").post(action::start_project))

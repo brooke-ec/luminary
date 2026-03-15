@@ -14,15 +14,13 @@ use luminary_macros::wrap_err;
 use tokio::fs::{self, File};
 
 use crate::core::{
-    LuminaryAction, LuminaryEngine, LuminaryIdentifier, LuminaryServiceList,
+    COMPOSE_FILENAME, LuminaryAction, LuminaryEngine, LuminaryIdentifier, LuminaryServiceList,
     model::{LuminaryProject, LuminaryService, LuminaryStateList, LuminaryStatus},
 };
 
 const COMPOSE_PROJECT_DIR_LABEL: &str = "com.docker.compose.project.working_dir";
 const COMPOSE_PROJECT_LABEL: &str = "com.docker.compose.project";
 const COMPOSE_SERVICE_LABEL: &str = "com.docker.compose.service";
-
-const COMPOSE_FILENAME: &str = "compose.yml";
 
 impl LuminaryEngine {
     pub async fn state_subscribe<'a>(&'_ self) -> BoxStream<'a, LuminaryStateList> {
