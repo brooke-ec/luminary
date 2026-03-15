@@ -2,9 +2,9 @@ type: http_request
 model: http_request
 id: rq_iR3xCtqz47
 createdAt: 2026-03-13T14:51:00.774380458
-updatedAt: 2026-03-13T15:04:04.659597955
+updatedAt: 2026-03-15T16:47:40.848391596
 workspaceId: wk_EsNSpdfnEe
-folderId: fl_6yTxas67yQ
+folderId: null
 authentication: {}
 authenticationType: null
 body: {}
@@ -13,6 +13,6 @@ description: ''
 headers: []
 method: GET
 name: App Subscribe
-sortPriority: 0.0
-url: ${[ BASE_URL ]}/realtime/app
+sortPriority: 333.3333333333333
+url: ${[ BASE_URL ]}/realtime
 urlParameters: []
