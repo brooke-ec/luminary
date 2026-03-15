@@ -11,7 +11,7 @@ use salvo::{
 pub async fn restart_project(project: PathParam<String>, depot: &mut Depot) -> LuminaryResponse<()> {
     let engine = obtain!(depot, LuminaryEngine);
 
-    engine.restart(project.into_inner(), None).await?;
+    engine.restart(&project.into_inner(), None).await?;
     return Ok(().into());
 }
 
@@ -25,7 +25,7 @@ pub async fn restart_service(
     let engine = obtain!(depot, LuminaryEngine);
 
     engine
-        .restart(project.into_inner(), Some(service.into_inner()))
+        .restart(&project.into_inner(), Some(&service.into_inner()))
         .await?;
     return Ok(().into());
 }
@@ -35,7 +35,7 @@ pub async fn restart_service(
 pub async fn start_project(project: PathParam<String>, depot: &mut Depot) -> LuminaryResponse<()> {
     let engine = obtain!(depot, LuminaryEngine);
 
-    engine.start(project.into_inner(), None).await?;
+    engine.start(&project.into_inner(), None).await?;
     return Ok(().into());
 }
 
@@ -49,7 +49,7 @@ pub async fn start_service(
     let engine = obtain!(depot, LuminaryEngine);
 
     engine
-        .start(project.into_inner(), Some(service.into_inner()))
+        .start(&project.into_inner(), Some(&service.into_inner()))
         .await?;
     return Ok(().into());
 }
@@ -59,7 +59,7 @@ pub async fn start_service(
 pub async fn stop_project(project: PathParam<String>, depot: &mut Depot) -> LuminaryResponse<()> {
     let engine = obtain!(depot, LuminaryEngine);
 
-    engine.stop(project.into_inner(), None).await?;
+    engine.stop(&project.into_inner(), None).await?;
     return Ok(().into());
 }
 
@@ -73,7 +73,7 @@ pub async fn stop_service(
     let engine = obtain!(depot, LuminaryEngine);
 
     engine
-        .stop(project.into_inner(), Some(service.into_inner()))
+        .stop(&project.into_inner(), Some(&service.into_inner()))
         .await?;
     return Ok(().into());
 }

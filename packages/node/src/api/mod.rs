@@ -14,7 +14,7 @@ use crate::{
     logging::BroadcastLayer,
 };
 
-mod actions;
+mod action;
 mod auth;
 pub mod realtime;
 mod response;
@@ -71,14 +71,14 @@ fn router() -> Router {
                     .push(
                         Router::with_path("/project/{project}")
                             .push(Router::with_path("logs").get(logs_subscribe))
-                            .push(Router::with_path("restart").post(actions::restart_project))
-                            .push(Router::with_path("start").post(actions::start_project))
-                            .push(Router::with_path("stop").post(actions::stop_project))
+                            .push(Router::with_path("restart").post(action::restart_project))
+                            .push(Router::with_path("start").post(action::start_project))
+                            .push(Router::with_path("stop").post(action::stop_project))
                             .push(
                                 Router::with_path("service/{service}")
-                                    .push(Router::with_path("restart").post(actions::restart_service))
-                                    .push(Router::with_path("start").post(actions::start_service))
-                                    .push(Router::with_path("stop").post(actions::stop_service)),
+                                    .push(Router::with_path("restart").post(action::restart_service))
+                                    .push(Router::with_path("start").post(action::start_service))
+                                    .push(Router::with_path("stop").post(action::stop_service)),
                             ),
                     ),
             ),
