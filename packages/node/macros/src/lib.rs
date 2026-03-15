@@ -33,12 +33,16 @@ pub fn wrap_err(attr: TokenStream, item: TokenStream) -> TokenStream {
     .into();
 }
 
-/// Creates a transparent wrapper
+/// Creates a wrapper around a HashMap with a solid [ToSchema](salvo::oapi::ToSchema) implementation.
 ///
 /// # Examples
 /// ```
 /// #[hashmap_schema]
 /// pub struct StructName<String, MyType>;
+/// ```
+/// Is the equivalent of:
+/// ```
+/// pub struct StructName(HashMap<String, MyType>);
 /// ```
 #[proc_macro_attribute]
 pub fn hashmap_schema(_: TokenStream, item: TokenStream) -> TokenStream {
@@ -91,20 +95,6 @@ pub fn hashmap_schema(_: TokenStream, item: TokenStream) -> TokenStream {
             }
         }
 
-        impl std::ops::Deref for #ident {
-            type Target = std::collections::HashMap<#key, #value>;
-
-            fn deref<'a>(&'a self) -> &'a Self::Target {
-                &self.0
-            }
-        }
-
-        impl std::ops::DerefMut for #ident {
-            fn deref_mut<'a>(&'a mut self) -> &'a mut Self::Target {
-                &mut self.0
-            }
-        }
-
         impl std::convert::From<std::collections::HashMap<#key, #value>> for #ident {
             fn from(value: std::collections::HashMap<#key, #value>) -> Self {
                 Self(value)
@@ -114,33 +104,6 @@ pub fn hashmap_schema(_: TokenStream, item: TokenStream) -> TokenStream {
         impl std::convert::From<#ident> for std::collections::HashMap<#key, #value> {
             fn from(value: #ident) -> Self {
                 value.0
-            }
-        }
-
-        impl std::iter::IntoIterator for #ident {
-            type Item = (#key, #value);
-            type IntoIter = std::collections::hash_map::IntoIter<#key, #value>;
-
-            fn into_iter(self) -> Self::IntoIter {
-                self.0.into_iter()
-            }
-        }
-
-        impl<'a> std::iter::IntoIterator for &'a #ident {
-            type Item = (&'a #key, &'a #value);
-            type IntoIter = std::collections::hash_map::Iter<'a, #key, #value>;
-
-            fn into_iter(self) -> Self::IntoIter {
-                self.0.iter()
-            }
-        }
-
-        impl<'a> std::iter::IntoIterator for &'a mut #ident {
-            type Item = (&'a #key, &'a mut #value);
-            type IntoIter = std::collections::hash_map::IterMut<'a, #key, #value>;
-
-            fn into_iter(self) -> Self::IntoIter {
-                self.0.iter_mut()
             }
         }
 

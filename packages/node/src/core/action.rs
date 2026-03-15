@@ -15,13 +15,14 @@ impl LuminaryEngine {
     ) -> Result<()> {
         // Get list of targets to update
         let mut project_list = self.state.write().await;
-        let targets = match project_list.get_mut(&project) {
+        let targets = match project_list.0.get_mut(&project) {
             None => bail!("Unknown project '{}'", project),
             Some(service_list) => match service {
-                None => service_list.services.values_mut().collect(),
+                None => service_list.services.0.values_mut().collect(),
                 Some(service) => vec![
                     service_list
                         .services
+                        .0
                         .get_mut(&service)
                         .wrap_err_with(|| format!("Unknown service '{}' in '{}'", service, project))?,
                 ],

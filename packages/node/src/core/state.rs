@@ -84,8 +84,8 @@ impl LuminaryEngine {
     pub async fn refresh(&self) -> Result<()> {
         let mut list = self.state.write().await;
 
-        for project in list.values_mut() {
-            for service in project.services.values_mut() {
+        for project in list.0.values_mut() {
+            for service in project.services.0.values_mut() {
                 service.stale = true;
             }
         }
@@ -93,9 +93,9 @@ impl LuminaryEngine {
         self.load_from_docker(&mut list).await?;
         self.load_from_filesystem(&mut list).await?;
 
-        list.retain(|_, project| {
-            project.services.retain(|_, service| !service.stale);
-            return !project.services.is_empty();
+        list.0.retain(|_, project| {
+            project.services.0.retain(|_, service| !service.stale);
+            return !project.services.0.is_empty();
         });
 
         self.broadcast(list.clone()).await;
@@ -131,6 +131,7 @@ impl LuminaryEngine {
                     .wrap_err_with(|| format!("Failed to deserialize compose file for {}", &project_name))?;
 
                     let project = list
+                        .0
                         .entry(project_name.clone())
                         .or_insert_with(|| LuminaryProject {
                             name: project_name.clone(),
@@ -138,7 +139,7 @@ impl LuminaryEngine {
                         });
 
                     for (service_name, _) in compose.services.0 {
-                        let existing = project.services.get(&service_name);
+                        let existing = project.services.0.get(&service_name);
                         project.services.0.insert(
                             service_name.clone(),
                             LuminaryService {
@@ -187,13 +188,14 @@ impl LuminaryEngine {
             && Path::new(&dir).starts_with(&self.configuration.project_directory)
         {
             let project = list
+                .0
                 .entry(project_name.clone())
                 .or_insert_with(|| LuminaryProject {
                     name: project_name.clone(),
                     services: LuminaryServiceList::new(),
                 });
 
-            let existing = project.services.get(&service_name);
+            let existing = project.services.0.get(&service_name);
             project.services.0.insert(
                 service_name.clone(),
                 LuminaryService {

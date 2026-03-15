@@ -33,13 +33,14 @@ impl LuminaryProject {
     /// True if any of this project's services are currently performing an action
     pub fn busy(&self) -> bool {
         self.services
+            .0
             .values()
             .any(|service| service.action != LuminaryAction::Idle)
     }
 
     /// The minimum status of this project's services see [LuminaryStatus]
     pub fn status(&self) -> LuminaryStatus {
-        LuminaryStatus::min(self.services.values().map(|service| service.status))
+        LuminaryStatus::min(self.services.0.values().map(|service| service.status))
     }
 }
 
