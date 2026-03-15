@@ -1,8 +1,8 @@
 type: http_request
 model: http_request
-id: rq_3RuPQeaDzX
-createdAt: 2026-03-13T15:22:24.676720221
-updatedAt: 2026-03-15T19:40:57.586339388
+id: rq_7yeXS99yeX
+createdAt: 2026-03-15T19:40:49.778572045
+updatedAt: 2026-03-15T19:41:01.375621603
 workspaceId: wk_EsNSpdfnEe
 folderId: fl_6yTxas67yQ
 authentication: {}
@@ -12,7 +12,7 @@ bodyType: null
 description: ''
 headers: []
 method: POST
-name: Restart
-sortPriority: 1000.0
-url: ${[ BASE_URL ]}/project/${[ PROJECT_NAME ]}/restart
+name: Start
+sortPriority: 2000.0
+url: ${[ BASE_URL ]}/project/${[ PROJECT_NAME ]}/start
 urlParameters: []
