@@ -10,6 +10,35 @@ use crate::schema_ref_or;
 /// A unified response type for Luminary API endpoints, consisting of [LuminarySuccessResponse] and [LuminaryFailResponse].
 pub type LuminaryResponse<T> = Result<LuminarySuccessResponse<T>, LuminaryFailResponse>;
 
+/// Registers the given schema as a 200 response, merging with any existing schema.
+fn register_or_merge(operation: &mut Operation, schema: RefOr<Schema>) {
+    if let Some(RefOr::Type(response)) = operation.responses.get_mut("200") {
+        if let Some(content) = response.contents.get_mut("application/json") {
+            let existing = std::mem::take(&mut content.schema);
+
+            content.schema = match existing {
+                RefOr::Type(Schema::OneOf(one_of)) => one_of.item(schema).into(),
+                other => OneOf::new().item(other).item(schema).into(),
+            };
+        } else {
+            response.contents.insert(
+                "application/json".to_owned(),
+                salvo::oapi::Content::new(OneOf::new().item(schema)),
+            );
+        }
+
+        return;
+    }
+
+    operation.responses.insert(
+        "200",
+        salvo::oapi::Response::new("Response").add_content(
+            "application/json",
+            salvo::oapi::Content::new(OneOf::new().item(schema)),
+        ),
+    );
+}
+
 /// A successful response containing type `T`.
 #[derive(Debug)]
 pub struct LuminarySuccessResponse<T: Serialize> {
@@ -63,19 +92,7 @@ impl<T: Serialize + Send> Scribe for LuminarySuccessResponse<T> {
 impl<T: Serialize + Send + ToSchema + 'static> EndpointOutRegister for LuminarySuccessResponse<T> {
     fn register(components: &mut Components, operation: &mut Operation) {
         let schema = Self::to_schema(components);
-
-        if let Some(RefOr::Type(existing)) = operation.responses.get_mut("200") {
-            if let Some(content) = existing.contents.get_mut("application/json") {
-                let other = std::mem::replace(&mut content.schema, RefOr::Type(Schema::default()));
-                content.schema = OneOf::new().item(other).item(schema).into();
-            }
-        } else {
-            operation.responses.insert(
-                "200",
-                salvo::oapi::Response::new("Response")
-                    .add_content("application/json", salvo::oapi::Content::new(schema)),
-            );
-        }
+        register_or_merge(operation, schema);
     }
 }
 
@@ -131,18 +148,6 @@ impl Scribe for LuminaryFailResponse {
 impl EndpointOutRegister for LuminaryFailResponse {
     fn register(components: &mut Components, operation: &mut Operation) {
         let schema = Self::to_schema(components);
-
-        if let Some(RefOr::Type(existing)) = operation.responses.get_mut("200") {
-            if let Some(content) = existing.contents.get_mut("application/json") {
-                let other = std::mem::replace(&mut content.schema, RefOr::Type(Schema::default()));
-                content.schema = OneOf::new().item(other).item(schema).into();
-            }
-        } else {
-            operation.responses.insert(
-                "200",
-                salvo::oapi::Response::new("Response")
-                    .add_content("application/json", salvo::oapi::Content::new(schema)),
-            );
-        }
+        register_or_merge(operation, schema);
     }
 }
