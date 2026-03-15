@@ -20,3 +20,20 @@ macro_rules! get_user {
             .expect("User can not be obtained from a unprotected endpoint.")
     };
 }
+
+/// Helper macro to create or reference an OpenAPI schema.
+#[macro_export]
+macro_rules! schema_ref_or {
+    ($components:expr, $block:expr) => {{
+        let name = salvo::oapi::naming::assign_name::<Self>(Default::default());
+        let ref_or = salvo::oapi::RefOr::Ref(salvo::oapi::Ref::new(format!("#/components/schemas/{}", name)));
+
+        if !$components.schemas.contains_key(&name) {
+            $components.schemas.insert(name.clone(), ref_or.clone());
+            let schema = $block;
+            $components.schemas.insert(name, schema)
+        }
+
+        ref_or
+    }};
+}

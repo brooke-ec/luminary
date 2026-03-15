@@ -1,11 +1,11 @@
 use salvo::Response;
 use salvo::http::StatusCode;
-use salvo::oapi::Ref;
-use salvo::oapi::naming::assign_name;
 use salvo::oapi::schema::{Array, BasicType, Object, OneOf, Schema};
 use salvo::oapi::{Components, EndpointOutRegister, Operation, RefOr, ToSchema};
 use salvo::writing::Scribe;
 use serde::Serialize;
+
+use crate::schema_ref_or;
 
 /// A unified response type for Luminary API endpoints, consisting of [LuminarySuccessResponse] and [LuminaryFailResponse].
 pub type LuminaryResponse<T> = Result<LuminarySuccessResponse<T>, LuminaryFailResponse>;
@@ -18,13 +18,9 @@ pub struct LuminarySuccessResponse<T: Serialize> {
 
 impl<T: Serialize + ToSchema + 'static> ToSchema for LuminarySuccessResponse<T> {
     fn to_schema(components: &mut Components) -> RefOr<Schema> {
-        let name = assign_name::<Self>(Default::default());
-        let ref_or = RefOr::Ref(Ref::new(format!("#/components/schemas/{}", name)));
-
-        if !components.schemas.contains_key(&name) {
-            components.schemas.insert(name.clone(), ref_or.clone());
-
-            let schema = Schema::Object(Box::new(
+        return schema_ref_or!(
+            components,
+            Schema::Object(Box::new(
                 Object::new()
                     .property(
                         "success",
@@ -33,11 +29,8 @@ impl<T: Serialize + ToSchema + 'static> ToSchema for LuminarySuccessResponse<T> 
                     .required("success")
                     .property("data", T::to_schema(components))
                     .required("data"),
-            ));
-            components.schemas.insert(name, schema);
-        }
-
-        ref_or
+            ))
+        );
     }
 }
 
@@ -94,13 +87,9 @@ pub struct LuminaryFailResponse {
 
 impl ToSchema for LuminaryFailResponse {
     fn to_schema(components: &mut Components) -> RefOr<Schema> {
-        let name = assign_name::<Self>(Default::default());
-        let ref_or = RefOr::Ref(Ref::new(format!("#/components/schemas/{}", name)));
-
-        if !components.schemas.contains_key(&name) {
-            components.schemas.insert(name.clone(), ref_or.clone());
-
-            let schema = Schema::Object(Box::new(
+        return schema_ref_or!(
+            components,
+            Schema::Object(Box::new(
                 Object::new()
                     .property(
                         "success",
@@ -109,11 +98,8 @@ impl ToSchema for LuminaryFailResponse {
                     .required("success")
                     .property("error", Array::new().items(Object::with_type(BasicType::String)))
                     .required("error"),
-            ));
-            components.schemas.insert(name, schema);
-        }
-
-        ref_or
+            ))
+        );
     }
 }
 

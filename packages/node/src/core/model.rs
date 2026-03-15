@@ -4,9 +4,11 @@ use std::{fmt::Display, sync::Arc};
 
 use bytes::{Bytes, BytesMut};
 use luminary_macros::hashmap_schema;
-use salvo::oapi::ToSchema;
+use salvo::oapi::{BasicType, Components, Object, RefOr, Schema, ToSchema};
 use serde::{Serialize, ser::SerializeStruct};
 use tokio::sync::{RwLock, broadcast};
+
+use crate::schema_ref_or;
 
 /// A collection of Luminary projects, keyed by project name.
 #[hashmap_schema]
@@ -21,7 +23,7 @@ pub struct LuminaryServiceList<String, LuminaryService>;
 /// Represents a Luminary project, consisting of a docker compose project.
 ///
 /// This is derived entirely from that state of its services.
-#[derive(Debug, Clone, PartialEq, ToSchema)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct LuminaryProject {
     /// The name of this project
     pub name: String,
@@ -55,6 +57,25 @@ impl Serialize for LuminaryProject {
         state.serialize_field("busy", &self.busy())?;
         state.serialize_field("services", &self.services)?;
         state.end()
+    }
+}
+
+impl ToSchema for LuminaryProject {
+    fn to_schema(components: &mut Components) -> RefOr<Schema> {
+        return schema_ref_or!(
+            components,
+            Schema::Object(Box::new(
+                Object::new()
+                    .property("name", Object::with_type(BasicType::String))
+                    .required("name")
+                    .property("status", LuminaryStatus::to_schema(components))
+                    .required("status")
+                    .property("busy", Object::with_type(BasicType::Boolean))
+                    .required("busy")
+                    .property("services", LuminaryServiceList::to_schema(components))
+                    .required("services"),
+            ))
+        );
     }
 }
 
