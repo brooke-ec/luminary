@@ -1,0 +1,18 @@
+type: http_request
+model: http_request
+id: rq_2DgbTFGTFz
+createdAt: 2026-03-15T20:10:33.636428514
+updatedAt: 2026-03-15T20:10:43.496820216
+workspaceId: wk_EsNSpdfnEe
+folderId: fl_UMakVYPEat
+authentication: {}
+authenticationType: null
+body: {}
+bodyType: null
+description: ''
+headers: []
+method: POST
+name: Pull
+sortPriority: 1000.004
+url: ${[ BASE_URL ]}/project/${[ PROJECT_NAME ]}/service/${[ SERVICE_NAME ]}/pull
+urlParameters: []

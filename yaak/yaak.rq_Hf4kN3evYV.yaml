@@ -1,0 +1,18 @@
+type: http_request
+model: http_request
+id: rq_Hf4kN3evYV
+createdAt: 2026-03-15T20:09:31.720780952
+updatedAt: 2026-03-15T20:10:08.778522377
+workspaceId: wk_EsNSpdfnEe
+folderId: fl_6yTxas67yQ
+authentication: {}
+authenticationType: null
+body: {}
+bodyType: null
+description: ''
+headers: []
+method: POST
+name: Pull
+sortPriority: 3000.0020000000004
+url: ${[ BASE_URL ]}/project/${[ PROJECT_NAME ]}/pull
+urlParameters: []

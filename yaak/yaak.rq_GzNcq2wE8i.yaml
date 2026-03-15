@@ -1,0 +1,18 @@
+type: http_request
+model: http_request
+id: rq_GzNcq2wE8i
+createdAt: 2026-03-15T20:10:22.649187768
+updatedAt: 2026-03-15T20:10:31.687033784
+workspaceId: wk_EsNSpdfnEe
+folderId: fl_UMakVYPEat
+authentication: {}
+authenticationType: null
+body: {}
+bodyType: null
+description: ''
+headers: []
+method: POST
+name: Redeploy
+sortPriority: 1000.003
+url: ${[ BASE_URL ]}/project/${[ PROJECT_NAME ]}/service/${[ SERVICE_NAME ]}/redeploy
+urlParameters: []

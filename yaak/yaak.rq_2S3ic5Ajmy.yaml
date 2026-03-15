@@ -1,0 +1,18 @@
+type: http_request
+model: http_request
+id: rq_2S3ic5Ajmy
+createdAt: 2026-03-15T20:09:37.163740804
+updatedAt: 2026-03-15T20:10:12.442754341
+workspaceId: wk_EsNSpdfnEe
+folderId: fl_6yTxas67yQ
+authentication: {}
+authenticationType: null
+body: {}
+bodyType: null
+description: ''
+headers: []
+method: POST
+name: Build
+sortPriority: 3000.0030000000006
+url: ${[ BASE_URL ]}/project/${[ PROJECT_NAME ]}/build
+urlParameters: []
