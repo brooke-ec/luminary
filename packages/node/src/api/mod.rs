@@ -49,7 +49,7 @@ pub async fn setup(pool: SqlitePool, logs: BroadcastLayer) -> Result<Router> {
         // Ensure custom core schemas are registered for SSE documentation.
         crate::core::LuminaryStateList::to_schema(&mut openapi.components);
 
-        let location = concat!(env!("CARGO_MANIFEST_DIR"), "/../panel/src/lib/openapi.json");
+        let location = concat!(env!("CARGO_MANIFEST_DIR"), "/../panel/static/openapi.json");
         std::fs::write(location, openapi.to_pretty_json()?)?;
         info!("OpenAPI documentation written to {}", location);
     }
