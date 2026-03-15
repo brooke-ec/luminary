@@ -59,12 +59,14 @@ pub async fn setup(pool: SqlitePool, logs: BroadcastLayer) -> Result<Router> {
     return Ok(router);
 }
 
+/// Sets up a Salvo router with all API routes
 fn router() -> Router {
     return Router::new().push(
         Router::with_path("/api")
             .push(Router::with_path("ping").get(ping))
             .push(auth::router())
             .push(
+                // New router for protected routes, to avoid repetition
                 Router::new()
                     .hoop(protected)
                     .push(Router::with_path("realtime").get(app_subscribe))
