@@ -74,11 +74,17 @@ fn router() -> Router {
                             .push(Router::with_path("restart").post(action::restart_project))
                             .push(Router::with_path("start").post(action::start_project))
                             .push(Router::with_path("stop").post(action::stop_project))
+                            .push(Router::with_path("redeploy").post(action::redeploy_project))
+                            .push(Router::with_path("pull").post(action::pull_project))
+                            .push(Router::with_path("build").post(action::build_project))
                             .push(
                                 Router::with_path("service/{service}")
                                     .push(Router::with_path("restart").post(action::restart_service))
                                     .push(Router::with_path("start").post(action::start_service))
-                                    .push(Router::with_path("stop").post(action::stop_service)),
+                                    .push(Router::with_path("stop").post(action::stop_service))
+                                    .push(Router::with_path("redeploy").post(action::redeploy_service))
+                                    .push(Router::with_path("pull").post(action::pull_service))
+                                    .push(Router::with_path("build").post(action::build_service)),
                             ),
                     ),
             ),

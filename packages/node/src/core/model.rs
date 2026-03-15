@@ -162,6 +162,7 @@ pub enum LuminaryAction {
     Stopping,
     Starting,
     Pulling,
+    Building,
 }
 
 /// Stores the log channel and buffer for a project.

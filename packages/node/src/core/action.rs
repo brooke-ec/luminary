@@ -86,4 +86,35 @@ impl LuminaryEngine {
             .await?;
         Ok(())
     }
+
+    #[wrap_err("Failed to redeploy project/service")]
+    pub async fn redeploy(&self, project: &str, service: Option<&str>) -> Result<()> {
+        self.stop(project, service).await?;
+        self.start(project, service).await?;
+        Ok(())
+    }
+
+    /// Stops the given project and optionally, a specific service within that project.
+    #[wrap_err("Failed to pull project/service images")]
+    pub async fn pull(&self, project: &str, service: Option<&str>) -> Result<()> {
+        self.run(LuminaryAction::Pulling, project, service, vec!["pull"])
+            .await?;
+        self.redeploy(project, service).await?;
+        Ok(())
+    }
+
+    /// Stops the given project and optionally, a specific service within that project.
+    #[wrap_err("Failed to build project/service images")]
+    pub async fn build(&self, project: &str, service: Option<&str>) -> Result<()> {
+        self.run(
+            LuminaryAction::Building,
+            project,
+            service,
+            vec!["build", "--no-cache"],
+        )
+        .await?;
+
+        self.redeploy(project, service).await?;
+        Ok(())
+    }
 }
