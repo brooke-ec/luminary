@@ -5,7 +5,7 @@ use luminary_macros::wrap_err;
 use salvo::{Router, affix_state, oapi::endpoint};
 use sqlx::SqlitePool;
 
-use crate::{api::auth::LuminaryAuthentication, core::LuminaryEngine, util::BroadcastLayer};
+use crate::{api::auth::LuminaryAuthentication, core::LuminaryEngine, logging::BroadcastLayer};
 
 mod actions;
 mod auth;

@@ -12,6 +12,7 @@ const DATABASE: &str = "luminary.db";
 
 mod api;
 mod core;
+mod logging;
 mod util;
 
 #[tokio::main]
@@ -19,7 +20,7 @@ async fn main() -> Result<()> {
     dotenvy::dotenv()?;
 
     // Set up logging
-    let broadcast_layer = util::BroadcastLayer::new();
+    let broadcast_layer = logging::BroadcastLayer::new();
     let fmt_layer = tracing_subscriber::fmt::layer().with_filter(
         EnvFilter::builder()
             .with_default_directive(LevelFilter::INFO.into())

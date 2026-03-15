@@ -7,7 +7,7 @@
 use std::convert::Infallible;
 
 use crate::obtain;
-use crate::{core::LuminaryEngine, util::BroadcastLayer};
+use crate::{core::LuminaryEngine, logging::BroadcastLayer};
 use eyre::Result;
 use futures_util::stream::select;
 use futures_util::{Stream, StreamExt};
