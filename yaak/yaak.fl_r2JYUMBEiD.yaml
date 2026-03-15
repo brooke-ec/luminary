@@ -2,12 +2,12 @@ type: folder
 model: folder
 id: fl_r2JYUMBEiD
 createdAt: 2026-03-13T15:04:08.814504962
-updatedAt: 2026-03-15T16:47:11.328229473
+updatedAt: 2026-03-15T22:12:02.294474100
 workspaceId: wk_EsNSpdfnEe
 folderId: null
 authentication: {}
 authenticationType: null
 description: ''
 headers: []
-name: Authemtication
+name: Authentication
 sortPriority: 2000.0
