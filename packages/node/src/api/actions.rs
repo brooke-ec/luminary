@@ -1,34 +1,31 @@
 //! Manages project actions
 
 use crate::{api::response::LuminaryResponse, core::LuminaryEngine, obtain};
-use eyre::ContextCompat;
-use salvo::{Depot, Request, oapi::endpoint};
+use salvo::{
+    Depot, Writer,
+    oapi::{endpoint, extract::PathParam},
+};
 
 /// Restarts the given project and all its services.
 #[endpoint]
-pub async fn restart_project(req: &mut Request, depot: &mut Depot) -> LuminaryResponse<()> {
+pub async fn restart_project(project: PathParam<String>, depot: &mut Depot) -> LuminaryResponse<()> {
     let engine = obtain!(depot, LuminaryEngine);
 
-    let project = req
-        .param::<String>("project")
-        .wrap_err("Expected project parameter")?;
-
-    engine.restart(project, None).await?;
+    engine.restart(project.into_inner(), None).await?;
     return Ok(().into());
 }
 
 /// Restarts the given service of the project.
 #[endpoint]
-pub async fn restart_service(req: &mut Request, depot: &mut Depot) -> LuminaryResponse<()> {
+pub async fn restart_service(
+    project: PathParam<String>,
+    service: PathParam<String>,
+    depot: &mut Depot,
+) -> LuminaryResponse<()> {
     let engine = obtain!(depot, LuminaryEngine);
 
-    let service = req
-        .param::<String>("service")
-        .wrap_err("Expected service parameter")?;
-    let project = req
-        .param::<String>("project")
-        .wrap_err("Expected project parameter")?;
-
-    engine.restart(project, Some(service)).await?;
+    engine
+        .restart(project.into_inner(), Some(service.into_inner()))
+        .await?;
     return Ok(().into());
 }
