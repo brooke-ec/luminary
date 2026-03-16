@@ -24,23 +24,24 @@
 			</h2>
 			<h1>Log In</h1>
 		</div>
-		<div>
-			<label for="username">Username</label>
-			<input required id="username" type="text" bind:value={credentials.username} />
-		</div>
-		<div>
-			<label for="password">Password</label>
-			<input required id="password" type="password" bind:value={credentials.password} />
-		</div>
-
-		<PromiseButton onclick={login}>
-			{#snippet children(loading)}
-				{#if loading}
-					Logging in...
-				{:else}
-					Log In
-				{/if}
-			{/snippet}
-		</PromiseButton>
+		<form class="flexc gap-20">
+			<div>
+				<label for="username">Username</label>
+				<input required minlength="1" id="username" type="text" bind:value={credentials.username} />
+			</div>
+			<div>
+				<label for="password">Password</label>
+				<input required minlength="1" id="password" type="password" bind:value={credentials.password} />
+			</div>
+			<PromiseButton onclick={login}>
+				{#snippet children(loading)}
+					{#if loading}
+						Logging in...
+					{:else}
+						Log In
+					{/if}
+				{/snippet}
+			</PromiseButton>
+		</form>
 	</div>
 </div>
