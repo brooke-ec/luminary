@@ -74,7 +74,7 @@ impl LuminaryEngine {
                     }
                 }
 
-                warn!("Docker event stream ended, restarting...");
+                warn!("Connection to Docker lost, Luminary will attempt to reconnect...");
                 tokio::time::sleep(std::time::Duration::from_secs(1)).await;
             }
         });

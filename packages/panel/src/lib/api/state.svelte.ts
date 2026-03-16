@@ -62,7 +62,7 @@ function handleEvent(event: ServerSentEvent) {
 			patch(list, JSON.parse(event.data));
 		case "log":
 			const message = JSON.parse(event.data) as LogMessage;
-			const details = message.message?.split("\n") ?? undefined;
+			const details = message.message?.split(",").map((l) => l.trim()) ?? undefined;
 			const title = details?.[0] ?? `Unknown ${message.level}`;
 			switch (message.level) {
 				case "ERROR":
