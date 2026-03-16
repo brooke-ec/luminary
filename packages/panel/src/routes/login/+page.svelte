@@ -2,6 +2,7 @@
 	import Logo from "$lib/component/Crane.svelte";
 	import { goto } from "$app/navigation";
 	import { api } from "$lib";
+	import PromiseButton from "$lib/component/PromiseButton.svelte";
 
 	let credentials = $state({
 		username: "",
@@ -32,6 +33,14 @@
 			<input required id="password" type="password" bind:value={credentials.password} />
 		</div>
 
-		<button class="full" onclick={login}>Log In</button>
+		<PromiseButton onclick={login}>
+			{#snippet children(loading)}
+				{#if loading}
+					Logging in...
+				{:else}
+					Log In
+				{/if}
+			{/snippet}
+		</PromiseButton>
 	</div>
 </div>
