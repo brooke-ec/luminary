@@ -30,43 +30,14 @@
 </script>
 
 <script lang="ts">
-	import { faXmark, faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
-	import { faCircleXmark } from "@fortawesome/free-regular-svg-icons";
+	import { faXmark } from "@fortawesome/free-solid-svg-icons";
+	import { openDialog } from "./Dialog.svelte";
 	import { Progress } from "melt/builders";
 	import { Toaster } from "melt/builders";
 	import { fly } from "svelte/transition";
 	import { flip } from "svelte/animate";
 	import { Fa } from "svelte-fa";
-	import { openDialog } from "./Dialog.svelte";
 </script>
-
-<button
-	onclick={() =>
-		addToast({
-			data: {
-				color: "peach",
-				icon: faTriangleExclamation,
-				title: "Something could go wrong",
-				details: "More context about the warning",
-			},
-		})}
->
-	Add Warning
-</button>
-
-<button
-	onclick={() =>
-		addToast({
-			data: {
-				color: "red",
-				icon: faCircleXmark,
-				title: "Something went wrong",
-				details: ["Eyre context level from the top of the stack", "Another line of context", "And another one"],
-			},
-		})}
->
-	Add Error
-</button>
 
 {#snippet content(data: ToastData)}
 	{#if Array.isArray(data.details)}

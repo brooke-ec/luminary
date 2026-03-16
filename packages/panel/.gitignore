@@ -9,8 +9,8 @@ node_modules
 /build
 
 # Generated
-static/openapi.json
-src/lib/openapi.ts
+/static/openapi.json
+/src/lib/api/openapi.ts
 
 # OS
 .DS_Store

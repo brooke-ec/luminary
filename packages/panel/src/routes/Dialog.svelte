@@ -55,12 +55,6 @@
 	});
 </script>
 
-{#snippet content()}
-	<p>Content</p>
-{/snippet}
-
-<button onclick={() => openDialog({ content, title: "Hello World!" })}>Open Dialog</button>
-
 <div {...dialog.overlay}></div>
 
 <dialog {...dialog.content}>

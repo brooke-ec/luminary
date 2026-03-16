@@ -4,7 +4,7 @@ import type { Plugin } from "vite";
 
 async function generateTypes() {
 	const output = await openapiTS(new URL("static/openapi.json", import.meta.url));
-	writeFileSync(new URL("src/lib/openapi.ts", import.meta.url), astToString(output));
+	writeFileSync(new URL("src/lib/api/openapi.ts", import.meta.url), astToString(output));
 }
 
 export function custom(): Plugin {
