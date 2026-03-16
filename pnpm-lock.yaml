@@ -16,6 +16,9 @@ importers:
       '@fontsource-variable/open-sans':
         specifier: ^5.2.7
         version: 5.2.7
+      '@fontsource/dejavu-mono':
+        specifier: ^5.2.5
+        version: 5.2.5
       '@fortawesome/fontawesome-common-types':
         specifier: 6.7.2
         version: 6.7.2
@@ -257,6 +260,9 @@ packages:
 
   '@fontsource-variable/open-sans@5.2.7':
     resolution: {integrity: sha512-wzCLm2STuekK9Fz58DiuBnk4GgJpvvVtAU85a4b06ACNG/UsVjQcCvkUd6R/ETlHfsaykCUZamLRvSXg4KtWuA==}
+
+  '@fontsource/dejavu-mono@5.2.5':
+    resolution: {integrity: sha512-xofv4WG9ReUsH0GmAt35itE+1Q4bZ/mOs0Q6+Fo96HSUHZxVfApObZWexjtPYU1WqDxSN2iLIS8kMOB+qTmntQ==}
 
   '@fortawesome/fontawesome-common-types@6.7.2':
     resolution: {integrity: sha512-Zs+YeHUC5fkt7Mg1l6XTniei3k4bwG/yo3iFUtZWd/pMx9g3fdvkSK9E0FOC+++phXOka78uJcYb8JaFkW52Xg==}
@@ -1128,6 +1134,8 @@ snapshots:
   '@floating-ui/utils@0.2.11': {}
 
   '@fontsource-variable/open-sans@5.2.7': {}
+
+  '@fontsource/dejavu-mono@5.2.5': {}
 
   '@fortawesome/fontawesome-common-types@6.7.2': {}
 

@@ -2,9 +2,9 @@
 	import type { Snippet } from "svelte";
 
 	interface DialogOptions<T> {
+		title: string | Snippet<[T]>;
 		content: Snippet<[T]>;
 		parameters?: T;
-		title: string;
 	}
 
 	let current: DialogOptions<any> | null = $state(null);
@@ -35,7 +35,11 @@
 	});
 </script>
 
-<button onclick={() => openDialog({ title: "Hello World", content: () => "This is a dialog" })}>Open Dialog</button>
+{#snippet content()}
+	<p>Content</p>
+{/snippet}
+
+<button onclick={() => openDialog({ content, title: "Hello World!" })}>Open Dialog</button>
 
 <div {...dialog.overlay}></div>
 
@@ -44,8 +48,14 @@
 		{#key current}
 			<div in:fade={{ duration: 250 }}>
 				<div class="titlebar">
-					<h1>{current.title}</h1>
-					<button class="a" style:color="inherit" onclick={() => (dialog.open = false)}>
+					<h1>
+						{#if typeof current.title == "string"}
+							{current.title}
+						{:else}
+							{@render current.title(current.parameters)}
+						{/if}
+					</h1>
+					<button class="a" style:color="inherit" onclick={closeDialog}>
 						<Fa icon={faXmark} scale={1.5} />
 					</button>
 				</div>

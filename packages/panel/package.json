@@ -15,6 +15,7 @@
 	"devDependencies": {
 		"@catppuccin/palette": "^1.7.1",
 		"@fontsource-variable/open-sans": "^5.2.7",
+		"@fontsource/dejavu-mono": "^5.2.5",
 		"@fortawesome/fontawesome-common-types": "6.7.2",
 		"@fortawesome/free-brands-svg-icons": "^6.7",
 		"@fortawesome/free-regular-svg-icons": "^6.7",

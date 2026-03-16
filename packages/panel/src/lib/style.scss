@@ -32,6 +32,8 @@ a {
 	cursor: pointer;
 	display: inline-block;
 
+	text-align: left;
+
 	&:focus-visible {
 		outline: 2px solid var(--rosewater);
 	}

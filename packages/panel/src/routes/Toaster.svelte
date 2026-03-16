@@ -1,14 +1,31 @@
+<!--
+	@component
+
+	A Svelte component for displaying toast notifications.
+	This should be mounted in a top-level `layout.svelte` so that toasts are visible on every page.
+
+	Toasts can be displayed by calling the `addToast` function exported from this component.
+-->
+
 <script lang="ts" module>
 	import type { IconDefinition } from "@fortawesome/fontawesome-common-types";
 
-	type ToastData = {
+	/**
+	 * The data structure for the content of a toast notification.
+	 */
+	export type ToastData = {
 		color: string;
 		icon: IconDefinition;
 		title: string;
-		description: string;
+		details?: string | string[];
 	};
 
 	const toaster = new Toaster<ToastData>({ closeDelay: 15 * 1000 });
+
+	/**
+	 * Adds a new toast notification to the toaster.
+	 * @param props The properties used to create the toast.
+	 */
 	export const addToast = toaster.addToast;
 </script>
 
@@ -20,16 +37,17 @@
 	import { fly } from "svelte/transition";
 	import { flip } from "svelte/animate";
 	import { Fa } from "svelte-fa";
+	import { openDialog } from "./Dialog.svelte";
 </script>
 
 <button
-	on:click={() =>
+	onclick={() =>
 		addToast({
 			data: {
 				color: "peach",
 				icon: faTriangleExclamation,
 				title: "Something could go wrong",
-				description: "More Information",
+				details: "More context about the warning",
 			},
 		})}
 >
@@ -37,13 +55,39 @@
 </button>
 
 <button
-	on:click={() =>
+	onclick={() =>
 		addToast({
-			data: { color: "red", icon: faCircleXmark, title: "Something went wrong", description: "More Information" },
+			data: {
+				color: "red",
+				icon: faCircleXmark,
+				title: "Something went wrong",
+				details: ["Eyre context level from the top of the stack", "Another line of context", "And another one"],
+			},
 		})}
 >
 	Add Error
 </button>
+
+{#snippet content(data: ToastData)}
+	{#if Array.isArray(data.details)}
+		<ul class="details">
+			{#each data.details as detail}
+				<li>{detail}</li>
+			{/each}
+		</ul>
+	{:else if typeof data.details === "string"}
+		<p class="details">{data.details}</p>
+	{:else}
+		<p class="details">No additional information provided.</p>
+	{/if}
+{/snippet}
+
+{#snippet title(data: ToastData)}
+	<span style:color="var(--{data.color})" style="padding-right: 5px;">
+		<Fa icon={data.icon} />
+	</span>
+	<span>{data.title}</span>
+{/snippet}
 
 <div {...toaster.root} class="root">
 	{#each toaster.toasts as toast (toast.id)}
@@ -67,7 +111,15 @@
 				</button>
 			</div>
 			<div class="row">
-				<div {...toast.description}>{toast.data.description}</div>
+				{#if toast.data.details}
+					<button
+						class="a"
+						{...toast.description}
+						onclick={() => openDialog({ title, content, parameters: toast.data })}
+					>
+						More Information
+					</button>
+				{/if}
 				<div {...progress.root}>
 					<div {...progress.progress} style:background="var(--{toast.data.color})"></div>
 				</div>
@@ -98,6 +150,7 @@
 		gap: 0.5rem;
 
 		width: 400px;
+		max-width: calc(100vw - 40px);
 		height: 100vh;
 		overflow: hidden;
 		pointer-events: none;
@@ -147,5 +200,22 @@
 	[data-melt-progress-progress] {
 		transform: translateX(calc((100% - var(--progress)) * -1));
 		height: 100%;
+	}
+
+	.details {
+		font-family: "DejaVu Mono", monospace;
+		background-color: var(--crust);
+		flex-direction: column;
+		word-wrap: break-word;
+		border-radius: 5px;
+		margin-top: 15px;
+		font-size: 14px;
+		display: flex;
+		padding: 10px;
+		gap: 10px;
+	}
+
+	ul.details {
+		padding: 10px 10px 10px 30px;
 	}
 </style>
