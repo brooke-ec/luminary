@@ -4,10 +4,15 @@ import { addToast } from "../routes/Toaster.svelte";
 
 export * as api from "./api";
 
-export function warn(title: string, details?: string | string[]) {
-	addToast({ data: { icon: faTriangleExclamation, color: "peach", title, details } });
+export function trim(str: string, maxLength: number) {
+	if (str.length <= maxLength) return str;
+	return str.slice(0, maxLength - 3) + "...";
 }
 
-export function error(title: string, details?: string | string[]) {
-	addToast({ data: { icon: faCircleXmark, color: "red", title, details } });
+export function warn(message: string, details?: string | string[]) {
+	addToast({ data: { icon: faTriangleExclamation, color: "peach", title: trim(message, 40), details } });
+}
+
+export function error(message: string, details?: string | string[]) {
+	addToast({ data: { icon: faCircleXmark, color: "red", title: trim(message, 40), details } });
 }
