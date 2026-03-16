@@ -1,17 +1,23 @@
 <script lang="ts">
+	import LoaderButton from "$lib/component/LoaderButton.svelte";
 	import Logo from "$lib/component/Crane.svelte";
 	import { goto } from "$app/navigation";
 	import { api } from "$lib";
-	import PromiseButton from "$lib/component/PromiseButton.svelte";
 
+	let loading = $state(false);
 	let credentials = $state({
 		username: "",
 		password: "",
 	});
 
 	async function login() {
-		await api.login(credentials);
-		await goto("/");
+		loading = true;
+		try {
+			await api.login(credentials);
+			await goto("/");
+		} finally {
+			loading = false;
+		}
 	}
 </script>
 
@@ -24,7 +30,7 @@
 			</h2>
 			<h1>Log In</h1>
 		</div>
-		<form class="flexc gap-20">
+		<form class="flexc gap-20" onsubmit={login}>
 			<div>
 				<label for="username">Username</label>
 				<input required minlength="1" id="username" type="text" bind:value={credentials.username} />
@@ -33,7 +39,7 @@
 				<label for="password">Password</label>
 				<input required minlength="1" id="password" type="password" bind:value={credentials.password} />
 			</div>
-			<PromiseButton onclick={login}>
+			<LoaderButton bind:loading>
 				{#snippet children(loading)}
 					{#if loading}
 						Logging in...
@@ -41,7 +47,7 @@
 						Log In
 					{/if}
 				{/snippet}
-			</PromiseButton>
+			</LoaderButton>
 		</form>
 	</div>
 </div>
