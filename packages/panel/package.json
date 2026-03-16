@@ -28,6 +28,7 @@
 		"melt": "^0.44.0",
 		"openapi-fetch": "^0.17.0",
 		"openapi-typescript": "^7.13.0",
+		"parse-sse": "^0.1.0",
 		"prettier": "^3.4.2",
 		"prettier-plugin-svelte": "^3.3.3",
 		"sass": "^1.89.0",
@@ -35,6 +36,7 @@
 		"svelte-check": "^4.0.0",
 		"svelte-fa": "^4.0.4",
 		"typescript": "^5.0.0",
+		"ultrapatch": "^0.1.4",
 		"vite": "^6.2.6"
 	}
 }

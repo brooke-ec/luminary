@@ -42,6 +42,17 @@ type CaughtPaths = {
 let token: string | null = localStorage.getItem(TOKEN_KEY);
 
 /**
+ * Check if the client is currently authenticated.
+ * @returns `true` if the client is authenticated, `false` otherwise.
+ */
+export const isAuthenticated = () => !!token;
+
+/**
+ * @returns The current token used for authentication.
+ */
+export const getToken = () => token;
+
+/**
  * Updates the token used for authentication and stores it in localStorage.
  * @param newToken The new token to use for authentication, or null to remove the token.
  */
@@ -60,12 +71,12 @@ const middleware: Middleware = {
 		if (token) request.headers.set("Authorization", `Bearer ${token}`);
 		return request;
 	},
-	async onResponse({ response }) {
+	async onResponse({ response, options }) {
 		if (response.status === 401) {
 			putToken(null);
 			goto("/login");
 			throw new Error("Unauthorized Request");
-		} else if (response.status === 200) {
+		} else if (options.parseAs == "json" && response.status === 200) {
 			const payload: LuminaryResponse = await response.json();
 			if (payload.success) return new Response(JSON.stringify(payload.data), response);
 			else {

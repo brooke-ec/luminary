@@ -77,7 +77,7 @@ async fn state_events(engine: &LuminaryEngine) -> impl Stream<Item = Result<SseE
 fn generate_patch(old: &serde_json::Value, new: &serde_json::Value) -> Result<SseEvent, Infallible> {
     let diff = json_patch::diff(&old, &new);
     let event = SseEvent::default()
-        .name("state")
+        .name("list")
         .json(diff)
         .expect("Failed to serialse JSON patch"); // This should never fail as we've already serialised the data to a json value
 
