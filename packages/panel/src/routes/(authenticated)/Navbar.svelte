@@ -1,3 +1,10 @@
+<!--
+    @component
+    
+    A Svelte component containing both the desktop and mobile Navbar.
+    
+-->
+
 <script lang="ts">
 	import { page } from "$app/state";
 	import Fa from "svelte-fa";
@@ -8,7 +15,10 @@
 		faGear,
 		faLayerGroup,
 		faMagnifyingGlass,
+		faXmark,
 	} from "@fortawesome/free-solid-svg-icons";
+	import { slide } from "svelte/transition";
+	import { onNavigate } from "$app/navigation";
 
 	const EXPANDED_KEY = "luminary-navbar-expanded";
 
@@ -19,41 +29,79 @@
 	] satisfies { icon: any; label: string; href: string }[];
 
 	let expanded = $state(localStorage.getItem(EXPANDED_KEY) === "true");
+	let open = $state(false);
 
-	let clientWidth = $state(0);
+	let navbarWidth = $state(0);
+	let windowWidth = $state(0);
+
+	let mobile = $derived(windowWidth <= 425);
 
 	function toggleExpanded() {
 		expanded = !expanded;
 		localStorage.setItem(EXPANDED_KEY, expanded.toString());
 	}
+
+	function toggleOpen() {
+		open = !open;
+	}
+
+	onNavigate(() => {
+		open = false;
+	});
 </script>
 
-<div style:width="{clientWidth}px"></div>
+<svelte:window bind:innerWidth={windowWidth} />
 
-<nav class:expanded bind:clientWidth>
+{#snippet links()}
 	{#each PAGES as { icon, label, href }}
-		<a {href} class:current={page.url.pathname.startsWith(href)}>
+		<a class="entry" {href} class:current={page.url.pathname.startsWith(href)}>
 			<div class="icon">
 				<Fa {icon} />
 			</div>
 			<div class="label">{label}</div>
 		</a>
 	{/each}
+{/snippet}
 
-	<button class="a" style="margin-top: auto">
-		<div class="icon">
-			<Fa icon={faMagnifyingGlass} />
-		</div>
-		<div class="label">Search</div>
-	</button>
+{#if mobile}
+	<div style:height="48px"></div>
 
-	<button class="a" onclick={toggleExpanded} aria-label="{expanded ? 'collapse' : 'expand'} sidebar">
-		<div class="icon">
-			<Fa icon={expanded ? faChevronLeft : faBars} />
+	<nav class:open>
+		<div class="titlebar">
+			<button class="a" onclick={toggleOpen}>
+				<Fa icon={open ? faXmark : faBars} />
+			</button>
+			<a href="./">
+				<Fa icon={faChevronLeft} />
+			</a>
 		</div>
-		<div class="label">Collapse</div>
-	</button>
-</nav>
+		{#if open}
+			<div class="list" transition:slide>
+				<div class="flexc expanded">{@render links()}</div>
+			</div>
+		{/if}
+	</nav>
+{:else}
+	<div style:width="{navbarWidth}px"></div>
+
+	<nav class:expanded bind:clientWidth={navbarWidth}>
+		{@render links()}
+
+		<button class="a entry" style="margin-top: auto">
+			<div class="icon">
+				<Fa icon={faMagnifyingGlass} />
+			</div>
+			<div class="label">Search</div>
+		</button>
+
+		<button class="a entry" onclick={toggleExpanded} aria-label="{expanded ? 'collapse' : 'expand'} sidebar">
+			<div class="icon">
+				<Fa icon={expanded ? faChevronLeft : faBars} />
+			</div>
+			<div class="label">Collapse</div>
+		</button>
+	</nav>
+{/if}
 
 <style lang="scss">
 	$navbar-width: 125px;
@@ -61,43 +109,94 @@
 	nav {
 		background-color: var(--crust);
 
-		display: flex;
-		flex-direction: column;
-		gap: 10px;
-
-		transition: width 250ms ease;
-		height: 100dvh;
-		width: 48px;
-
 		position: fixed;
 		left: 0;
 		top: 0;
 
-		& > * {
-			justify-content: left;
-			align-items: center;
-			display: flex;
+		display: flex;
+		flex-direction: column;
 
-			padding: 0;
+		@media (max-width: 425px) {
+			background-color: var(--crust);
 
+			transition: height 250ms ease;
 			height: 48px;
-			border-radius: 0;
+			width: 100%;
 
+			&.open {
+				height: 100dvh;
+				width: 100%;
+			}
+		}
+
+		@media (min-width: 426px) {
+			transition: width 250ms ease;
+			height: 100dvh;
+			width: 48px;
+
+			&.expanded {
+				width: #{$navbar-width};
+			}
+		}
+	}
+
+	.titlebar {
+		justify-content: space-between;
+		flex-direction: row-reverse;
+		align-items: center;
+		display: flex;
+
+		flex-basis: 48px;
+		height: 50px;
+		width: 100%;
+
+		& > * {
+			width: 48px;
+			height: 100%;
+
+			font-size: 20px;
 			color: var(--subtext0);
 
-			&:hover,
-			&.current {
-				color: var(--mauve);
-			}
+			display: flex;
+			justify-content: center;
+			align-items: center;
+		}
+	}
+
+	.list {
+		transition: flex-basis 250ms ease;
+		flex-basis: 0px;
+		overflow: hidden;
+	}
+
+	.open .list {
+		flex-basis: calc(100% - 48px);
+	}
+
+	.entry {
+		justify-content: left;
+		align-items: center;
+		display: flex;
+
+		padding: 0;
+
+		height: 48px;
+		border-radius: 0;
+
+		color: var(--subtext0);
+
+		&:hover,
+		&.current {
+			color: var(--mauve);
 		}
 
-		&.expanded {
-			width: #{$navbar-width};
-
-			& > * > .label {
-				flex-basis: #{$navbar-width - 48px};
-			}
+		&.current {
+			pointer-events: none;
 		}
+	}
+
+	.expanded .label {
+		flex-basis: #{$navbar-width - 48px};
 	}
 
 	.icon {

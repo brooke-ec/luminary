@@ -2,6 +2,8 @@ import { faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
 import { faCircleXmark } from "@fortawesome/free-regular-svg-icons";
 import { addToast } from "../routes/Toaster.svelte";
 
+export { openDialog, closeDialog } from "../routes/Dialog.svelte";
+
 export * as api from "./api";
 
 export function trim(str: string, maxLength: number) {

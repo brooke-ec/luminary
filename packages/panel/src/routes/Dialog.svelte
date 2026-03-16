@@ -98,6 +98,8 @@
 		min-width: 75vw;
 		min-height: 25vh;
 
+		padding: 10px;
+
 		transition: ease 300ms;
 		scale: 0.95;
 
@@ -146,11 +148,13 @@
 		display: flex;
 		gap: 20px;
 
+		margin-bottom: 10px;
+
 		h1 {
 			font-size: 25px;
 
 			@media (max-width: 425px) {
-				font-size: inherit;
+				font-size: 20px;
 			}
 		}
 

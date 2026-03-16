@@ -12,5 +12,9 @@
 <style lang="scss">
 	.container {
 		display: flex;
+
+		@media (max-width: 425px) {
+			flex-direction: column;
+		}
 	}
 </style>
