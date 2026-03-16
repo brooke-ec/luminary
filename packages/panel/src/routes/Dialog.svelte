@@ -1,7 +1,20 @@
+<!--
+	@component
+	
+	A Svelte component for displaying Dialogs/Modals/Popups.
+	This should be mounted in a top-level `layout.svelte` so that toasts are visible on every page.
+
+	Dialogs can be displayed by calling the `openDialog` function exported from this component.
+	
+-->
+
 <script lang="ts" module>
 	import type { Snippet } from "svelte";
 
-	interface DialogOptions<T> {
+	/**
+	 * The interface representing the content of a given dialog.
+	 */
+	export interface DialogOptions<T> {
 		title: string | Snippet<[T]>;
 		content: Snippet<[T]>;
 		parameters?: T;
@@ -9,10 +22,17 @@
 
 	let current: DialogOptions<any> | null = $state(null);
 
-	export function openDialog<T>(options: DialogOptions<T>) {
-		current = options;
+	/**
+	 * Opens a new dialog with the given options.
+	 * @param props The options used to create the dialog.
+	 */
+	export function openDialog<T>(props: DialogOptions<T>) {
+		current = props;
 	}
 
+	/**
+	 * Closes the currently open dialog, if there is one.
+	 */
 	export function closeDialog() {
 		current = null;
 	}

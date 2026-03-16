@@ -11,20 +11,20 @@
 	import type { IconDefinition } from "@fortawesome/fontawesome-common-types";
 
 	/**
-	 * The data structure for the content of a toast notification.
+	 * The interface representing the content of a given toast notification.
 	 */
-	export type ToastData = {
+	export interface ToastData {
 		color: string;
 		icon: IconDefinition;
 		title: string;
 		details?: string | string[];
-	};
+	}
 
 	const toaster = new Toaster<ToastData>({ closeDelay: 15 * 1000 });
 
 	/**
 	 * Adds a new toast notification to the toaster.
-	 * @param props The properties used to create the toast.
+	 * @param props The options used to create the toast.
 	 */
 	export const addToast = toaster.addToast;
 </script>
