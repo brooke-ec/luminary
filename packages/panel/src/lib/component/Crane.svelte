@@ -17,6 +17,6 @@
 
 	svg {
 		position: absolute;
-		margin-top: 0.15em;
+		// margin-top: 0.15em;
 	}
 </style>

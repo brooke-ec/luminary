@@ -12,15 +12,13 @@
 <Toaster />
 <Dialog />
 
-<main>
+<div class="main">
 	{@render children()}
-</main>
+</div>
 
 <style lang="scss">
-	main {
+	.main {
 		height: calc(100% - 20px);
-		max-width: 1000px;
-		margin: 0 auto;
 		padding: 10px;
 	}
 </style>

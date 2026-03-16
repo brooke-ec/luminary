@@ -21,7 +21,7 @@
 	}
 </script>
 
-<div class="full flex center">
+<main class="full flex center">
 	<div class="island flexc center gap-20">
 		<div class="flexc center">
 			<h2 class="sub">
@@ -50,4 +50,4 @@
 			</LoaderButton>
 		</form>
 	</div>
-</div>
+</main>
