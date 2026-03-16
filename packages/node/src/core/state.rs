@@ -13,9 +13,12 @@ use log::{debug, error, warn};
 use luminary_macros::wrap_err;
 use tokio::fs::{self, File};
 
-use crate::core::{
-    COMPOSE_FILENAME, LuminaryAction, LuminaryEngine, LuminaryIdentifier, LuminaryServiceList,
-    model::{LuminaryProject, LuminaryService, LuminaryStateList, LuminaryStatus},
+use crate::{
+    core::{
+        COMPOSE_FILENAME, LuminaryAction, LuminaryEngine, LuminaryIdentifier, LuminaryServiceList,
+        model::{LuminaryProject, LuminaryService, LuminaryStateList, LuminaryStatus},
+    },
+    eyre_fmt,
 };
 
 const COMPOSE_PROJECT_DIR_LABEL: &str = "com.docker.compose.project.working_dir";
@@ -31,10 +34,10 @@ impl LuminaryEngine {
             yield initial;
 
             loop {
-                match reciever.recv().await {
+                match reciever.recv().await.wrap_err("Error receiving state update") {
                     Ok(list) => yield list,
                     Err(err) => {
-                        error!("Error receiving state update: {:?}", err);
+                        error!("{}", eyre_fmt!(err));
                         continue;
                     }
                 };
@@ -55,8 +58,8 @@ impl LuminaryEngine {
                 let mut stream = this.docker.events(Some(options));
 
                 while let Some(event) = stream.next().await {
-                    match event {
-                        Err(err) => error!("Error receiving Docker event: {:?}", err),
+                    match event.wrap_err("Error receiving Docker event") {
+                        Err(err) => error!("{}", eyre_fmt!(err)),
                         Ok(event) => {
                             if let Some(actor) = event.actor
                                 && let Some(action) = event.action

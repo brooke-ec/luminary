@@ -13,7 +13,7 @@ use salvo::{oapi::extract::JsonBody, prelude::*};
 use serde::Deserialize;
 use sqlx::{SqlitePool, prelude::FromRow};
 
-use crate::{api::response::LuminaryResponse, obtain};
+use crate::{api::response::LuminaryResponse, eyre_fmt, obtain};
 
 /// Returns a router containing all authentication-related endpoints.
 pub fn router() -> Router {
@@ -150,7 +150,11 @@ pub async fn protected(req: &mut Request, depot: &mut Depot, res: &mut Response,
     // Obtain auth backend from the depot
     let auth = obtain!(depot, LuminaryAuthentication);
 
-    match auth.get_user_by_token(token).await {
+    match auth
+        .get_user_by_token(token)
+        .await
+        .wrap_err("Failed verify token")
+    {
         Ok(Some(user)) => {
             depot.insert("user", user);
             ctrl.call_next(req, depot, res).await;
@@ -159,7 +163,7 @@ pub async fn protected(req: &mut Request, depot: &mut Depot, res: &mut Response,
             res.status_code(StatusCode::UNAUTHORIZED);
         }
         Err(error) => {
-            error!("Failed verify token: {error:#}");
+            error!("{}", eyre_fmt!(error));
             res.status_code(StatusCode::INTERNAL_SERVER_ERROR);
         }
     }

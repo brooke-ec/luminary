@@ -6,9 +6,9 @@
 
 use std::convert::Infallible;
 
-use crate::obtain;
 use crate::{core::LuminaryEngine, logging::BroadcastLayer};
-use eyre::Result;
+use crate::{eyre_fmt, obtain};
+use eyre::{Context, Result};
 use futures_util::stream::select;
 use futures_util::{Stream, StreamExt};
 use log::error;
@@ -42,8 +42,9 @@ fn log_events(layer: &BroadcastLayer) -> impl Stream<Item = Result<SseEvent, Inf
         let event = SseEvent::default()
             .name("log")
             .json(&log)
+            .wrap_err("Error serialising log message")
             .map_err(|err| {
-                error!("Error serialising log message: {:?}", err);
+                error!("{}", eyre_fmt!(err));
                 err
             })
             .ok()?;
@@ -59,10 +60,10 @@ async fn state_events(engine: &LuminaryEngine) -> impl Stream<Item = Result<SseE
 
     return async_stream::stream! {
         while let Some(state) = stream.next().await {
-            let new = match serde_json::to_value(&state) {
+            let new = match serde_json::to_value(&state).wrap_err("Error serialising state update") {
                 Ok(event) => event,
                 Err(err) => {
-                    error!("Error serialising log message: {:?}", err);
+                    error!("{}", eyre_fmt!(err));
                     continue;
                 }
             };

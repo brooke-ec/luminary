@@ -37,3 +37,10 @@ macro_rules! schema_ref_or {
         ref_or
     }};
 }
+
+#[macro_export]
+macro_rules! eyre_fmt {
+    ($err:expr) => {
+        $err.chain().map(|e| e.to_string()).collect::<Vec<_>>().join("\n")
+    };
+}

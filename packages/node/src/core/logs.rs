@@ -1,7 +1,11 @@
 use std::sync::Arc;
 
-use crate::core::{LuminaryEngine, LuminaryStatus, ProjectLogChannel};
+use crate::{
+    core::{LuminaryEngine, LuminaryStatus, ProjectLogChannel},
+    eyre_fmt,
+};
 use bytes::{Bytes, BytesMut};
+use eyre::Context;
 use futures_util::{StreamExt, stream::BoxStream};
 use log::{debug, error};
 use tokio::sync::{RwLock, broadcast};
@@ -54,12 +58,15 @@ impl LuminaryEngine {
             loop {
                 debug!("Starting logs stream for project '{}'...", project);
                 // Spawn docker compose process, yielding logs as they are recieved
-                match this.cli(&project, ["logs", "-f"]) {
-                    Err(err) => error!("Failed to start docker compose logs process: {err}"),
+                match this
+                    .cli(&project, ["logs", "-f"])
+                    .wrap_err("Failed to start docker compose logs process")
+                {
+                    Err(err) => error!("{}", eyre_fmt!(err)),
                     Ok(mut stream) => {
                         while let Some(result) = stream.next().await {
-                            match result {
-                                Err(err) => error!("Error streaming logs for project {}: {:?}", project, err),
+                            match result.wrap_err("Error streaming logs for project") {
+                                Err(err) => error!("{}", eyre_fmt!(err)),
                                 Ok(bytes) => {
                                     buffer.write().await.extend_from_slice(&bytes);
                                     if channel.send(bytes).is_err() {
@@ -78,8 +85,12 @@ impl LuminaryEngine {
                 debug!("Docker compose logs process exited, waiting for event to trigger retry...");
 
                 loop {
-                    match this.wait_until(&project, None, LuminaryStatus::Running).await {
-                        Err(err) => error!("Error while waiting for project to restart: {err}"),
+                    match this
+                        .wait_until(&project, None, LuminaryStatus::Running)
+                        .await
+                        .wrap_err("Error while waiting for project to restart")
+                    {
+                        Err(err) => error!("{}", eyre_fmt!(err)),
                         Ok(_) => break,
                     }
                 }

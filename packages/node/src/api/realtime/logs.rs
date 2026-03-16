@@ -5,6 +5,7 @@
 use std::convert::Infallible;
 
 use base64::prelude::*;
+use eyre::Context;
 use futures_util::StreamExt;
 use salvo::{
     Depot, Response, Writer,
@@ -12,7 +13,7 @@ use salvo::{
     sse::{self, SseEvent},
 };
 
-use crate::{core::LuminaryEngine, obtain};
+use crate::{core::LuminaryEngine, eyre_fmt, obtain};
 
 /// Subscribes to a stream of log messages for a given project, sent as Server-Sent Events.
 #[endpoint(
@@ -34,8 +35,8 @@ pub async fn logs_subscribe(project: PathParam<String>, res: &mut Response, depo
         res,
         async_stream::stream! {
             while let Some(bytes) = stream.next().await {
-                match create_event(&bytes) {
-                    Err(err) =>log::error!("Failed to create SSE event from log bytes: {err}"),
+                match create_event(&bytes).wrap_err("Failed to create SSE event from log bytes") {
+                    Err(err) => log::error!("{}", eyre_fmt!(err)),
                     Ok(event) => yield Ok::<SseEvent, Infallible>(event),
                 }
             }

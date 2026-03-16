@@ -1,5 +1,6 @@
 use core::fmt;
 
+use eyre::Context as _;
 use futures_util::stream::{BoxStream, StreamExt};
 use log::error;
 use salvo::oapi::ToSchema;
@@ -10,6 +11,8 @@ use tracing::{
     field::{Field, Visit},
 };
 use tracing_subscriber::{Layer, layer::Context};
+
+use crate::eyre_fmt;
 
 /// Represents a single log message.
 #[derive(Default, Serialize, Clone, ToSchema)]
@@ -48,10 +51,10 @@ impl BroadcastLayer {
 
         return async_stream::stream! {
             loop {
-                match reciever.recv().await {
+                match reciever.recv().await.wrap_err("Failed to receive log message from broadcast channel") {
                     Ok(message) => yield message,
                     Err(err) => {
-                        error!("Error receiving log message: {:?}", err);
+                        error!("{}", eyre_fmt!(err));
                         continue;
                     }
                 };
