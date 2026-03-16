@@ -9,7 +9,18 @@
 	let { children } = $props();
 </script>
 
-{@render children()}
-
 <Toaster />
 <Dialog />
+
+<main>
+	{@render children()}
+</main>
+
+<style lang="scss">
+	main {
+		height: calc(100% - 20px);
+		max-width: 1000px;
+		margin: 0 auto;
+		padding: 10px;
+	}
+</style>

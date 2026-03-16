@@ -2,7 +2,8 @@ import { parseServerSentEvents, type ServerSentEvent } from "parse-sse";
 import type { components } from "./openapi";
 import { error, sleep, warn } from "$lib";
 import { patch } from "ultrapatch";
-import { client } from ".";
+import { client, isAuthenticated } from ".";
+import { goto } from "$app/navigation";
 
 export type LuminaryStateList = components["schemas"]["luminary_node.core.model.LuminaryStateList"];
 type LogMessage = components["schemas"]["luminary_node.logging.LogMessage"];
@@ -26,7 +27,9 @@ export const getList = () => list;
 export async function subscribe(fetch?: typeof globalThis.fetch) {
 	let retryDelay = INITIAL_RETRY_DELAY;
 
-	while (true) {
+	if (!isAuthenticated()) goto("/login");
+
+	while (isAuthenticated()) {
 		try {
 			const { response } = await client.GET("/api/realtime", {
 				parseAs: "stream",

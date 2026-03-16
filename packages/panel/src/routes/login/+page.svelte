@@ -1,15 +1,37 @@
 <script lang="ts">
+	import Logo from "$lib/component/Crane.svelte";
 	import { goto } from "$app/navigation";
 	import { api } from "$lib";
 
-	async function login() {
-		await api.login({
-			username: "admin",
-			password: "password",
-		});
+	let credentials = $state({
+		username: "",
+		password: "",
+	});
 
-		goto("/");
+	async function login() {
+		await api.login(credentials);
+		await goto("/");
 	}
 </script>
 
-<button onclick={login}>Login</button>
+<div class="full flex center">
+	<div class="island flexc center gap-20">
+		<div class="flexc center">
+			<h2 class="sub">
+				<Logo />
+				Luminary
+			</h2>
+			<h1>Log In</h1>
+		</div>
+		<div>
+			<label for="username">Username</label>
+			<input required id="username" type="text" bind:value={credentials.username} />
+		</div>
+		<div>
+			<label for="password">Password</label>
+			<input required id="password" type="password" bind:value={credentials.password} />
+		</div>
+
+		<button class="full" onclick={login}>Log In</button>
+	</div>
+</div>

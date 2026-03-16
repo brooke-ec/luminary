@@ -9,10 +9,17 @@
 	}
 }
 
+body {
+	overflow-x: hidden;
+	height: 100dvh;
+	margin: 0;
+}
+
 :root {
 	font-family: "Open Sans Variable", sans-serif;
 	background-color: var(--base);
 	color: var(--text);
+	font-size: 14px;
 }
 
 ::selection {
@@ -21,7 +28,7 @@
 }
 
 button.a,
-a {
+a:not(.button) {
 	font-family: inherit;
 	color: var(--blue);
 
@@ -35,11 +42,39 @@ a {
 	text-align: left;
 
 	&:focus-visible {
-		outline: 2px solid var(--rosewater);
+		outline: 2px solid var(--lavender);
 	}
 
 	&:hover {
 		text-decoration: underline;
+	}
+}
+
+button:not(.a),
+a.button {
+	text-decoration: none;
+	font-family: inherit;
+	color: var(--base);
+	font-weight: bold;
+
+	transition: background-color 250ms;
+	background-color: var(--lavender);
+	cursor: pointer;
+
+	padding: 10px;
+	border-radius: 10px;
+	border: none;
+
+	&:focus-visible {
+		outline: 2px solid var(--rosewater);
+	}
+
+	&:hover {
+		background-color: var(--mauve);
+	}
+
+	&:disabled {
+		background-color: var(--overlay1);
 	}
 }
 
@@ -50,4 +85,71 @@ h4,
 h5,
 h6 {
 	margin: 0;
+
+	&.sub {
+		color: var(--subtext0);
+	}
+}
+
+label {
+	display: block;
+	margin-bottom: 5px;
+}
+
+*:has(input[required]) > label::after {
+	content: " *";
+	color: var(--red);
+}
+
+input[type="text"],
+input[type="password"] {
+	background-color: var(--surface1);
+	border-radius: 10px;
+	color: inherit;
+	padding: 10px;
+	border: none;
+
+	min-width: calc(200px + 25vw);
+
+	&:focus-visible {
+		outline: 2px solid var(--lavender);
+	}
+}
+
+@media (min-width: 426px) {
+	.island {
+		background-color: var(--surface0);
+		border-radius: 10px;
+		padding: 20px;
+	}
+}
+
+.flex,
+.flexr {
+	display: flex;
+
+	&.center {
+		justify-content: center;
+		align-items: center;
+	}
+
+	&.space {
+		justify-content: space-between;
+	}
+
+	@for $i from 1 through 100 {
+		&.gap-#{$i} {
+			gap: #{$i}px;
+		}
+	}
+}
+
+.flexc {
+	@extend .flexr;
+	flex-direction: column;
+}
+
+.full {
+	height: 100%;
+	width: 100%;
 }
