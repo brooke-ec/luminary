@@ -87,12 +87,13 @@ const middleware: Middleware = {
 
 		return response;
 	},
-	onError({ error: e }) {
-		error("Network Error", [
-			"An error occurred while making a request to the backend." +
-				" Please check your network connection and try again.",
-			String(e),
-		]);
+	onError({ error: e, options }) {
+		if (options.parseAs !== "stream")
+			error("Network Error", [
+				"An error occurred while making a request to the backend." +
+					" Please check your network connection and try again.",
+				String(e),
+			]);
 	},
 };
 
