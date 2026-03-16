@@ -78,6 +78,9 @@
 
 <style lang="scss">
 	.root {
+		font-family: inherit;
+		color: inherit;
+
 		position: fixed;
 		inset: auto;
 		bottom: 0px;
@@ -125,7 +128,6 @@
 	h3 {
 		font-size: inherit;
 		font-weight: bold;
-		margin: 0;
 
 		display: flex;
 		align-items: center;
