@@ -125,6 +125,18 @@
 		height: 100vh;
 		overflow: hidden;
 		pointer-events: none;
+
+		@media (max-width: 425px) {
+			top: 0;
+			right: 0;
+			bottom: 0;
+			left: 0;
+			box-sizing: border-box;
+			min-width: 100dvw;
+			min-height: 100dvh;
+			padding: 10px;
+			margin: 0;
+		}
 	}
 
 	.toast {
@@ -137,9 +149,11 @@
 		border-radius: 10px;
 		font-size: 14px;
 		padding: 10px;
+		box-sizing: border-box;
 
 		display: flex;
 		flex-direction: column;
+		width: 100%;
 		gap: 5px;
 	}
 

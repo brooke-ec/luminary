@@ -100,6 +100,18 @@
 
 		transition: ease 300ms;
 		scale: 0.95;
+
+		@media (max-width: 425px) {
+			border-radius: 0;
+			min-height: 100vh;
+			min-width: 100vw;
+			margin: 0;
+			box-sizing: border-box;
+			top: 0;
+			right: 0;
+			bottom: 0;
+			left: 0;
+		}
 	}
 
 	dialog::backdrop {
@@ -115,6 +127,8 @@
 	[data-melt-dialog-overlay] {
 		backdrop-filter: blur(2px);
 		position: fixed;
+		padding: 0;
+		border: none;
 		width: 100%;
 		height: 100%;
 		background: rgba(0, 0, 0, 0.2);
@@ -134,6 +148,10 @@
 
 		h1 {
 			font-size: 25px;
+
+			@media (max-width: 425px) {
+				font-size: inherit;
+			}
 		}
 
 		button {
