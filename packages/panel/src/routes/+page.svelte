@@ -5,7 +5,7 @@
 	const client = createClient<paths>({ baseUrl: "./" });
 	const login = client.POST("/api/auth/login", {
 		body: {
-			username: "admin",
+			username: "admi",
 			password: "password",
 		},
 	});

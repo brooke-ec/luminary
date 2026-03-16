@@ -1,2 +1,6 @@
 packages:
-  - "packages/panel"
+  - packages/panel
+
+onlyBuiltDependencies:
+  - '@parcel/watcher'
+  - esbuild

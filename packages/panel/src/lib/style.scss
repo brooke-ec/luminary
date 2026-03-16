@@ -1,0 +1,47 @@
+@use "@catppuccin/palette/scss/catppuccin";
+@use "sass:map";
+
+@each $flavor, $color in catppuccin.$palette {
+	:root.#{$flavor} {
+		@each $shade, $value in $color {
+			--#{$shade}: #{$value};
+		}
+	}
+}
+
+:root {
+	font-family: "Open Sans Variable", sans-serif;
+	background-color: var(--base);
+	color: var(--text);
+}
+
+::selection {
+	background-color: var(--overlay2);
+	opacity: 0.2;
+}
+
+[popover] {
+	font-family: inherit;
+	color: inherit;
+}
+
+button.a,
+a {
+	font-family: inherit;
+	color: var(--blue);
+
+	border-radius: 5px;
+	background: none;
+	border: none;
+
+	cursor: pointer;
+	display: inline-block;
+
+	&:focus-visible {
+		outline: 2px solid var(--rosewater);
+	}
+
+	&:hover {
+		text-decoration: underline;
+	}
+}
