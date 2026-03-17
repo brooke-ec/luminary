@@ -99,6 +99,9 @@ impl LuminaryEngine {
                 }
 
                 debug!("Received event indicating project is running, restarting logs stream...");
+
+                // Clear buffer to avoid sending old logs
+                buffer.write().await.clear();
             }
         });
 
