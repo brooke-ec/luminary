@@ -6,7 +6,10 @@
 
 <div class="container">
 	<Navbar />
-	{@render children()}
+
+	<div class="full">
+		{@render children()}
+	</div>
 </div>
 
 <style lang="scss">
