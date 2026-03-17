@@ -115,6 +115,10 @@ input[type="password"] {
 	&:focus-visible {
 		outline: 2px solid var(--lavender);
 	}
+
+	&::placeholder {
+		color: var(--subtext0);
+	}
 }
 
 @media (min-width: 426px) {

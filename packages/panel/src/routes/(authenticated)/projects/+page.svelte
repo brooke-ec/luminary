@@ -1,22 +1,34 @@
 <script lang="ts">
 	import StatusIcon, { type LuminaryStatus } from "$lib/component/StatusIcon.svelte";
+	import { faMagnifyingGlass, faMinus, faPlus } from "@fortawesome/free-solid-svg-icons";
 	import { Accordion } from "melt/builders";
 	import { getList } from "$lib/api";
+	import { Debounced } from "runed";
 	import Fa from "svelte-fa";
-	import { faMinus, faPlus } from "@fortawesome/free-solid-svg-icons";
 
 	const ORDER = ["healthy", "running", "exited", "paused", "down", "paused"] as LuminaryStatus[];
 
 	const accordion = new Accordion({ multiple: true, value: ORDER });
 
+	let search = $state("");
+	const debounced = new Debounced(() => search, 250);
+
 	let groups = $derived(
-		Object.entries(Object.groupBy(Object.values(getList()), (project) => project.status)).toSorted(
-			([a], [b]) => ORDER.indexOf(a as LuminaryStatus) - ORDER.indexOf(b as LuminaryStatus),
-		),
+		Object.entries(
+			Object.groupBy(
+				Object.values(getList()).filter((p) => p.name.includes(debounced.current)),
+				(project) => project.status,
+			),
+		).toSorted(([a], [b]) => ORDER.indexOf(a as LuminaryStatus) - ORDER.indexOf(b as LuminaryStatus)),
 	);
 </script>
 
 <div class="flexc gap-10 full" {...accordion.root}>
+	<div class="flexr center gap-10">
+		<Fa icon={faMagnifyingGlass} size="lg" />
+		<input class="full" type="text" placeholder="Search projects..." bind:value={search} />
+	</div>
+
 	{#each groups as [status, projects]}
 		{@const item = accordion.getItem({ id: status })}
 		<button class="a divider" {...item.trigger} aria-label="toggle {status} projects">
@@ -41,6 +53,18 @@
 			</div>
 		{/if}
 	{/each}
+
+	{#if debounced.current}
+		<button
+			class="a"
+			onclick={() => {
+				search = "";
+				debounced.setImmediately("");
+			}}
+		>
+			Clear search filter
+		</button>
+	{/if}
 </div>
 
 <style lang="scss">
