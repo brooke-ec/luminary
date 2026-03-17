@@ -50,7 +50,8 @@ a:not(.button) {
 		text-decoration: underline;
 	}
 
-	&:disabled {
+	&:disabled,
+	.disabled {
 		color: var(--subtext0);
 		text-decoration: none;
 		cursor: not-allowed;

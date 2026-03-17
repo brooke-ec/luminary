@@ -20,6 +20,8 @@
 		faMagnifyingGlass,
 		faXmark,
 	} from "@fortawesome/free-solid-svg-icons";
+	import type { Snippet } from "svelte";
+	import Crane from "$lib/component/Crane.svelte";
 
 	const EXPANDED_KEY = "luminary-navbar-expanded";
 
@@ -29,10 +31,14 @@
 		{ icon: faCircleUser, label: "User", href: "/user" },
 	] satisfies { icon: any; label: string; href: string }[];
 
+	let { children }: { children: Snippet<[]> } = $props();
+
 	let expanded = $state(localStorage.getItem(EXPANDED_KEY) !== "false");
 	let open = $state(false);
 
 	let navbarWidth = $state(0);
+
+	let returnable = $derived(page.url.pathname.split("/").length > 2);
 
 	function toggleExpanded() {
 		expanded = !expanded;
@@ -59,48 +65,71 @@
 	{/each}
 {/snippet}
 
-{#if isMobile()}
-	<div style:min-height="48px"></div>
+<div class="container">
+	{#if isMobile()}
+		<div style:min-height="48px"></div>
 
-	<nav class:open>
-		<div class="titlebar">
-			<button class="a" onclick={toggleOpen}>
-				<Fa icon={open ? faXmark : faBars} />
+		<nav class:open>
+			<div class="titlebar">
+				<button class="a" onclick={toggleOpen}>
+					<Fa icon={open ? faXmark : faBars} />
+				</button>
+				{#if returnable}
+					<a href="./">
+						<Fa icon={faChevronLeft} />
+					</a>
+				{:else}
+					<h2 class="flex center gap-5" style="margin-left: 10px;"><Crane /> Luminary</h2>
+				{/if}
+			</div>
+			{#if open}
+				<div class="list" transition:slide>
+					<div class="flexc expanded">{@render links()}</div>
+				</div>
+			{/if}
+		</nav>
+	{:else}
+		<div style:min-width="{navbarWidth}px"></div>
+
+		<nav class:expanded bind:clientWidth={navbarWidth}>
+			{@render links()}
+
+			<button class="a entry" style="margin-top: auto">
+				<div class="icon">
+					<Fa icon={faMagnifyingGlass} />
+				</div>
+				<div class="label">Search</div>
 			</button>
-			<a href="./">
-				<Fa icon={faChevronLeft} />
-			</a>
-		</div>
-		{#if open}
-			<div class="list" transition:slide>
-				<div class="flexc expanded">{@render links()}</div>
-			</div>
+
+			<button class="a entry" onclick={toggleExpanded} aria-label="{expanded ? 'collapse' : 'expand'} sidebar">
+				<div class="icon">
+					<Fa icon={expanded ? faChevronLeft : faBars} />
+				</div>
+				<div class="label">Collapse</div>
+			</button>
+		</nav>
+	{/if}
+
+	<div class="flexc gap-20 full">
+		{#if returnable && !isMobile()}
+			<a href="./"><Fa icon={faChevronLeft} /> Back</a>
 		{/if}
-	</nav>
-{:else}
-	<div style:min-width="{navbarWidth}px"></div>
-
-	<nav class:expanded bind:clientWidth={navbarWidth}>
-		{@render links()}
-
-		<button class="a entry" style="margin-top: auto">
-			<div class="icon">
-				<Fa icon={faMagnifyingGlass} />
-			</div>
-			<div class="label">Search</div>
-		</button>
-
-		<button class="a entry" onclick={toggleExpanded} aria-label="{expanded ? 'collapse' : 'expand'} sidebar">
-			<div class="icon">
-				<Fa icon={expanded ? faChevronLeft : faBars} />
-			</div>
-			<div class="label">Collapse</div>
-		</button>
-	</nav>
-{/if}
+		<div class="full">
+			{@render children()}
+		</div>
+	</div>
+</div>
 
 <style lang="scss">
 	$navbar-width: 125px;
+
+	.container {
+		display: flex;
+
+		@media (max-width: 425px) {
+			flex-direction: column;
+		}
+	}
 
 	nav {
 		background-color: var(--crust);
@@ -146,7 +175,8 @@
 		height: 50px;
 		width: 100%;
 
-		& > * {
+		& > a,
+		& > button {
 			width: 48px;
 			height: 100%;
 
