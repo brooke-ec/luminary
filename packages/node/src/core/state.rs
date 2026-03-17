@@ -7,7 +7,7 @@ use bollard::{
     secret::ContainerSummaryStateEnum,
 };
 use docker_compose_types::Compose;
-use eyre::{Result, WrapErr};
+use eyre::{ContextCompat, Result, WrapErr};
 use futures_util::{StreamExt, stream::BoxStream};
 use log::{debug, error, warn};
 use luminary_macros::wrap_err;
@@ -26,6 +26,17 @@ const COMPOSE_PROJECT_LABEL: &str = "com.docker.compose.project";
 const COMPOSE_SERVICE_LABEL: &str = "com.docker.compose.service";
 
 impl LuminaryEngine {
+    pub async fn get_project(&self, name: &String) -> Result<LuminaryProject> {
+        return Ok(self
+            .state
+            .read()
+            .await
+            .0
+            .get(name)
+            .cloned()
+            .wrap_err("Failed to fetch project")?);
+    }
+
     pub async fn state_subscribe<'a>(&'_ self) -> BoxStream<'a, LuminaryStateList> {
         let mut reciever = self.state_channel.subscribe();
         let initial = self.state.read().await.clone();

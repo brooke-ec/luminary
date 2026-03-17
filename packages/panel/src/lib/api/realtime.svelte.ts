@@ -20,6 +20,8 @@ let list: LuminaryStateList = $state({});
  */
 export const getList = () => list;
 
+export const putProject = (project: LuminaryProject) => (list = { ...list, [project.name]: project });
+
 /**
  * Subscribes to real-time updates from the server.
  */
@@ -46,7 +48,6 @@ async function listen(signal: AbortSignal, fetch?: typeof globalThis.fetch) {
 			});
 
 			backoff.reset();
-			list = {};
 
 			try {
 				for await (const event of parseServerSentEvents(

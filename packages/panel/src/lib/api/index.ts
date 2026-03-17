@@ -16,6 +16,12 @@ type LuminaryResponse =
 
 type ExcludeFail<T> = T extends LuminaryFailResponse ? never : T;
 type UnwrapSuccess<T> = T extends { success: true; data: infer D } ? D : T;
+
+/**
+ * Transform OpenAPI type definition to unwrap responses as if they could never fail.
+ *
+ * This is done because the handling of errors is done in the middleware.
+ */
 type CaughtPaths = {
 	[P in keyof paths]: {
 		[M in keyof paths[P]]: paths[P][M] extends { responses: infer R }

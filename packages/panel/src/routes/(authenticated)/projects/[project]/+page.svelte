@@ -1,12 +1,12 @@
 <script lang="ts">
 	import { faCircleInfo, faGears, faLayerGroup, faPencil } from "@fortawesome/free-solid-svg-icons";
+	import LogTerminal from "$lib/component/LogTerminal.svelte";
 	import StatusIcon from "$lib/component/StatusIcon.svelte";
 	import Tabs from "$lib/component/Tabs.svelte";
 	import StatusTab from "./ProjectStatus.svelte";
 	import { getList } from "$lib/api";
 	import { page } from "$app/state";
 	import Fa from "svelte-fa";
-	import LogTerminal from "$lib/component/LogTerminal.svelte";
 
 	let project = $derived(getList()[page.params.project!]);
 	let { data } = $props();

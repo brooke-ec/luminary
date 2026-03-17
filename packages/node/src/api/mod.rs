@@ -16,7 +16,7 @@ use crate::{
 
 mod action;
 mod auth;
-mod compose;
+mod project;
 mod realtime;
 mod response;
 
@@ -72,7 +72,7 @@ fn router() -> Router {
                     .push(Router::with_path("realtime").get(app_subscribe))
                     .push(
                         Router::with_path("/project/{project}")
-                            .push(compose::router())
+                            .push(project::router())
                             .push(Router::with_path("logs").get(logs_subscribe))
                             .push(Router::with_path("restart").post(action::restart_project))
                             .push(Router::with_path("start").post(action::start_project))
