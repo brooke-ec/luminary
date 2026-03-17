@@ -2,7 +2,7 @@
 	import StatusIcon, { type LuminaryStatus } from "$lib/component/StatusIcon.svelte";
 	import { faMagnifyingGlass, faMinus, faPlus } from "@fortawesome/free-solid-svg-icons";
 	import { Accordion } from "melt/builders";
-	import { getList } from "$lib/api";
+	import { getProjects } from "$lib/api";
 	import { Debounced } from "runed";
 	import Fa from "svelte-fa";
 
@@ -16,7 +16,7 @@
 	let groups = $derived(
 		Object.entries(
 			Object.groupBy(
-				Object.values(getList())
+				Object.values(getProjects())
 					.filter((p) => p.name.includes(debounced.current))
 					.toSorted((a, b) => a.name.localeCompare(b.name)),
 				(project) => project.status,

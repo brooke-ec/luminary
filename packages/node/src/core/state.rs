@@ -26,6 +26,7 @@ const COMPOSE_PROJECT_LABEL: &str = "com.docker.compose.project";
 const COMPOSE_SERVICE_LABEL: &str = "com.docker.compose.service";
 
 impl LuminaryEngine {
+    /// Retrieves a [LuminaryProject] by its name from the current state.
     pub async fn get_project(&self, name: &String) -> Result<LuminaryProject> {
         return Ok(self
             .state
@@ -37,6 +38,7 @@ impl LuminaryEngine {
             .wrap_err("Failed to fetch project")?);
     }
 
+    /// Returns a stream of state updates, initialising the stream with the current state.
     pub async fn state_subscribe<'a>(&'_ self) -> BoxStream<'a, LuminaryStateList> {
         let mut reciever = self.state_channel.subscribe();
         let initial = self.state.read().await.clone();
@@ -57,6 +59,7 @@ impl LuminaryEngine {
         .boxed();
     }
 
+    /// Spawn a background task that listens to Docker events and updates the state accordingly.
     pub(super) async fn spawn_state_worker(&self) {
         let this = self.clone();
         let mut filters = HashMap::new();

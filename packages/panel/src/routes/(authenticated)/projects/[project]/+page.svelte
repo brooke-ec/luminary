@@ -4,11 +4,11 @@
 	import StatusIcon from "$lib/component/StatusIcon.svelte";
 	import Tabs from "$lib/component/Tabs.svelte";
 	import StatusTab from "./ProjectStatus.svelte";
-	import { getList } from "$lib/api";
+	import { getProjects } from "$lib/api";
 	import { page } from "$app/state";
 	import Fa from "svelte-fa";
 
-	let project = $derived(getList()[page.params.project!]);
+	let project = $derived(getProjects()[page.params.project!]);
 	let { data } = $props();
 </script>
 

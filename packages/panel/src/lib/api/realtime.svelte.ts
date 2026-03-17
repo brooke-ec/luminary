@@ -18,8 +18,12 @@ let list: LuminaryStateList = $state({});
  * A getter for the current project list.
  * @returns A reactive store containing the current state list.
  */
-export const getList = () => list;
+export const getProjects = () => list;
 
+/**
+ * Updates the project list with the given project.
+ * @param project The project to insert into the list.
+ */
 export const putProject = (project: LuminaryProject) => (list = { ...list, [project.name]: project });
 
 /**
