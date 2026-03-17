@@ -22,3 +22,24 @@ export function error(message: string, details?: string | string[]) {
 export function sleep(ms: number) {
 	return new Promise((resolve) => setTimeout(resolve, ms));
 }
+
+export class Backoff {
+	public currentDelay: number;
+	public initialDelay: number;
+	public maxDelay: number;
+
+	public constructor(initialDelay: number = 1000, maxDelay: number = 30000) {
+		this.currentDelay = initialDelay;
+		this.initialDelay = initialDelay;
+		this.maxDelay = maxDelay;
+	}
+
+	public reset() {
+		this.currentDelay = this.initialDelay;
+	}
+
+	public async wait() {
+		await sleep(this.currentDelay);
+		this.currentDelay = Math.min(this.currentDelay * 2, this.maxDelay);
+	}
+}

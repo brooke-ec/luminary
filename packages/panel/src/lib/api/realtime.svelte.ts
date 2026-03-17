@@ -1,15 +1,13 @@
 import { parseServerSentEvents, type ServerSentEvent } from "parse-sse";
 import type { components } from "./openapi";
-import { error, sleep, warn } from "$lib";
-import { patch } from "ultrapatch";
+import { Backoff, error, warn } from "$lib";
 import { client, isAuthenticated } from ".";
 import { goto } from "$app/navigation";
+import { patch } from "ultrapatch";
 
 export type LuminaryStateList = components["schemas"]["luminary_node.core.model.LuminaryStateList"];
 export type LuminaryProject = components["schemas"]["luminary_node.core.model.LuminaryProject"];
 type LogMessage = components["schemas"]["luminary_node.logging.LogMessage"];
-
-const INITIAL_RETRY_DELAY = 1000;
 
 /**
  * The current internal list of projects and their states.
@@ -25,24 +23,38 @@ export const getList = () => list;
 /**
  * Subscribes to real-time updates from the server.
  */
-export async function subscribe(fetch?: typeof globalThis.fetch) {
-	let retryDelay = INITIAL_RETRY_DELAY;
-
+export function subscribe(fetch?: typeof globalThis.fetch) {
 	if (!isAuthenticated()) goto("/login");
+
+	const controller = new AbortController();
+	listen(controller.signal, fetch);
+	return () => controller.abort();
+}
+
+/**
+ * The main listning loop that connects to the server and processes incoming events.
+ */
+async function listen(signal: AbortSignal, fetch?: typeof globalThis.fetch) {
+	const backoff = new Backoff();
 
 	while (isAuthenticated()) {
 		try {
 			const { response } = await client.GET("/api/realtime", {
 				parseAs: "stream",
+				signal,
 				fetch,
 			});
 
-			retryDelay = INITIAL_RETRY_DELAY;
+			backoff.reset();
 			list = {};
 
 			try {
-				for await (const event of parseServerSentEvents(response) as unknown as AsyncIterable<ServerSentEvent>)
+				for await (const event of parseServerSentEvents(
+					response,
+				) as unknown as AsyncIterable<ServerSentEvent>) {
+					if (signal.aborted) return;
 					handleEvent(event);
+				}
 			} catch (err) {
 				error("Connection to server lost", [
 					"Your connection to the server was lost: " + (err instanceof Error ? err.message : String(err)),
@@ -50,8 +62,8 @@ export async function subscribe(fetch?: typeof globalThis.fetch) {
 				]);
 			}
 		} catch (_) {
-			await sleep(retryDelay);
-			retryDelay = Math.min(retryDelay * 2, 30000); // Exponential backoff with a max of 30 seconds
+			if (signal.aborted) return;
+			await backoff.wait();
 		}
 	}
 }

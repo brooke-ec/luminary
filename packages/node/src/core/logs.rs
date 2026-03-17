@@ -33,6 +33,8 @@ impl LuminaryEngine {
             }
 
             let mut receiver = channel.subscribe();
+            debug!("Subscriber number {} subscribed to logs for project '{}'", channel.receiver_count(), project);
+
             loop {
                 match receiver.recv().await {
                     Ok(event) => yield event,

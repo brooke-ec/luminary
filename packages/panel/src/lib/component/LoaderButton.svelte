@@ -47,7 +47,7 @@
 	.loader {
 		width: 14px;
 		height: 14px;
-		border: 3px solid #fff;
+		border: 3px solid var(--text);
 		border-bottom-color: transparent;
 		border-radius: 50%;
 		display: inline-block;

@@ -6,6 +6,7 @@
 	import { Terminal } from "@xterm/xterm";
 	import "@xterm/xterm/css/xterm.css";
 	import { client } from "$lib/api";
+	import { Backoff } from "$lib";
 
 	let { project }: { project: string } = $props();
 
@@ -21,22 +22,40 @@
 		const observer = new ResizeObserver(() => fitAddon.fit());
 		observer.observe(el);
 
-		stream(terminal);
+		const abort = new AbortController();
+		stream(terminal, abort.signal);
 
 		return () => {
+			abort.abort();
 			observer.disconnect();
 			terminal.dispose();
 		};
 	};
 
-	async function stream(terminal: Terminal) {
-		const { response } = await client.GET("/api/project/{project}/logs", {
-			params: { path: { project } },
-			parseAs: "stream",
-		});
+	async function stream(terminal: Terminal, signal: AbortSignal) {
+		const backoff = new Backoff();
 
-		for await (const event of parseServerSentEvents(response) as unknown as AsyncIterable<ServerSentEvent>) {
-			terminal.write(Uint8Array.from(atob(event.data), (c) => c.charCodeAt(0)));
+		while (true) {
+			try {
+				const { response } = await client.GET("/api/project/{project}/logs", {
+					params: { path: { project } },
+					parseAs: "stream",
+					signal,
+				});
+
+				backoff.reset();
+
+				for await (const event of parseServerSentEvents(
+					response,
+				) as unknown as AsyncIterable<ServerSentEvent>) {
+					if (signal.aborted) return;
+
+					terminal.write(Uint8Array.from(atob(event.data), (c) => c.charCodeAt(0)));
+				}
+			} catch (_) {
+				if (signal.aborted) return;
+				await backoff.wait();
+			}
 		}
 	}
 </script>
