@@ -1,25 +1,55 @@
 <script lang="ts">
 	import { catppuccinMacchiato } from "@catppuccin/codemirror";
-	import { EditorView, keymap } from "@codemirror/view";
 	import type { Attachment } from "svelte/attachments";
-	import { indentWithTab } from "@codemirror/commands";
+
+	import { yamlSchema } from "codemirror-json-schema/yaml";
+	import * as autocomplete from "@codemirror/autocomplete";
+	import * as language from "@codemirror/language";
+	import * as commands from "@codemirror/commands";
 	import { yaml } from "@codemirror/lang-yaml";
-	import { basicSetup } from "codemirror";
+	import * as estate from "@codemirror/state";
+	import * as view from "@codemirror/view";
+	import * as lint from "@codemirror/lint";
+
+	import schema from "../schema.json";
 
 	let { content = $bindable() }: { content: string } = $props();
 
 	let focused = $state(false);
 
 	const editor: Attachment<HTMLElement> = (parent) => {
-		const view = new EditorView({
+		const editor = new view.EditorView({
 			extensions: [
-				yaml(),
-				basicSetup,
-				keymap.of([indentWithTab]),
 				catppuccinMacchiato,
+				yamlSchema(schema),
+				yaml(),
+
+				view.lineNumbers(),
+				view.highlightSpecialChars(),
+				commands.history(),
+				language.foldGutter(),
+				view.drawSelection(),
+				view.dropCursor(),
+				estate.EditorState.allowMultipleSelections.of(true),
+				language.indentOnInput(),
+				language.syntaxHighlighting(language.defaultHighlightStyle, { fallback: true }),
+				language.bracketMatching(),
+				autocomplete.closeBrackets(),
+				autocomplete.autocompletion(),
+				view.rectangularSelection(),
+				view.crosshairCursor(),
+				view.keymap.of([
+					commands.indentWithTab,
+					...autocomplete.closeBracketsKeymap,
+					...commands.defaultKeymap,
+					...commands.historyKeymap,
+					...language.foldKeymap,
+					...autocomplete.completionKeymap,
+					...lint.lintKeymap,
+				]),
 
 				// Update content on every change
-				EditorView.updateListener.of((update) => {
+				view.EditorView.updateListener.of((update) => {
 					if (update.docChanged) {
 						content = update.state.doc.toString();
 					}
@@ -30,7 +60,7 @@
 		});
 
 		return () => {
-			view.destroy();
+			editor.destroy();
 		};
 	};
 </script>
@@ -86,6 +116,26 @@
 
 		& :global(.cm-textfield) {
 			border-color: var(--subtext0);
+		}
+
+		& :global(.cm-tooltip) {
+			background-color: var(--mantle);
+			box-shadow: 0 -2px 10px #00000080;
+
+			// padding: 0 10px;
+			border-radius: 5px;
+			overflow: hidden;
+
+			border: 1px solid var(--subtext0);
+
+			& :global(.cm6-json-schema-hover) {
+				padding: 0 10px;
+			}
+		}
+
+		& :global(.cm-tooltip .cm-tooltip-arrow:before),
+		& :global(.cm-tooltip .cm-tooltip-arrow:after) {
+			display: none;
 		}
 	}
 </style>
