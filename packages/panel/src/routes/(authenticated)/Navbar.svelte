@@ -64,7 +64,7 @@
 {/snippet}
 
 {#if mobile}
-	<div style:height="48px"></div>
+	<div style:min-height="48px"></div>
 
 	<nav class:open>
 		<div class="titlebar">
@@ -82,7 +82,7 @@
 		{/if}
 	</nav>
 {:else}
-	<div style:width="{navbarWidth}px"></div>
+	<div style:min-width="{navbarWidth}px"></div>
 
 	<nav class:expanded bind:clientWidth={navbarWidth}>
 		{@render links()}

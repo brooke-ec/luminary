@@ -100,7 +100,8 @@
 
 		padding: 10px;
 
-		transition: ease 300ms;
+		transition: opacity ease 300ms;
+		transition: scale ease 300ms;
 		scale: 0.95;
 
 		@media (max-width: 425px) {
@@ -135,7 +136,7 @@
 		height: 100%;
 		background: rgba(0, 0, 0, 0.2);
 		opacity: 0;
-		transition: ease 300ms;
+		transition: opacity ease 300ms;
 	}
 
 	[data-melt-dialog-overlay][data-open] {

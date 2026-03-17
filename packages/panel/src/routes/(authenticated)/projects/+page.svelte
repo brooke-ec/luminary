@@ -25,13 +25,13 @@
 	);
 </script>
 
-<div class="flexc gap-10 full" {...accordion.root}>
+<div class="flexc gap-10 full projects" {...accordion.root}>
 	<div class="flexr center gap-10">
 		<Fa icon={faMagnifyingGlass} size="lg" />
 		<input class="full" type="text" placeholder="Search projects..." bind:value={search} />
 	</div>
 
-	{#each groups as [status, projects]}
+	{#each groups as [status, projects] (status)}
 		{@const item = accordion.getItem({ id: status })}
 		<button class="a divider" {...item.trigger} aria-label="toggle {status} projects">
 			<Fa icon={item.isExpanded ? faMinus : faPlus} />
@@ -41,7 +41,7 @@
 		</button>
 		{#if item.isExpanded}
 			<div class="grid" {...item.content}>
-				{#each projects as project}
+				{#each projects as project (project.name)}
 					<a href="/project/{project.name}" class="project">
 						<h2>
 							<StatusIcon status={project.status} />
@@ -70,6 +70,10 @@
 </div>
 
 <style lang="scss">
+	.projects {
+		container: projects / inline-size;
+	}
+
 	.divider {
 		display: flex;
 		align-items: center;
@@ -85,14 +89,16 @@
 	}
 
 	.grid {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(300px, calc(100% / 3 - 20px)));
 		gap: 10px;
 
 		width: 100%;
+	}
 
-		@media (max-width: 425px) {
-			grid-template-columns: repeat(auto-fit, 100%);
+	@container projects (max-width: 919px) {
+		.grid {
+			grid-template-columns: 1fr;
 		}
 	}
 
