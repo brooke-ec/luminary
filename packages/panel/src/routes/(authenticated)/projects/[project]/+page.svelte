@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { faCircleInfo, faGears, faLayerGroup, faPencil } from "@fortawesome/free-solid-svg-icons";
+	import ComposeEditor from "$lib/component/ComposeEditor.svelte";
 	import LogTerminal from "$lib/component/LogTerminal.svelte";
 	import StatusIcon from "$lib/component/StatusIcon.svelte";
 	import Tabs from "$lib/component/Tabs.svelte";
@@ -44,7 +45,8 @@
 {/snippet}
 
 {#snippet compose()}
-	<h2>Compose Tab</h2>
+	<h2>Compose</h2>
+	<ComposeEditor bind:content={data.compose} />
 {/snippet}
 
 {#snippet variables()}

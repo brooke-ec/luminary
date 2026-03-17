@@ -13,7 +13,12 @@
 		"lint": "prettier --check ."
 	},
 	"devDependencies": {
+		"@catppuccin/codemirror": "^1.0.3",
 		"@catppuccin/palette": "^1.7.1",
+		"@codemirror/autocomplete": "^6.20.1",
+		"@codemirror/commands": "^6.10.3",
+		"@codemirror/lang-yaml": "^6.1.2",
+		"@codemirror/view": "^6.40.0",
 		"@fontsource-variable/open-sans": "^5.2.7",
 		"@fontsource/dejavu-mono": "^5.2.5",
 		"@fortawesome/fontawesome-common-types": "6.7.2",
@@ -27,6 +32,7 @@
 		"@xterm/addon-fit": "^0.11.0",
 		"@xterm/addon-web-links": "^0.12.0",
 		"@xterm/xterm": "^6.0.0",
+		"codemirror": "^6.0.2",
 		"melt": "^0.44.0",
 		"openapi-fetch": "^0.17.0",
 		"openapi-typescript": "^7.13.0",
