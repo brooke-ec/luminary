@@ -126,17 +126,17 @@ impl Display for LuminaryIdentifier {
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq, PartialOrd, Ord, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub enum LuminaryStatus {
+    /// Represents a service that is in the process of changing state.
+    Loading,
+
     /// Represents a service that has exited (usually due to an error).
     Exited,
-
-    /// Represents a service that is offline.
-    Down,
 
     /// Represents a service that has been paused.
     Paused,
 
-    /// Represents a service that is in the process of changing state.
-    Loading,
+    /// Represents a service that is offline.
+    Down,
 
     /// Represents a service that is running and online.
     Running,

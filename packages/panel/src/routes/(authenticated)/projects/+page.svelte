@@ -47,7 +47,7 @@
 							<StatusIcon status={project.status} />
 							{project.name}
 						</h2>
-						<div style="color: var(--subtext0);">
+						<div class="subtext">
 							{Object.keys(project.services).length} services {project.status}
 						</div>
 					</a>

@@ -23,21 +23,33 @@
 -->
 
 <script lang="ts">
-	import type { Snippet } from "svelte";
+	import type { ComponentProps, Snippet } from "svelte";
 	import LoaderButton from "./LoaderButton.svelte";
 
-	let { onclick, children }: { onclick: () => Promise<void>; children: Snippet<[boolean]> } = $props();
+	let {
+		onclick,
+		children,
+		disabled,
+		loading,
+		style,
+	}: {
+		style?: ComponentProps<typeof LoaderButton>["style"];
+		children: Snippet<[boolean]> | string;
+		onclick: () => Promise<any>;
+		disabled?: boolean;
+		loading?: boolean;
+	} = $props();
 
-	let loading = $state(false);
+	let waiting = $state(false);
 
 	async function handleClick() {
-		loading = true;
+		waiting = true;
 		try {
 			await onclick();
 		} finally {
-			loading = false;
+			waiting = false;
 		}
 	}
 </script>
 
-<LoaderButton onclick={handleClick} bind:loading {children} />
+<LoaderButton onclick={handleClick} {disabled} {style} {children} loading={waiting || loading} />

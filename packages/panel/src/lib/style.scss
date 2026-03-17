@@ -49,6 +49,12 @@ a:not(.button) {
 	&:hover {
 		text-decoration: underline;
 	}
+
+	&:disabled {
+		color: var(--subtext0);
+		text-decoration: none;
+		cursor: not-allowed;
+	}
 }
 
 button:not(.a),
@@ -62,7 +68,7 @@ a.button {
 	background-color: var(--lavender);
 	cursor: pointer;
 
-	padding: 10px;
+	padding: 5px 10px;
 	border-radius: 10px;
 	border: none;
 
@@ -76,6 +82,13 @@ a.button {
 
 	&:disabled {
 		background-color: var(--overlay1);
+		cursor: not-allowed;
+	}
+
+	&.outline {
+		background-color: transparent;
+		border: 1px solid var(--subtext0);
+		color: inherit;
 	}
 }
 
@@ -146,10 +159,18 @@ input[type="password"] {
 		justify-content: space-between;
 	}
 
+	&.wrap {
+		flex-wrap: wrap;
+	}
+
 	@for $i from 1 through 100 {
 		&.gap-#{$i} {
 			gap: #{$i}px;
 		}
+	}
+
+	& > .grow {
+		flex-grow: 1;
 	}
 }
 
@@ -161,4 +182,13 @@ input[type="password"] {
 .full {
 	height: 100% !important;
 	width: 100% !important;
+}
+
+.fit {
+	width: fit-content;
+}
+
+.subtext {
+	font-size: 14px;
+	color: var(--subtext0);
 }

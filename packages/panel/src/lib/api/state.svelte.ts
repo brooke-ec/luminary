@@ -6,6 +6,7 @@ import { client, isAuthenticated } from ".";
 import { goto } from "$app/navigation";
 
 export type LuminaryStateList = components["schemas"]["luminary_node.core.model.LuminaryStateList"];
+export type LuminaryProject = components["schemas"]["luminary_node.core.model.LuminaryProject"];
 type LogMessage = components["schemas"]["luminary_node.logging.LogMessage"];
 
 const INITIAL_RETRY_DELAY = 1000;

@@ -1,6 +1,6 @@
-import { api } from "$lib";
-import { error } from "@sveltejs/kit";
 import type { PageLoad } from "./$types";
+import { error } from "@sveltejs/kit";
+import { api } from "$lib";
 
 export const prerender = false;
 

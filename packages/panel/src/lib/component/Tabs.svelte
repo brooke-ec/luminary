@@ -51,7 +51,7 @@
 					<span {...item.heading}>{tab.label}</span>
 
 					{#if mobile}
-						<Fa icon={item.isExpanded ? faChevronDown : faChevronUp} style="margin-left: auto;" />
+						<Fa icon={item.isExpanded ? faChevronUp : faChevronDown} style="margin-left: auto;" />
 					{/if}
 				</button>
 				{#if mobile}
@@ -110,7 +110,10 @@
 
 		&:hover {
 			text-decoration: none;
-			color: var(--mauve);
+
+			@media (min-width: 426px) {
+				color: var(--mauve);
+			}
 		}
 
 		&.active {

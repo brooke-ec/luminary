@@ -8,18 +8,32 @@
 	import type { Snippet } from "svelte";
 
 	let {
-		onclick,
+		style = "button",
+		loading = false,
 		children,
-		loading = $bindable(),
-	}: { onclick?: () => Promise<void>; children: Snippet<[boolean]>; loading: boolean } = $props();
+		disabled,
+		onclick,
+	}: {
+		style?: "button" | "a" | "outline";
+		children: Snippet<[boolean]> | string;
+		onclick?: () => Promise<void>;
+		disabled?: boolean;
+		loading?: boolean;
+	} = $props();
 </script>
 
-<button class="full" {onclick} disabled={loading}>
+<button class="full {style}" disabled={loading || disabled} {onclick}>
 	{#if loading}
 		<span class="loader"></span>
 	{/if}
 
-	<div>{@render children(loading)}</div>
+	<div>
+		{#if typeof children === "string"}
+			{children}
+		{:else}
+			{@render children(loading)}
+		{/if}
+	</div>
 </button>
 
 <style lang="scss">
