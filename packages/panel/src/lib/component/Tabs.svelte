@@ -15,14 +15,24 @@
 	import { Accordion } from "melt/builders";
 	import type { Snippet } from "svelte";
 	import Fa from "svelte-fa";
+	import { page } from "$app/state";
 
 	let { tabs }: { tabs: { label: string; icon: IconDefinition; content: Snippet<[]> }[] } = $props();
 
 	const accordion = new Accordion();
 
 	$effect(() => {
-		if (accordion.value === undefined && !isMobile()) {
+		const hash = page.url.hash.slice(1);
+		if (hash && tabs.some((t) => t.label === hash)) {
+			accordion.value = hash;
+		} else if (accordion.value === undefined && !isMobile()) {
 			accordion.value = tabs[0].label;
+		}
+	});
+
+	$effect(() => {
+		if (accordion.value) {
+			window.location.hash = accordion.value;
 		}
 	});
 </script>
