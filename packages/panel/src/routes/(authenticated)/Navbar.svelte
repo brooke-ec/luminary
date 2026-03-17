@@ -6,7 +6,10 @@
 -->
 
 <script lang="ts">
+	import { onNavigate } from "$app/navigation";
+	import { slide } from "svelte/transition";
 	import { page } from "$app/state";
+	import { isMobile } from "$lib";
 	import Fa from "svelte-fa";
 	import {
 		faBars,
@@ -17,8 +20,6 @@
 		faMagnifyingGlass,
 		faXmark,
 	} from "@fortawesome/free-solid-svg-icons";
-	import { slide } from "svelte/transition";
-	import { onNavigate } from "$app/navigation";
 
 	const EXPANDED_KEY = "luminary-navbar-expanded";
 
@@ -32,9 +33,6 @@
 	let open = $state(false);
 
 	let navbarWidth = $state(0);
-	let windowWidth = $state(0);
-
-	let mobile = $derived(windowWidth <= 425);
 
 	function toggleExpanded() {
 		expanded = !expanded;
@@ -50,8 +48,6 @@
 	});
 </script>
 
-<svelte:window bind:innerWidth={windowWidth} />
-
 {#snippet links()}
 	{#each PAGES as { icon, label, href }}
 		<a class="entry" {href} class:current={page.url.pathname.startsWith(href)}>
@@ -63,7 +59,7 @@
 	{/each}
 {/snippet}
 
-{#if mobile}
+{#if isMobile()}
 	<div style:min-height="48px"></div>
 
 	<nav class:open>

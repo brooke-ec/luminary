@@ -6,6 +6,8 @@ export { openDialog, closeDialog } from "../routes/Dialog.svelte";
 
 export * as api from "./api";
 
+export { isMobile } from "../routes/+layout.svelte";
+
 export function trim(str: string, maxLength: number) {
 	if (str.length <= maxLength) return str;
 	return str.slice(0, maxLength - 3) + "...";

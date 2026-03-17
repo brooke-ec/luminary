@@ -78,18 +78,18 @@ pub async fn stop_service(
     return Ok(().into());
 }
 
-/// Redeploys the given project and all its services.
+/// recreates the given project and all its services.
 #[endpoint]
-pub async fn redeploy_project(project: PathParam<String>, depot: &mut Depot) -> LuminaryResponse<()> {
+pub async fn recreate_project(project: PathParam<String>, depot: &mut Depot) -> LuminaryResponse<()> {
     let engine = obtain!(depot, LuminaryEngine);
 
-    engine.redeploy(&project.into_inner(), None).await?;
+    engine.recreate(&project.into_inner(), None).await?;
     return Ok(().into());
 }
 
-/// Redeploys the given service of the project.
+/// recreates the given service of the project.
 #[endpoint]
-pub async fn redeploy_service(
+pub async fn recreate_service(
     project: PathParam<String>,
     service: PathParam<String>,
     depot: &mut Depot,
@@ -97,7 +97,7 @@ pub async fn redeploy_service(
     let engine = obtain!(depot, LuminaryEngine);
 
     engine
-        .redeploy(&project.into_inner(), Some(&service.into_inner()))
+        .recreate(&project.into_inner(), Some(&service.into_inner()))
         .await?;
     return Ok(().into());
 }

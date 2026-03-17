@@ -27,6 +27,7 @@
 	import LoaderButton from "./LoaderButton.svelte";
 
 	let {
+		"aria-label": ariaLabel,
 		onclick,
 		children,
 		disabled,
@@ -36,6 +37,7 @@
 		style?: ComponentProps<typeof LoaderButton>["style"];
 		children: Snippet<[boolean]> | string;
 		onclick: () => Promise<any>;
+		"aria-label"?: string;
 		disabled?: boolean;
 		loading?: boolean;
 	} = $props();
@@ -52,4 +54,4 @@
 	}
 </script>
 
-<LoaderButton onclick={handleClick} {disabled} {style} {children} loading={waiting || loading} />
+<LoaderButton onclick={handleClick} {disabled} {style} {children} loading={waiting || loading} aria-label={ariaLabel} />

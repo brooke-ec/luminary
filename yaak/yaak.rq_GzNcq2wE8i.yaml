@@ -9,10 +9,10 @@ authentication: {}
 authenticationType: null
 body: {}
 bodyType: null
-description: ''
+description: ""
 headers: []
 method: POST
-name: Redeploy
+name: Recreate
 sortPriority: 1000.003
-url: ${[ BASE_URL ]}/project/${[ PROJECT_NAME ]}/service/${[ SERVICE_NAME ]}/redeploy
+url: ${[ BASE_URL ]}/project/${[ PROJECT_NAME ]}/service/${[ SERVICE_NAME ]}/recreate
 urlParameters: []

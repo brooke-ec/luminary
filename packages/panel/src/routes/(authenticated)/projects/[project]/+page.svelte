@@ -6,6 +6,7 @@
 	import StatusTab from "./ProjectStatus.svelte";
 	import { getProjects } from "$lib/api";
 	import { page } from "$app/state";
+	import { isMobile } from "$lib";
 	import Fa from "svelte-fa";
 
 	let project = $derived(getProjects()[page.params.project!]);
@@ -36,8 +37,10 @@
 
 {#snippet status()}
 	<StatusTab {project} />
-	<h2>Logs</h2>
-	<LogTerminal project={project.name} />
+	{#if !isMobile()}
+		<h2>Logs</h2>
+		<LogTerminal project={project.name} />
+	{/if}
 {/snippet}
 
 {#snippet compose()}

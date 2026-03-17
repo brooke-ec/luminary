@@ -8,6 +8,7 @@
 	import type { Snippet } from "svelte";
 
 	let {
+		"aria-label": ariaLabel,
 		style = "button",
 		loading = false,
 		children,
@@ -17,12 +18,13 @@
 		style?: "button" | "a" | "outline";
 		children: Snippet<[boolean]> | string;
 		onclick?: () => Promise<void>;
+		"aria-label"?: string;
 		disabled?: boolean;
 		loading?: boolean;
 	} = $props();
 </script>
 
-<button class="full {style}" disabled={loading || disabled} {onclick}>
+<button class="full {style}" disabled={loading || disabled} {onclick} aria-label={ariaLabel}>
 	{#if loading}
 		<span class="loader"></span>
 	{/if}

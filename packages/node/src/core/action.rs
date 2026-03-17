@@ -87,8 +87,8 @@ impl LuminaryEngine {
         Ok(())
     }
 
-    #[wrap_err("Failed to redeploy project/service")]
-    pub async fn redeploy(&self, project: &str, service: Option<&str>) -> Result<()> {
+    #[wrap_err("Failed to recreate project/service")]
+    pub async fn recreate(&self, project: &str, service: Option<&str>) -> Result<()> {
         self.stop(project, service).await?;
         self.start(project, service).await?;
         Ok(())
@@ -99,7 +99,7 @@ impl LuminaryEngine {
     pub async fn pull(&self, project: &str, service: Option<&str>) -> Result<()> {
         self.run(LuminaryAction::Pulling, project, service, vec!["pull"])
             .await?;
-        self.redeploy(project, service).await?;
+        self.recreate(project, service).await?;
         Ok(())
     }
 
@@ -114,7 +114,7 @@ impl LuminaryEngine {
         )
         .await?;
 
-        self.redeploy(project, service).await?;
+        self.recreate(project, service).await?;
         Ok(())
     }
 }

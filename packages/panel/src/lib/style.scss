@@ -87,8 +87,14 @@ a.button {
 
 	&.outline {
 		background-color: transparent;
-		border: 1px solid var(--subtext0);
 		color: inherit;
+
+		transition: border-color 250ms;
+		border: 1px solid var(--subtext0);
+
+		&:hover {
+			border-color: var(--mauve);
+		}
 	}
 }
 

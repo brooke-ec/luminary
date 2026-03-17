@@ -8,39 +8,35 @@
 -->
 
 <script lang="ts">
+	import { faChevronDown, faChevronUp } from "@fortawesome/free-solid-svg-icons";
 	import type { IconDefinition } from "@fortawesome/fontawesome-common-types";
-	import { Accordion } from "melt/builders";
+	import { isMobile } from "../../routes/+layout.svelte";
 	import { fade, slide } from "svelte/transition";
+	import { Accordion } from "melt/builders";
 	import type { Snippet } from "svelte";
 	import Fa from "svelte-fa";
-	import { faChevronDown, faChevronUp } from "@fortawesome/free-solid-svg-icons";
 
 	let { tabs }: { tabs: { label: string; icon: IconDefinition; content: Snippet<[]> }[] } = $props();
 
 	const accordion = new Accordion();
 
-	let windowWidth = $state(0);
-	let mobile = $derived(windowWidth <= 425);
-
 	$effect(() => {
-		if (accordion.value === undefined && !mobile) {
+		if (accordion.value === undefined && !isMobile()) {
 			accordion.value = tabs[0].label;
 		}
 	});
 </script>
 
-<svelte:window bind:innerWidth={windowWidth} />
-
 <div {...accordion.root}>
 	<div
-		class:container={!mobile}
-		class:flexc={mobile}
+		class:container={!isMobile()}
+		class:flexc={isMobile()}
 		class="flexr gap-10"
-		style:width={mobile ? "100%" : "fit-content"}
+		style:width={isMobile() ? "100%" : "fit-content"}
 	>
 		{#each tabs as tab (tab.label)}
 			{@const item = accordion.getItem({ id: tab.label })}
-			<div class:container={mobile}>
+			<div class:container={isMobile()}>
 				<button
 					class="a switch"
 					{...item.trigger}
@@ -50,11 +46,11 @@
 					<Fa icon={tab.icon} translateY="0.1" />
 					<span {...item.heading}>{tab.label}</span>
 
-					{#if mobile}
+					{#if isMobile()}
 						<Fa icon={item.isExpanded ? faChevronUp : faChevronDown} style="margin-left: auto;" />
 					{/if}
 				</button>
-				{#if mobile}
+				{#if isMobile()}
 					{#if item.isExpanded}
 						<div style="overflow: hidden;" transition:slide={{ duration: 250 }}>
 							<hr style="margin-top: 15px;" />
@@ -68,7 +64,7 @@
 		{/each}
 	</div>
 
-	{#if !mobile}
+	{#if !isMobile()}
 		<div class="container">
 			{#each tabs as tab (tab.label)}
 				{@const item = accordion.getItem({ id: tab.label })}
