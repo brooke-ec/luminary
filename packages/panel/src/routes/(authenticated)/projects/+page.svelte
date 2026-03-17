@@ -16,7 +16,9 @@
 	let groups = $derived(
 		Object.entries(
 			Object.groupBy(
-				Object.values(getList()).filter((p) => p.name.includes(debounced.current)),
+				Object.values(getList())
+					.filter((p) => p.name.includes(debounced.current))
+					.toSorted((a, b) => a.name.localeCompare(b.name)),
 				(project) => project.status,
 			),
 		).toSorted(([a], [b]) => ORDER.indexOf(a as LuminaryStatus) - ORDER.indexOf(b as LuminaryStatus)),
@@ -85,8 +87,13 @@
 	.grid {
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(300px, calc(100% / 3 - 20px)));
-		width: 100%;
 		gap: 10px;
+
+		width: 100%;
+
+		@media (max-width: 425px) {
+			grid-template-columns: repeat(auto-fit, 100%);
+		}
 	}
 
 	.project {
