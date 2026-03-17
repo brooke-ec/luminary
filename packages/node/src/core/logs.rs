@@ -10,7 +10,7 @@ use futures_util::{StreamExt, stream::BoxStream};
 use log::{debug, error};
 use tokio::sync::{RwLock, broadcast};
 
-const EMPTY_LOGS_MESSAGE: &[u8] = b"No logs to show. Waiting for project to start...";
+const EMPTY_LOGS_MESSAGE: &[u8] = b"No logs to show. Waiting for project to start...\n\r";
 
 impl LuminaryEngine {
     /// Creates a stream of [Bytes] for clients to subscribe to.
