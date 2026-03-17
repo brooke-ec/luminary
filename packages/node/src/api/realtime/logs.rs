@@ -4,7 +4,8 @@
 
 use std::convert::Infallible;
 
-use base64::prelude::*;
+use base64::Engine;
+use base64::engine::general_purpose::STANDARD;
 use eyre::Context;
 use futures_util::StreamExt;
 use salvo::{
@@ -46,6 +47,6 @@ pub async fn logs_subscribe(project: PathParam<String>, res: &mut Response, depo
 
 /// Creates a Server-Sent Event from a chunk of log bytes.
 fn create_event(bytes: &[u8]) -> Result<SseEvent, Infallible> {
-    let encoded = BASE64_STANDARD.encode(bytes);
+    let encoded = STANDARD.encode(bytes);
     return Ok(SseEvent::default().text(encoded));
 }

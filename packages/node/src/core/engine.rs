@@ -82,6 +82,7 @@ impl LuminaryEngine {
         let mut child = Command::new("docker")
             .current_dir(path)
             .arg("compose")
+            .args(["--ansi", "always"])
             .args(args)
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())

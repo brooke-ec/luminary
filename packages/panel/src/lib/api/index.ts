@@ -4,7 +4,7 @@ import createClient from "openapi-fetch";
 import { goto } from "$app/navigation";
 import { error } from "$lib";
 
-export * from "./state.svelte";
+export * from "./realtime.svelte";
 
 const TOKEN_KEY = "luminary-token";
 

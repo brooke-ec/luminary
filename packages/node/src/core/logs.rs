@@ -68,6 +68,9 @@ impl LuminaryEngine {
                             match result.wrap_err("Error streaming logs for project") {
                                 Err(err) => error!("{}", eyre_fmt!(err)),
                                 Ok(bytes) => {
+                                    let bytes = normalise_line_endings(&bytes);
+
+                                    // Update buffer with logs and send to subscribers
                                     buffer.write().await.extend_from_slice(&bytes);
                                     if channel.send(bytes).is_err() {
                                         // There are no subscribers, so clean up and stop the worker
@@ -101,4 +104,21 @@ impl LuminaryEngine {
 
         return entry;
     }
+}
+
+/// Normalises line endings in the given bytes to be CRLF.
+fn normalise_line_endings(bytes: &[u8]) -> Bytes {
+    let mut out = BytesMut::with_capacity(bytes.len());
+
+    let mut prev = 0u8;
+    for &b in bytes.iter() {
+        if b == b'\n' && prev != b'\r' {
+            out.extend_from_slice(b"\r\n");
+        } else {
+            out.extend_from_slice(&[b]);
+        }
+        prev = b;
+    }
+
+    return out.freeze();
 }

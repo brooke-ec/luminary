@@ -2,10 +2,11 @@
 	import { faCircleInfo, faGears, faLayerGroup, faPencil } from "@fortawesome/free-solid-svg-icons";
 	import StatusIcon from "$lib/component/StatusIcon.svelte";
 	import Tabs from "$lib/component/Tabs.svelte";
-	import StatusTab from "./StatusTab.svelte";
+	import StatusTab from "./ProjectStatus.svelte";
 	import { getList } from "$lib/api";
 	import { page } from "$app/state";
 	import Fa from "svelte-fa";
+	import LogTerminal from "$lib/component/LogTerminal.svelte";
 
 	let project = $derived(getList()[page.params.project!]);
 	let { data } = $props();
@@ -35,6 +36,8 @@
 
 {#snippet status()}
 	<StatusTab {project} />
+	<h2>Logs</h2>
+	<LogTerminal project={project.name} />
 {/snippet}
 
 {#snippet compose()}
@@ -44,3 +47,15 @@
 {#snippet variables()}
 	<h2>Variables Tab</h2>
 {/snippet}
+
+<style lang="scss">
+	// Modify h2 of all child components
+	* :global(h2) {
+		margin-bottom: 5px;
+		font-size: 16px;
+
+		&:not(:first-child) {
+			margin-top: 15px;
+		}
+	}
+</style>

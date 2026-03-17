@@ -56,7 +56,7 @@
 		>
 			<div class="flexr center gap-10">
 				<Fa icon={faStop} />
-				Stop
+				Stop All
 			</div>
 		</PromiseButton>
 	</div>
@@ -148,15 +148,6 @@
 </div>
 
 <style lang="scss">
-	h2 {
-		margin-bottom: 5px;
-		font-size: 16px;
-
-		&:not(:first-child) {
-			margin-top: 15px;
-		}
-	}
-
 	h3 {
 		font-size: 14px;
 	}
