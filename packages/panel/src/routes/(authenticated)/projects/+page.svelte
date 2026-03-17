@@ -42,7 +42,7 @@
 		{#if item.isExpanded}
 			<div class="grid" {...item.content}>
 				{#each projects as project (project.name)}
-					<a href="/project/{project.name}" class="project">
+					<a href="/projects/{project.name}" class="project">
 						<h2>
 							<StatusIcon status={project.status} />
 							{project.name}
@@ -83,7 +83,6 @@
 		text-decoration: none !important;
 
 		hr {
-			border-color: var(--subtext0);
 			flex-grow: 1;
 		}
 	}

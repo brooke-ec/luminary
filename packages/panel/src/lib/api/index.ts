@@ -100,7 +100,7 @@ const middleware: Middleware = {
 /**
  * The client used to make API requests to the backend.
  */
-export const client = createClient<CaughtPaths>({ baseUrl: "./" });
+export const client = createClient<CaughtPaths>({ baseUrl: "/" });
 client.use(middleware);
 
 /**

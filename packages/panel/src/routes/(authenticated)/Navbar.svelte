@@ -28,7 +28,7 @@
 		{ icon: faCircleUser, label: "User", href: "/user" },
 	] satisfies { icon: any; label: string; href: string }[];
 
-	let expanded = $state(localStorage.getItem(EXPANDED_KEY) === "true");
+	let expanded = $state(localStorage.getItem(EXPANDED_KEY) !== "false");
 	let open = $state(false);
 
 	let navbarWidth = $state(0);
@@ -188,10 +188,6 @@
 		&:hover,
 		&.current {
 			color: var(--mauve);
-		}
-
-		&.current {
-			pointer-events: none;
 		}
 	}
 
