@@ -227,7 +227,7 @@
 		align-items: center;
 
 		width: 48px;
-		font-size: 30px;
+		font-size: 23px;
 
 		flex-basis: 48px;
 	}
