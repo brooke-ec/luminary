@@ -10,6 +10,8 @@ use futures_util::{StreamExt, stream::BoxStream};
 use log::{debug, error};
 use tokio::sync::{RwLock, broadcast};
 
+const EMPTY_LOGS_MESSAGE: &[u8] = b"No logs to show. Waiting for project to start...";
+
 impl LuminaryEngine {
     /// Creates a stream of [Bytes] for clients to subscribe to.
     pub async fn logs_subscribe<'a>(&'_ self, project: String) -> BoxStream<'a, Bytes> {
@@ -27,11 +29,9 @@ impl LuminaryEngine {
             {
                 // Send previous logs in buffer to bring client up to date
                 let bytes = &buffer.read().await;
-                if bytes.is_empty() {
-                    yield b"Nothing yet...".as_slice().into();
-                } else {
+                if !bytes.is_empty() {
                     yield <BytesMut as Clone>::clone(&bytes).freeze()
-                }
+                } 
             }
 
             let mut receiver = channel.subscribe();
@@ -90,6 +90,15 @@ impl LuminaryEngine {
 
                 // If the process exits, wait for an event from the project before triggering a retry
                 debug!("Docker compose logs process exited, waiting for event to trigger retry...");
+                
+                // Send a message to clients if there are no logs to show
+                {
+                    let mut buffer = buffer.write().await;
+                    if buffer.is_empty() {
+                        buffer.extend_from_slice(EMPTY_LOGS_MESSAGE);
+                        let _ = channel.send(Bytes::from(EMPTY_LOGS_MESSAGE));
+                    }
+                }
 
                 loop {
                     match this
