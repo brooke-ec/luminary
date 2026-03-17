@@ -27,7 +27,7 @@
 		<span class="loader"></span>
 	{/if}
 
-	<div>
+	<div class="content">
 		{#if typeof children === "string"}
 			{children}
 		{:else}
@@ -62,5 +62,9 @@
 		100% {
 			transform: rotate(360deg);
 		}
+	}
+
+	.content:empty {
+		display: none;
 	}
 </style>

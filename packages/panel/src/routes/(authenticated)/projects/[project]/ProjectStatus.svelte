@@ -26,10 +26,12 @@
 			onclick={() =>
 				api.client.POST("/api/project/{project}/start", { params: { path: { project: project.name } } })}
 		>
-			<div class="flexr center gap-10">
-				<Fa icon={faPlay} />
-				Start All
-			</div>
+			{#snippet children(loading)}
+				<div class="flexr center gap-10">
+					{#if !loading}<Fa icon={faPlay} />{/if}
+					Start All
+				</div>
+			{/snippet}
 		</PromiseButton>
 	</div>
 	<div>
@@ -40,10 +42,12 @@
 			onclick={() =>
 				api.client.POST("/api/project/{project}/restart", { params: { path: { project: project.name } } })}
 		>
-			<div class="flexr center gap-10">
-				<Fa icon={faArrowsRotate} />
-				Restart All
-			</div>
+			{#snippet children(loading)}
+				<div class="flexr center gap-10">
+					{#if !loading}<Fa icon={faArrowsRotate} />{/if}
+					Restart All
+				</div>
+			{/snippet}
 		</PromiseButton>
 	</div>
 	<div>
@@ -54,10 +58,12 @@
 			onclick={() =>
 				api.client.POST("/api/project/{project}/stop", { params: { path: { project: project.name } } })}
 		>
-			<div class="flexr center gap-10">
-				<Fa icon={faStop} />
-				Stop All
-			</div>
+			{#snippet children(loading)}
+				<div class="flexr center gap-10">
+					{#if !loading}<Fa icon={faStop} />{/if}
+					Stop All
+				</div>
+			{/snippet}
 		</PromiseButton>
 	</div>
 	<div>
@@ -67,10 +73,12 @@
 			onclick={() =>
 				api.client.POST("/api/project/{project}/redeploy", { params: { path: { project: project.name } } })}
 		>
-			<div class="flexr center gap-10">
-				<Fa icon={faRocket} />
-				Redeploy All
-			</div>
+			{#snippet children(loading)}
+				<div class="flexr center gap-10">
+					{#if !loading}<Fa icon={faRocket} />{/if}
+					Redeploy All
+				</div>
+			{/snippet}
 		</PromiseButton>
 	</div>
 </div>
@@ -98,9 +106,9 @@
 							params: { path: { project: project.name, service: service.serviceName } },
 						})}
 				>
-					<div class="flexr center gap-10">
-						<Fa icon={faPlay} />
-					</div>
+					{#snippet children(loading)}
+						{#if !loading}<Fa icon={faPlay} />{/if}
+					{/snippet}
 				</PromiseButton>
 				<PromiseButton
 					style="a"
@@ -111,9 +119,9 @@
 							params: { path: { project: project.name, service: service.serviceName } },
 						})}
 				>
-					<div class="flexr center gap-10">
-						<Fa icon={faArrowsRotate} />
-					</div>
+					{#snippet children(loading)}
+						{#if !loading}<Fa icon={faArrowsRotate} />{/if}
+					{/snippet}
 				</PromiseButton>
 
 				<PromiseButton
@@ -125,9 +133,9 @@
 							params: { path: { project: project.name, service: service.serviceName } },
 						})}
 				>
-					<div class="flexr center gap-10">
-						<Fa icon={faStop} />
-					</div>
+					{#snippet children(loading)}
+						{#if !loading}<Fa icon={faStop} />{/if}
+					{/snippet}
 				</PromiseButton>
 
 				<PromiseButton
@@ -138,9 +146,9 @@
 							params: { path: { project: project.name, service: service.serviceName } },
 						})}
 				>
-					<div class="flexr center gap-10">
-						<Fa icon={faRocket} />
-					</div>
+					{#snippet children(loading)}
+						{#if !loading}<Fa icon={faRocket} />{/if}
+					{/snippet}
 				</PromiseButton>
 			</div>
 		</div>
