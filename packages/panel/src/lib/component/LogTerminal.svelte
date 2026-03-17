@@ -3,17 +3,38 @@
 	import { WebLinksAddon } from "@xterm/addon-web-links";
 	import type { Attachment } from "svelte/attachments";
 	import { FitAddon } from "@xterm/addon-fit";
-	import { Terminal } from "@xterm/xterm";
+	import { Terminal, type ITheme } from "@xterm/xterm";
 	import "@xterm/xterm/css/xterm.css";
 	import { client } from "$lib/api";
 	import { Backoff } from "$lib";
 
 	let { project }: { project: string } = $props();
-
 	let loading = $state(true);
 
+	function getComputedCSSVar(name: string) {
+		return getComputedStyle(document.documentElement).getPropertyValue(`--${name}`).trim();
+	}
+
+	const theme = Object.fromEntries(
+		Object.entries({
+			cursor: "rosewater",
+			selectionForeground: "base",
+			selectionBackground: "lavender",
+			background: "crust",
+			foreground: "text",
+			black: "crust",
+			red: "red",
+			green: "green",
+			yellow: "yellow",
+			blue: "blue",
+			magenta: "pink",
+			cyan: "teal",
+			white: "text",
+		} satisfies ITheme).map(([key, varName]) => [key, getComputedCSSVar(varName)]),
+	);
+
 	const terminal: Attachment<HTMLElement> = (el) => {
-		const terminal = new Terminal();
+		const terminal = new Terminal({ fontFamily: "DejaVu Mono", theme });
 		const fitAddon = new FitAddon();
 
 		terminal.loadAddon(new WebLinksAddon());
@@ -76,6 +97,10 @@
 <style lang="scss">
 	.container {
 		position: relative;
+
+		background-color: var(--crust);
+		border-radius: 10px;
+		padding: 10px;
 	}
 
 	.positioner {
