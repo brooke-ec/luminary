@@ -10,6 +10,8 @@
 
 	let { project }: { project: string } = $props();
 
+	let loading = $state(true);
+
 	const terminal: Attachment<HTMLElement> = (el) => {
 		const terminal = new Terminal();
 		const fitAddon = new FitAddon();
@@ -37,6 +39,8 @@
 
 		while (true) {
 			try {
+				loading = true;
+
 				const { response } = await client.GET("/api/project/{project}/logs", {
 					params: { path: { project } },
 					parseAs: "stream",
@@ -49,6 +53,7 @@
 					response,
 				) as unknown as AsyncIterable<ServerSentEvent>) {
 					if (signal.aborted) return;
+					loading = false;
 
 					terminal.write(Uint8Array.from(atob(event.data), (c) => c.charCodeAt(0)));
 				}
@@ -60,4 +65,47 @@
 	}
 </script>
 
-<div {@attach terminal}></div>
+<div class="container">
+	{#if loading}
+		<div class="positioner"><span class="loader"></span></div>
+	{/if}
+
+	<div {@attach terminal}></div>
+</div>
+
+<style lang="scss">
+	.container {
+		position: relative;
+	}
+
+	.positioner {
+		position: absolute;
+		inset: 0;
+
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.loader {
+		z-index: 10;
+
+		width: 48px;
+		height: 48px;
+		border: 5px solid var(--text);
+		border-bottom-color: transparent;
+		border-radius: 50%;
+		display: inline-block;
+		box-sizing: border-box;
+		animation: rotation 1s linear infinite;
+	}
+
+	@keyframes rotation {
+		0% {
+			transform: rotate(0deg);
+		}
+		100% {
+			transform: rotate(360deg);
+		}
+	}
+</style>

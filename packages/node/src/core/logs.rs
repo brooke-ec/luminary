@@ -27,8 +27,10 @@ impl LuminaryEngine {
             {
                 // Send previous logs in buffer to bring client up to date
                 let bytes = &buffer.read().await;
-                if !bytes.is_empty() {
-                    yield <BytesMut as Clone>::clone(&bytes).freeze();
+                if bytes.is_empty() {
+                    yield b"Nothing yet...".as_slice().into();
+                } else {
+                    yield <BytesMut as Clone>::clone(&bytes).freeze()
                 }
             }
 
