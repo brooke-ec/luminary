@@ -1,10 +1,11 @@
 <script lang="ts">
-	import { faCircleInfo, faLayerGroup, faPencil } from "@fortawesome/free-solid-svg-icons";
+	import { faCircleInfo, faClockRotateLeft, faLayerGroup, faPencil } from "@fortawesome/free-solid-svg-icons";
 	import ComposeEditor from "$lib/component/ComposeEditor.svelte";
+	import { faSave } from "@fortawesome/free-regular-svg-icons";
 	import LogTerminal from "$lib/component/LogTerminal.svelte";
 	import StatusIcon from "$lib/component/StatusIcon.svelte";
-	import Tabs from "$lib/component/Tabs.svelte";
 	import StatusTab from "./ProjectStatus.svelte";
+	import Tabs from "$lib/component/Tabs.svelte";
 	import { getProjects } from "$lib/api";
 	import { page } from "$app/state";
 	import { isMobile } from "$lib";
@@ -12,6 +13,18 @@
 
 	let project = $derived(getProjects()[page.params.project!]);
 	let { data } = $props();
+
+	// svelte-ignore state_referenced_locally
+	let copy = $state({
+		name: project.name,
+		compose: data.compose,
+	});
+
+	// Watch for changes to set unsaved state
+	let unsaved = $state(false);
+	$effect(() => {
+		unsaved = copy.name !== project.name || copy.compose !== data.compose;
+	});
 </script>
 
 <div class="flexc gap-10">
@@ -46,12 +59,24 @@
 {#snippet compose()}
 	<div>
 		<label for="name">Name</label>
-		<input required id="name" type="text" value={project.name} />
+		<input required id="name" type="text" bind:value={copy.name} />
 	</div>
 
 	<h2>Compose</h2>
-	<ComposeEditor bind:content={data.compose} />
+	<ComposeEditor bind:content={copy.compose} />
 {/snippet}
+
+{#if unsaved}
+	<div style="color: var(--peach); margin-bottom: 10px;">* Unsaved changes</div>
+	<div class="flexr gap-10">
+		<button class="flexr gap-5 center">
+			<Fa icon={faSave} /> Save
+		</button>
+		<button class="flexr gap-5 center">
+			<Fa icon={faClockRotateLeft} /> Revert
+		</button>
+	</div>
+{/if}
 
 <style lang="scss">
 	// Modify h2 of all child components
