@@ -2,6 +2,7 @@
 	import { catppuccinMacchiato } from "@catppuccin/codemirror";
 	import type { Attachment } from "svelte/attachments";
 
+	import { indentationMarkers } from "@replit/codemirror-indentation-markers";
 	import { yamlSchema } from "codemirror-json-schema/yaml";
 	import * as autocomplete from "@codemirror/autocomplete";
 	import * as language from "@codemirror/language";
@@ -20,6 +21,7 @@
 	const editor: Attachment<HTMLElement> = (parent) => {
 		const editor = new view.EditorView({
 			extensions: [
+				indentationMarkers(),
 				catppuccinMacchiato,
 				yamlSchema(schema),
 				yaml(),
