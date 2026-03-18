@@ -8,15 +8,15 @@ use salvo::{
     Depot,
     oapi::{endpoint, extract::PathParam},
 };
-use serde::Deserialize;
 use serde::Serialize;
 
 use crate::core::LuminaryProject;
+use crate::core::LuminaryProjectPatch;
 use crate::{api::response::LuminaryResponse, core::LuminaryEngine, obtain};
 
 /// Returns the router for compose related endpoints.
 pub fn router() -> Router {
-    return Router::new().get(get_project_endpoint).patch(put_compose);
+    return Router::new().get(get_project_endpoint).patch(patch_compose);
 }
 
 /// Retrieves the compose file for a given project.
@@ -50,37 +50,14 @@ struct LuminaryProjectWithCompose {
 
 /// Perform a configurable change to a project.
 #[endpoint]
-pub async fn put_compose(
+pub async fn patch_compose(
     project: PathParam<String>,
-    payload: JsonBody<LuminaryProjectPatch>,
+    mut payload: JsonBody<LuminaryProjectPatch>,
     depot: &mut Depot,
 ) -> LuminaryResponse<LuminaryProjectWithCompose> {
     let engine = obtain!(depot, LuminaryEngine);
-    let mut changed = false;
 
-    if let Some(compose) = &payload.compose {
-        engine.put_compose(&project, &compose).await?;
-        changed = true;
-    }
-
-    if let Some(from) = &payload.from {
-        engine.rename_project(from, &project).await?;
-        changed = true;
-    }
-
-    if changed {
-        engine.refresh().await?;
-    }
-
-    return get_project(engine, &project).await;
-}
-
-/// The payload for updating a project. Allows for multiple updates at once.
-#[derive(Debug, Clone, Deserialize, ToSchema)]
-struct LuminaryProjectPatch {
-    /// If [Some], the new compose file for this project. If [None], the compose file will not be updated.
-    compose: Option<String>,
-
-    /// If [Some], renames the project with the given name. If [None], no rename will take place.
-    from: Option<String>,
+    engine.wait_until_idle(&project, None).await?;
+    engine.patch_project(&project, &payload.0).await?;
+    return get_project(engine, &payload.to.take().unwrap_or(project.0)).await;
 }

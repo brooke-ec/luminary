@@ -17,9 +17,9 @@
 	let { data } = $props();
 
 	// svelte-ignore state_referenced_locally
-	let copied = $state({
-		name: project.name,
-		compose: data.compose,
+	let copy = $state({
+		compose: data.compose ?? "",
+		name: project?.name ?? "",
 	});
 
 	// Watch for changes to set unsaved state
@@ -27,32 +27,34 @@
 	$effect(() => {
 		if (!project) return;
 
-		unsaved = copied.name !== project.name || copied.compose !== data.compose;
+		unsaved = copy.name !== project.name || copy.compose !== data.compose;
 	});
 
 	function revert() {
-		copied.compose = data.compose;
-		copied.name = project.name;
+		copy.compose = data.compose ?? "";
+		copy.name = project.name;
 	}
 
 	async function save() {
-		const rename = copied.name !== project.name;
+		const rename = copy.name !== project.name;
 
-		await api.client.PATCH(`/api/project/{project}`, {
-			params: { path: { project: rename ? copied.name : project.name } },
+		const response = await api.client.PATCH(`/api/project/{project}`, {
+			params: { path: { project: project.name } },
 			body: {
-				compose: copied.compose === data.compose ? null : copied.compose,
-				from: rename ? project.name : null,
+				compose: copy.compose === data.compose ? null : copy.compose,
+				to: rename ? copy.name : null,
 			},
 		});
 
+		api.putProject(response.data!);
+
 		if (rename) {
-			await goto(`/projects/${copied.name}${location.hash}`);
+			await goto(`/projects/${copy.name}${location.hash}`);
 			return;
 		}
 
 		unsaved = false;
-		data.compose = copied.compose;
+		data.compose = copy.compose;
 	}
 
 	onMount(() => {
@@ -85,7 +87,7 @@
 			</div>
 		</h1>
 
-		<EditTabs bind:data={copied} tabs={[{ label: "status", icon: faCircleInfo, content: status }]} />
+		<EditTabs bind:data={copy} tabs={[{ label: "status", icon: faCircleInfo, content: status }]} />
 	</div>
 
 	{#snippet status()}

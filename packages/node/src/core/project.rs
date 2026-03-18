@@ -1,11 +1,11 @@
-use std::path::{self, Path, PathBuf};
+use std::path::{Path, PathBuf};
 
 use eyre::{Context, Ok, Result};
 use futures_util::StreamExt;
 use luminary_macros::wrap_err;
 use tokio::fs::{self, read_to_string};
 
-use crate::core::{COMPOSE_FILENAME, LuminaryEngine, LuminaryStatus};
+use crate::core::{COMPOSE_FILENAME, LuminaryAction, LuminaryEngine, LuminaryProjectPatch, LuminaryStatus};
 
 impl LuminaryEngine {
     /// Retrieves the paths for the given project directory and its compose file.
@@ -30,12 +30,36 @@ impl LuminaryEngine {
         return Ok(read_to_string(path).await.wrap_err("Failed to read file")?);
     }
 
+    /// Updates the given project by applying the provided patch
+    pub async fn patch_project(&self, project: &str, patch: &LuminaryProjectPatch) -> Result<()> {
+        self.set_action(project, None, LuminaryAction::Patching).await?;
+
+        let (project_path, compose_path) = self.get_path(project);
+        let mut changed = false;
+
+        if let Some(compose) = &patch.compose {
+            self.put_compose(&project_path, &compose_path, &compose).await?;
+            changed = true;
+        }
+
+        if let Some(to) = &patch.to {
+            self.rename_project(&project, &project_path, to).await?;
+            changed = true;
+        }
+
+        self.set_action(project, None, LuminaryAction::Idle).await?;
+
+        if changed {
+            self.refresh().await?;
+        }
+
+        return Ok(());
+    }
+
     /// Updates the docker compose file for a given project.
     /// WARNING: Does not automatically call `refresh`, make sure to do this after calling this function.
     #[wrap_err("Failed to update compose file")]
-    pub async fn put_compose(&self, project: &str, compose: &str) -> Result<()> {
-        let (project_path, compose_path) = self.get_path(project);
-
+    async fn put_compose(&self, project_path: &PathBuf, compose_path: &PathBuf, compose: &str) -> Result<()> {
         // Create project directory if it doesn't exist
         fs::create_dir_all(&project_path)
             .await
@@ -52,11 +76,10 @@ impl LuminaryEngine {
     /// Renames the project dirctory for a given project. Recreating the project if it was previously running.
     /// WARNING: Does not automatically call `refresh`, make sure to do this after calling this function.
     #[wrap_err("Failed to rename project")]
-    pub async fn rename_project(&self, from: &str, to: &str) -> Result<()> {
-        let src_path = path::absolute(self.get_path(from).0).wrap_err("Failed to get absolute path")?;
-        let to_path = src_path.parent().unwrap().join(to);
+    async fn rename_project(&self, from: &str, from_path: &PathBuf, to: &str) -> Result<()> {
+        let to_path = from_path.parent().unwrap().join(to);
 
-        if !src_path.exists() {
+        if !from_path.exists() {
             eyre::bail!("Project '{}' does not exist", from);
         }
 
@@ -74,15 +97,16 @@ impl LuminaryEngine {
             .any(|(_, s)| s.status != LuminaryStatus::Down);
 
         if recreate {
-            self.stop(&from, None).await?;
+            // Use manual command as action is currently "patching"
+            let mut stream = self.cli(&from, vec!["down", "--remove-orphans"])?;
+            while let Some(_) = stream.next().await {}
         };
 
-        fs::rename(&src_path, &to_path)
+        fs::rename(&from_path, &to_path)
             .await
             .wrap_err("Failed to rename project directory")?;
 
         if recreate {
-            // Use manual command as the project wont be in the program state at this point
             let mut stream = self.cli(&to, vec!["up", "-d"])?;
             while let Some(_) = stream.next().await {}
         }

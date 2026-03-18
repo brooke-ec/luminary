@@ -5,7 +5,7 @@ use std::{fmt::Display, sync::Arc};
 use bytes::{Bytes, BytesMut};
 use luminary_macros::hashmap_schema;
 use salvo::oapi::{BasicType, Components, Object, RefOr, Schema, ToSchema};
-use serde::{Serialize, ser::SerializeStruct};
+use serde::{Deserialize, Serialize, ser::SerializeStruct};
 use tokio::sync::{RwLock, broadcast};
 
 use crate::schema_ref_or;
@@ -169,6 +169,7 @@ pub enum LuminaryAction {
     Starting,
     Pulling,
     Building,
+    Patching,
 }
 
 /// Stores the log channel and buffer for a project.
@@ -178,4 +179,14 @@ pub struct ProjectLogChannel {
     pub channel: broadcast::Sender<Bytes>,
     // Using an Arc here to allow the worker to keep a reference to the log buffer
     pub buffer: Arc<RwLock<BytesMut>>,
+}
+
+/// The configuration for updating a project. Allows for multiple updates at once.
+#[derive(Debug, Clone, Deserialize, ToSchema)]
+pub struct LuminaryProjectPatch {
+    /// If [Some], the new compose file for this project. If [None], the compose file will not be updated.
+    pub compose: Option<String>,
+
+    /// If [Some], renames the current to the given name. If [None], no rename will take place.
+    pub to: Option<String>,
 }

@@ -7,7 +7,12 @@ use crate::core::{LuminaryAction, LuminaryEngine};
 impl LuminaryEngine {
     /// Updates the currently processing action for the given project and optionally, a specific service within that project.
     #[wrap_err("Failed to set action for service")]
-    async fn set_action(&self, project: &str, service: Option<&str>, action: LuminaryAction) -> Result<()> {
+    pub(super) async fn set_action(
+        &self,
+        project: &str,
+        service: Option<&str>,
+        action: LuminaryAction,
+    ) -> Result<()> {
         // Get list of targets to update
         let mut project_list = self.list.write().await;
         let targets = match project_list.0.get_mut(project) {

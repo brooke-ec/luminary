@@ -10,7 +10,7 @@ use bollard::{
     secret::ContainerSummaryStateEnum,
 };
 use docker_compose_types::Compose;
-use eyre::{ContextCompat, Result, WrapErr};
+use eyre::{ContextCompat, Result, WrapErr, bail};
 use futures_util::{StreamExt, stream::BoxStream};
 use log::{debug, error, warn};
 use luminary_macros::wrap_err;
@@ -279,7 +279,7 @@ impl LuminaryEngine {
     }
 
     /// Waits until a given project or service reaches the desired status by listening to Docker events.
-    pub(super) async fn wait_until(
+    pub(super) async fn wait_until_status(
         &self,
         project: &String,
         service: Option<&String>,
@@ -311,6 +311,33 @@ impl LuminaryEngine {
 
             warn!("Docker event stream ended, restarting...");
             tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+        }
+    }
+
+    /// Waits until a given project or service is no longer processing any actions.
+    pub async fn wait_until_idle(&self, project: &String, service: Option<&String>) -> Result<()> {
+        let mut stream = self.state_subscribe().await;
+
+        loop {
+            if let Some(list) = stream.next().await {
+                if let Some(busy) = list.0.get(project).and_then(|p| {
+                    if service.is_none() {
+                        return Some(p.busy());
+                    } else {
+                        return p
+                            .services
+                            .0
+                            .get(service?)
+                            .map(|s| s.action != LuminaryAction::Idle);
+                    }
+                }) {
+                    if !busy {
+                        return Ok(());
+                    }
+                } else {
+                    bail!("Project or service does not exist");
+                }
+            }
         }
     }
 }

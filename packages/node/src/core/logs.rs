@@ -102,7 +102,7 @@ impl LuminaryEngine {
 
                 loop {
                     match this
-                        .wait_until(&project, None, LuminaryStatus::Running)
+                        .wait_until_status(&project, None, LuminaryStatus::Running)
                         .await
                         .wrap_err("Error while waiting for project to restart")
                     {
