@@ -4,8 +4,6 @@ import type { PageLoad } from "./$types";
 import { error } from "@sveltejs/kit";
 import { api } from "$lib";
 
-export const prerender = false;
-
 type LuminaryProjectWithCompose = components["schemas"]["luminary_node.api.project.LuminaryProjectWithCompose"];
 
 export const load: PageLoad = async ({ params }) => {
