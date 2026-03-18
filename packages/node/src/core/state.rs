@@ -18,21 +18,18 @@ use tokio::fs::{self, File};
 
 use crate::{
     core::{
-        COMPOSE_FILENAME, LuminaryAction, LuminaryEngine, LuminaryIdentifier, LuminaryServiceList,
-        model::{LuminaryProject, LuminaryService, LuminaryStateList, LuminaryStatus},
+        COMPOSE_FILENAME, COMPOSE_PROJECT_DIR_LABEL, COMPOSE_PROJECT_LABEL, COMPOSE_SERVICE_LABEL,
+        LuminaryAction, LuminaryEngine, LuminaryIdentifier, LuminaryServiceList,
+        model::{LuminaryProject, LuminaryProjectList, LuminaryService, LuminaryStatus},
     },
     eyre_fmt,
 };
 
-const COMPOSE_PROJECT_DIR_LABEL: &str = "com.docker.compose.project.working_dir";
-const COMPOSE_PROJECT_LABEL: &str = "com.docker.compose.project";
-const COMPOSE_SERVICE_LABEL: &str = "com.docker.compose.service";
-
 impl LuminaryEngine {
     /// Retrieves a [LuminaryProject] by its name from the current state.
-    pub async fn get_project(&self, name: &String) -> Result<LuminaryProject> {
+    pub async fn get_project(&self, name: &str) -> Result<LuminaryProject> {
         return Ok(self
-            .state
+            .list
             .read()
             .await
             .0
@@ -42,9 +39,9 @@ impl LuminaryEngine {
     }
 
     /// Returns a stream of state updates, initialising the stream with the current state.
-    pub async fn state_subscribe<'a>(&'_ self) -> BoxStream<'a, LuminaryStateList> {
-        let mut reciever = self.state_channel.subscribe();
-        let initial = self.state.read().await.clone();
+    pub async fn state_subscribe<'a>(&'_ self) -> BoxStream<'a, LuminaryProjectList> {
+        let mut reciever = self.list_channel.subscribe();
+        let initial = self.list.read().await.clone();
 
         return async_stream::stream! {
             yield initial;
@@ -83,7 +80,7 @@ impl LuminaryEngine {
                                 && let Some(labels) = actor.attributes
                                 && let Some(status) = Self::parse_action(action.clone())
                             {
-                                let mut list = this.state.write().await;
+                                let mut list = this.list.write().await;
                                 this.merge_service(status, labels, &mut list);
                                 this.broadcast(list.clone()).await;
                             }
@@ -100,7 +97,7 @@ impl LuminaryEngine {
     /// Lists all Luminary projects by combining data from both the filesystem and Docker engine.
     #[wrap_err("Failed to list projects")]
     pub async fn refresh(&self) -> Result<()> {
-        let mut list = self.state.write().await;
+        let mut list = self.list.write().await;
 
         for project in list.0.values_mut() {
             for service in project.services.0.values_mut() {
@@ -122,7 +119,7 @@ impl LuminaryEngine {
 
     /// Loads all Luminary projects found in the configured projects directory into the given state list.
     #[wrap_err("Failed to load projects from filesystem")]
-    async fn load_from_filesystem(&self, list: &mut LuminaryStateList) -> Result<()> {
+    async fn load_from_filesystem(&self, list: &mut LuminaryProjectList) -> Result<()> {
         let mut entries = fs::read_dir(&self.configuration.project_directory)
             .await
             .wrap_err("Failed to list project directory contents")?;
@@ -137,7 +134,7 @@ impl LuminaryEngine {
     }
 
     /// Loads a single project from the filesystem if a compose file is found, merging it into the given state list.
-    async fn load_project_dir(&self, mut path: PathBuf, list: &mut LuminaryStateList) -> Result<()> {
+    async fn load_project_dir(&self, mut path: PathBuf, list: &mut LuminaryProjectList) -> Result<()> {
         if path.is_dir()
             && let Some(project_name) = path.file_name().and_then(|n| n.to_str()).map(|s| s.to_string())
         {
@@ -171,6 +168,7 @@ impl LuminaryEngine {
                         service_name.clone(),
                         LuminaryService {
                             stale: false,
+                            orphan: false,
                             action: existing.map(|s| s.action).unwrap_or(LuminaryAction::Idle),
                             status: existing.map(|s| s.status).unwrap_or(LuminaryStatus::Down),
                             identifier: LuminaryIdentifier::new(project_name.clone(), service_name),
@@ -185,7 +183,7 @@ impl LuminaryEngine {
 
     /// Lists all Luminary projects by querying the Docker engine for containers with specific labels.
     #[wrap_err("Failed to list projects from docker engine")]
-    async fn load_from_docker(&self, list: &mut LuminaryStateList) -> Result<()> {
+    async fn load_from_docker(&self, list: &mut LuminaryProjectList) -> Result<()> {
         let options = ListContainersOptionsBuilder::default().all(true).build();
         let containers = self
             .docker
@@ -202,11 +200,12 @@ impl LuminaryEngine {
         return Ok(());
     }
 
+    /// Updates the state of a service based on Docker API details, merging it into the given state list.
     fn merge_service(
         &self,
         status: LuminaryStatus,
         mut labels: HashMap<String, String>,
-        list: &mut LuminaryStateList,
+        list: &mut LuminaryProjectList,
     ) {
         if let Some(service_name) = labels.remove(COMPOSE_SERVICE_LABEL)
             && let Some(project_name) = labels.remove(COMPOSE_PROJECT_LABEL)
@@ -222,16 +221,25 @@ impl LuminaryEngine {
                 });
 
             let existing = project.services.0.get(&service_name);
+            let orphan = existing.as_ref().map(|e| e.stale || e.orphan).unwrap_or(false);
+
+            // If the service is down and the service is an orphan, remove it
+            if status == LuminaryStatus::Down && orphan {
+                project.services.0.remove(&service_name);
+                return;
+            }
+
             project.services.0.insert(
                 service_name.clone(),
                 LuminaryService {
                     action: existing
                         .as_ref()
-                        .map(|s| s.action)
+                        .map(|e| e.action)
                         .unwrap_or(LuminaryAction::Idle),
                     identifier: LuminaryIdentifier::new(project_name, service_name),
-                    stale: false,
+                    stale: existing.is_none() && status != LuminaryStatus::Down,
                     status,
+                    orphan,
                 },
             );
         }

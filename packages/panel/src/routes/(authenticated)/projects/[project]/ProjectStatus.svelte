@@ -94,77 +94,90 @@
 			</div>
 			<div class="grow">
 				<h3>{service.serviceName}</h3>
-				<div class="subtext">{service.status}</div>
+				<div class="subtext">
+					{#if service.orphan}
+						<Tooltip
+							content={`This service no longer exists in the compose file.
+							It will be removed when it is recreated`}
+						>
+							<span style="color: var(--peach)">orphaned</span>,
+						</Tooltip>
+					{/if}
+
+					{service.status}
+				</div>
 			</div>
 
-			<div class="flexr center gap-5">
-				<Tooltip placement="left" content="Start Service">
-					<PromiseButton
-						style="a"
-						aria-label="Start Service"
-						disabled={service.action !== "idle"}
-						loading={service.action === "starting"}
-						onclick={() =>
-							api.client.POST("/api/project/{project}/service/{service}/start", {
-								params: { path: { project: project.name, service: service.serviceName } },
-							})}
-					>
-						{#snippet children(loading)}
-							{#if !loading}<Fa icon={faPlay} />{/if}
-						{/snippet}
-					</PromiseButton>
-				</Tooltip>
+			{#if !service.orphan}
+				<div class="flexr center gap-5">
+					<Tooltip placement="left" content="Start Service">
+						<PromiseButton
+							style="a"
+							aria-label="Start Service"
+							disabled={service.action !== "idle"}
+							loading={service.action === "starting"}
+							onclick={() =>
+								api.client.POST("/api/project/{project}/service/{service}/start", {
+									params: { path: { project: project.name, service: service.serviceName } },
+								})}
+						>
+							{#snippet children(loading)}
+								{#if !loading}<Fa icon={faPlay} />{/if}
+							{/snippet}
+						</PromiseButton>
+					</Tooltip>
 
-				<Tooltip placement="left" content="Restart Service">
-					<PromiseButton
-						style="a"
-						aria-label="Restart Service"
-						disabled={service.action !== "idle"}
-						loading={service.action === "restarting"}
-						onclick={() =>
-							api.client.POST("/api/project/{project}/service/{service}/restart", {
-								params: { path: { project: project.name, service: service.serviceName } },
-							})}
-					>
-						{#snippet children(loading)}
-							{#if !loading}<Fa icon={faArrowsRotate} />{/if}
-						{/snippet}
-					</PromiseButton>
-				</Tooltip>
+					<Tooltip placement="left" content="Restart Service">
+						<PromiseButton
+							style="a"
+							aria-label="Restart Service"
+							disabled={service.action !== "idle"}
+							loading={service.action === "restarting"}
+							onclick={() =>
+								api.client.POST("/api/project/{project}/service/{service}/restart", {
+									params: { path: { project: project.name, service: service.serviceName } },
+								})}
+						>
+							{#snippet children(loading)}
+								{#if !loading}<Fa icon={faArrowsRotate} />{/if}
+							{/snippet}
+						</PromiseButton>
+					</Tooltip>
 
-				<Tooltip placement="left" content="Stop Service">
-					<PromiseButton
-						style="a"
-						aria-label="Stop Service"
-						disabled={service.action !== "idle"}
-						loading={service.action === "stopping"}
-						onclick={() =>
-							api.client.POST("/api/project/{project}/service/{service}/stop", {
-								params: { path: { project: project.name, service: service.serviceName } },
-							})}
-					>
-						{#snippet children(loading)}
-							{#if !loading}<Fa icon={faStop} />{/if}
-						{/snippet}
-					</PromiseButton>
-				</Tooltip>
+					<Tooltip placement="left" content="Stop Service">
+						<PromiseButton
+							style="a"
+							aria-label="Stop Service"
+							disabled={service.action !== "idle"}
+							loading={service.action === "stopping"}
+							onclick={() =>
+								api.client.POST("/api/project/{project}/service/{service}/stop", {
+									params: { path: { project: project.name, service: service.serviceName } },
+								})}
+						>
+							{#snippet children(loading)}
+								{#if !loading}<Fa icon={faStop} />{/if}
+							{/snippet}
+						</PromiseButton>
+					</Tooltip>
 
-				<Tooltip placement="left" content="Recreate Service">
-					<PromiseButton
-						style="a"
-						aria-label="Recreate Service"
-						disabled={service.action !== "idle"}
-						onclick={() =>
-							api.client.POST("/api/project/{project}/service/{service}/recreate", {
-								params: { path: { project: project.name, service: service.serviceName } },
-							})}
-					>
-						{#snippet children(loading)}
-							{#if !loading}<Fa icon={faRocket} />{/if}
-						{/snippet}
-					</PromiseButton>
-				</Tooltip>
-			</div>
+					<Tooltip placement="left" content="Recreate Service">
+						<PromiseButton
+							style="a"
+							aria-label="Recreate Service"
+							disabled={service.action !== "idle"}
+							onclick={() =>
+								api.client.POST("/api/project/{project}/service/{service}/recreate", {
+									params: { path: { project: project.name, service: service.serviceName } },
+								})}
+						>
+							{#snippet children(loading)}
+								{#if !loading}<Fa icon={faRocket} />{/if}
+							{/snippet}
+						</PromiseButton>
+					</Tooltip>
+				</div>
+			{/if}
 		</div>
 	{/each}
 </div>

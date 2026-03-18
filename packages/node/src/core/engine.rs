@@ -16,17 +16,17 @@ use tokio::{
 
 use crate::{
     configuration::LuminaryConfiguration,
-    core::{LuminaryStateList, ProjectLogChannel},
+    core::{LuminaryProjectList, ProjectLogChannel},
 };
 
 /// The core engine of the Luminary application, containing shared state and configuration.
 #[derive(Debug, Clone)]
 pub struct LuminaryEngine {
     /// The canonical list of services for this instance of [LuminaryEngine].
-    pub(super) state: Arc<RwLock<LuminaryStateList>>,
+    pub(super) list: Arc<RwLock<LuminaryProjectList>>,
 
     /// A channel for broadcasting state changes to listeners.
-    pub(super) state_channel: broadcast::Sender<LuminaryStateList>,
+    pub(super) list_channel: broadcast::Sender<LuminaryProjectList>,
 
     /// A map of log channels for each project, keyed by project name. This is lazily populated when clients subscribe to logs for a project.
     pub(super) log_channels: Arc<Mutex<HashMap<String, ProjectLogChannel>>>,
@@ -45,9 +45,9 @@ impl LuminaryEngine {
         let docker = Docker::connect_with_defaults().wrap_err("Failed to connect to docker engine.")?;
 
         let instance = Self {
-            state: Arc::new(RwLock::new(LuminaryStateList::new())),
+            list: Arc::new(RwLock::new(LuminaryProjectList::new())),
             log_channels: Arc::new(Mutex::new(HashMap::new())),
-            state_channel: broadcast::channel(64).0,
+            list_channel: broadcast::channel(64).0,
             configuration,
             docker,
         };
@@ -59,10 +59,10 @@ impl LuminaryEngine {
     }
 
     /// Broadcasts the given state change to all listeners.
-    pub(super) async fn broadcast(&self, list: LuminaryStateList) {
-        if self.state_channel.receiver_count() > 0 {
+    pub(super) async fn broadcast(&self, list: LuminaryProjectList) {
+        if self.list_channel.receiver_count() > 0 {
             // This will only error if there are no receivers, so we can safely ignore it.
-            let _ = self.state_channel.send(list.clone());
+            let _ = self.list_channel.send(list.clone());
         }
     }
 

@@ -29,6 +29,7 @@
 
 <style lang="scss">
 	.trigger {
+		display: inline-block;
 		width: fit-content;
 		cursor: help;
 	}
@@ -37,7 +38,10 @@
 		position: relative;
 		background-color: var(--overlay0);
 		box-shadow: 0 -2px 10px #00000080;
-		color: inherit;
+		color: var(--text);
+
+		max-width: 20vw;
+		text-align: center;
 
 		border-radius: 5px;
 		border: none;

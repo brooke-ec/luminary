@@ -13,7 +13,7 @@ use crate::schema_ref_or;
 /// A collection of Luminary projects, keyed by project name.
 #[hashmap_schema]
 #[derive(Debug, Clone, PartialEq, Serialize)]
-pub struct LuminaryStateList<String, LuminaryProject>;
+pub struct LuminaryProjectList<String, LuminaryProject>;
 
 /// A collection of Luminary services, keyed by service name.
 #[hashmap_schema]
@@ -86,10 +86,16 @@ pub struct LuminaryService {
     /// The identifier of this service
     #[serde(flatten)]
     pub identifier: LuminaryIdentifier,
+
     /// The current status of this service
     pub status: LuminaryStatus,
+
     /// The current action being performed on this service
     pub action: LuminaryAction,
+
+    /// Wether this service is no longer defined in its compose file. It will be removed when it goes down.
+    pub orphan: bool,
+
     /// Wether this service is stale, meaning that it was removed in the recent refresh.
     #[serde(skip)]
     pub stale: bool,

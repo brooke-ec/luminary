@@ -5,14 +5,14 @@ import { client, isAuthenticated } from ".";
 import { goto } from "$app/navigation";
 import { patch } from "ultrapatch";
 
-export type LuminaryStateList = components["schemas"]["luminary_node.core.model.LuminaryStateList"];
+export type LuminaryProjectList = components["schemas"]["luminary_node.core.model.LuminaryProjectList"];
 export type LuminaryProject = components["schemas"]["luminary_node.core.model.LuminaryProject"];
 type LogMessage = components["schemas"]["luminary_node.logging.LogMessage"];
 
 /**
  * The current internal list of projects and their states.
  */
-let list: LuminaryStateList = $state({});
+let list: LuminaryProjectList = $state({});
 
 /**
  * A getter for the current project list.

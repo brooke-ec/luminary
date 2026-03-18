@@ -48,7 +48,7 @@ pub async fn setup(engine: LuminaryEngine, pool: SqlitePool, logs: BroadcastLaye
             .merge_router(&router);
 
         // Ensure custom core schemas are registered for SSE documentation.
-        crate::core::LuminaryStateList::to_schema(&mut openapi.components);
+        crate::core::LuminaryProjectList::to_schema(&mut openapi.components);
         crate::logging::LogMessage::to_schema(&mut openapi.components);
 
         let location = concat!(env!("CARGO_MANIFEST_DIR"), "/../panel/static/openapi.json");

@@ -14,9 +14,8 @@
 	import { fade, slide } from "svelte/transition";
 	import { Accordion } from "melt/builders";
 	import type { Snippet } from "svelte";
-	import Fa from "svelte-fa";
 	import { page } from "$app/state";
-	import { goto } from "$app/navigation";
+	import Fa from "svelte-fa";
 
 	let { tabs }: { tabs: { label: string; icon: IconDefinition; content: Snippet<[]> }[] } = $props();
 

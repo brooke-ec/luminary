@@ -9,7 +9,7 @@ impl LuminaryEngine {
     #[wrap_err("Failed to set action for service")]
     async fn set_action(&self, project: &str, service: Option<&str>, action: LuminaryAction) -> Result<()> {
         // Get list of targets to update
-        let mut project_list = self.state.write().await;
+        let mut project_list = self.list.write().await;
         let targets = match project_list.0.get_mut(project) {
             None => bail!("Unknown project '{}'", project),
             Some(service_list) => match service {
@@ -82,8 +82,13 @@ impl LuminaryEngine {
     /// Stops the given project and optionally, a specific service within that project.
     #[wrap_err("Failed to stop project/service")]
     pub async fn stop(&self, project: &str, service: Option<&str>) -> Result<()> {
-        self.run(LuminaryAction::Stopping, project, service, vec!["down"])
-            .await?;
+        self.run(
+            LuminaryAction::Stopping,
+            project,
+            service,
+            vec!["down", "--remove-orphans"],
+        )
+        .await?;
         Ok(())
     }
 
