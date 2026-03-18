@@ -39,7 +39,7 @@
 				<label for="password">Password</label>
 				<input required minlength="1" id="password" type="password" bind:value={credentials.password} />
 			</div>
-			<LoaderButton bind:loading>
+			<LoaderButton {loading}>
 				{#snippet children(loading)}
 					{#if loading}
 						Logging in...

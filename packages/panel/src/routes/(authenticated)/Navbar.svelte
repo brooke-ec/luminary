@@ -114,9 +114,9 @@
 		{#if returnable && !isMobile()}
 			<a href="./"><Fa icon={faChevronLeft} /> Back</a>
 		{/if}
-		<div class="full">
+		<main class="full">
 			{@render children()}
-		</div>
+		</main>
 	</div>
 </div>
 
