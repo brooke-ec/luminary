@@ -34,12 +34,16 @@
 	);
 
 	const terminal: Attachment<HTMLElement> = (el) => {
-		const terminal = new Terminal({ theme });
+		const terminal = new Terminal({ theme, disableStdin: true });
 		const fitAddon = new FitAddon();
 
 		terminal.loadAddon(new WebLinksAddon());
 		terminal.loadAddon(fitAddon);
 		terminal.open(el);
+
+		// Remove the textarea from tab order
+		const textarea = el.querySelector("textarea");
+		if (textarea) textarea.tabIndex = -1;
 
 		fitAddon.fit();
 		const observer = new ResizeObserver(() => fitAddon.fit());
