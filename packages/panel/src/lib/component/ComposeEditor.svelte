@@ -144,9 +144,9 @@
 
 <div class="container">
 	{#if focused}
-		<div class="messages">
-			<div class="message"><Fa icon={faArrowRightFromBracket} /> Esc</div>
-			<div class="message"><Fa icon={faAlignLeft} /> Alt F</div>
+		<div class="keybinds">
+			<div class="keybind"><Fa icon={faArrowRightFromBracket} /> Esc</div>
+			<div class="keybind"><Fa icon={faAlignLeft} /> Alt F</div>
 		</div>
 	{/if}
 	<div onfocusin={() => (focused = true)} onfocusout={() => (focused = false)} class="editor" {@attach editor}></div>
@@ -161,27 +161,15 @@
 		justify-content: end;
 	}
 
-	.messages {
+	.keybinds {
+		z-index: 10;
+
 		pointer-events: none;
 		display: flex;
 		position: absolute;
 		gap: 10px;
 
 		margin: 10px;
-	}
-
-	.message {
-		display: flex;
-		align-items: center;
-		gap: 10px;
-
-		z-index: 10;
-
-		padding: 5px 10px;
-
-		background-color: var(--crust);
-		border: var(--subtext0);
-		border-radius: 5px;
 	}
 
 	.editor {
