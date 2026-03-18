@@ -1,9 +1,11 @@
 <script lang="ts">
 	import StatusIcon, { type LuminaryStatus } from "$lib/component/StatusIcon.svelte";
 	import { faMagnifyingGlass, faMinus, faPlus } from "@fortawesome/free-solid-svg-icons";
+	import type { Attachment } from "svelte/attachments";
 	import { Accordion } from "melt/builders";
 	import { getProjects } from "$lib/api";
 	import { Debounced } from "runed";
+	import hotkeys from "hotkeys-js";
 	import Fa from "svelte-fa";
 
 	const ORDER = ["healthy", "running", "exited", "paused", "down", "paused"] as LuminaryStatus[];
@@ -23,12 +25,23 @@
 			),
 		).toSorted(([a], [b]) => ORDER.indexOf(a as LuminaryStatus) - ORDER.indexOf(b as LuminaryStatus)),
 	);
+
+	const searchKeybind: Attachment<HTMLInputElement> = (el) => {
+		hotkeys("ctrl+f", () => {
+			el.focus();
+			return false;
+		});
+
+		return () => {
+			hotkeys.unbind("ctrl+f");
+		};
+	};
 </script>
 
 <div class="flexc gap-10 full projects" {...accordion.root}>
 	<div class="flexr center gap-10">
 		<Fa icon={faMagnifyingGlass} size="lg" />
-		<input class="full" type="text" placeholder="Search projects..." bind:value={search} />
+		<input class="full" type="text" placeholder="Search projects..." bind:value={search} {@attach searchKeybind} />
 	</div>
 
 	{#each groups as [status, projects] (status)}
