@@ -41,7 +41,19 @@
 <div class="flexc gap-10 full projects" {...accordion.root}>
 	<div class="flexr center gap-10">
 		<Fa icon={faMagnifyingGlass} size="lg" />
-		<input class="full" type="text" placeholder="Search projects..." bind:value={search} {@attach searchKeybind} />
+		<div class="full flex" style="align-items: center">
+			{#if search === ""}
+				<div
+					class="subtext flexr gap-10 center"
+					style="position: absolute; padding-left: 10px; pointer-events: none;"
+				>
+					Search projects
+					<div class="keybind">crtl + f</div>
+				</div>
+			{/if}
+
+			<input class="full" type="text" bind:value={search} {@attach searchKeybind} />
+		</div>
 	</div>
 
 	{#each groups as [status, projects] (status)}

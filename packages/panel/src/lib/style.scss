@@ -199,3 +199,19 @@ input[type="password"] {
 	font-size: 14px;
 	color: var(--subtext0);
 }
+
+.keybind {
+	border: 1px solid var(--subtext0);
+	background-color: transparent;
+	display: inline-block;
+	border-radius: 5px;
+	padding: 2px 5px;
+
+	height: fit-content;
+	width: fit-content;
+
+	font-family: "DejaVu Mono", monospace;
+	text-transform: uppercase;
+	color: var(--subtext0);
+	font-size: 10px;
+}
