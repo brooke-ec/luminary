@@ -191,6 +191,7 @@
 		font-family: "DejaVu Mono", monospace;
 		background-color: var(--crust);
 		flex-direction: column;
+		white-space: pre-line;
 		word-wrap: break-word;
 		border-radius: 5px;
 		margin-top: 15px;
