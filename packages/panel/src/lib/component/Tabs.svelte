@@ -16,6 +16,7 @@
 	import type { Snippet } from "svelte";
 	import Fa from "svelte-fa";
 	import { page } from "$app/state";
+	import { goto } from "$app/navigation";
 
 	let { tabs }: { tabs: { label: string; icon: IconDefinition; content: Snippet<[]> }[] } = $props();
 
@@ -32,7 +33,8 @@
 
 	$effect(() => {
 		if (accordion.value) {
-			window.location.hash = accordion.value;
+			if (window.location.hash === "") history.replaceState(null, "", `#${accordion.value}`);
+			else window.location.hash = accordion.value;
 		}
 	});
 </script>
