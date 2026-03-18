@@ -10,6 +10,7 @@
 	import { goto } from "$app/navigation";
 	import { api, isMobile } from "$lib";
 	import { page } from "$app/state";
+	import { onMount } from "svelte";
 	import Fa from "svelte-fa";
 
 	let project = $derived(getProjects()[page.params.project!]);
@@ -53,6 +54,21 @@
 		unsaved = false;
 		data.compose = copied.compose;
 	}
+
+	onMount(() => {
+		const saveKeybind = (event: KeyboardEvent) => {
+			if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") {
+				event.preventDefault();
+				save();
+			}
+		};
+
+		window.addEventListener("keydown", saveKeybind, true);
+
+		return () => {
+			window.removeEventListener("keydown", saveKeybind, true);
+		};
+	});
 </script>
 
 {#if project}
