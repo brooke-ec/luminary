@@ -20,6 +20,7 @@
 
 	let { content = $bindable() }: { content: string } = $props();
 
+	let initial = $state.snapshot(content);
 	let focused = $state(false);
 
 	const enterHandler = (view: view.EditorView) => {
@@ -131,7 +132,7 @@
 					}
 				}),
 			],
-			doc: content,
+			doc: initial,
 			parent,
 		});
 
