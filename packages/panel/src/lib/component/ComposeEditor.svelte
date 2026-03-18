@@ -25,21 +25,23 @@
 	const enterHandler = (view: view.EditorView) => {
 		const { state } = view;
 		const { from } = state.selection.main;
-		const line = state.doc.lineAt(from).text;
+		const line = state.doc.lineAt(from);
 
-		// Get the current indentation
-		const currentIndent = line.match(/^(\s*)/)?.[0] ?? "";
-		const unit = state.facet(language.indentUnit);
+		const change = line.text.substring(0, from - line.from).trim() !== "";
 
 		let result = "\n";
 
+		// Get the current indentation
+		const currentIndent = line.text.match(/^(\s*)/)?.[0] ?? "";
+		const unit = state.facet(language.indentUnit);
+
 		// Check if line ends with a colon
-		if (/:\s*(?:#.*)?$/.test(line)) {
+		if (change && /:\s*(?:#.*)?$/.test(line.text)) {
 			result += currentIndent + unit; // Increase indent for new line
 		}
 
 		// Check if line starts starts with a dash
-		else if (/^\s*-/.test(line)) {
+		else if (change && /^\s*-/.test(line.text)) {
 			result += currentIndent + "- "; // Inset a dash on new line
 		}
 
@@ -212,7 +214,6 @@
 
 			// padding: 0 10px;
 			border-radius: 5px;
-			overflow: hidden;
 
 			border: 1px solid var(--subtext0);
 
