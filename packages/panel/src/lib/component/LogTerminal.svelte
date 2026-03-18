@@ -34,7 +34,7 @@
 	);
 
 	const terminal: Attachment<HTMLElement> = (el) => {
-		const terminal = new Terminal({ fontFamily: "DejaVu Mono", theme });
+		const terminal = new Terminal({ theme });
 		const fitAddon = new FitAddon();
 
 		terminal.loadAddon(new WebLinksAddon());

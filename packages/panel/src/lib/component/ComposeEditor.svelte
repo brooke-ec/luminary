@@ -9,7 +9,6 @@
 	import * as language from "@codemirror/language";
 	import prettierYaml from "prettier/plugins/yaml";
 	import * as commands from "@codemirror/commands";
-	import { yaml } from "@codemirror/lang-yaml";
 	import * as estate from "@codemirror/state";
 	import * as view from "@codemirror/view";
 	import * as lint from "@codemirror/lint";
@@ -23,6 +22,42 @@
 
 	let focused = $state(false);
 
+	const enterHandler = (view: view.EditorView) => {
+		const { state } = view;
+		const { from } = state.selection.main;
+		const line = state.doc.lineAt(from).text;
+
+		// Get the current indentation
+		const currentIndent = line.match(/^(\s*)/)?.[0] ?? "";
+		const unit = state.facet(language.indentUnit);
+
+		let result = "\n";
+
+		// Check if line ends with a colon
+		if (/:\s*(?:#.*)?$/.test(line)) {
+			result += currentIndent + unit; // Increase indent for new line
+		}
+
+		// Check if line starts starts with a dash
+		else if (/^\s*-/.test(line)) {
+			result += currentIndent + "- "; // Inset a dash on new line
+		}
+
+		// Otherwise, maintain previous indentation
+		else {
+			result = "\n" + currentIndent;
+		}
+
+		// Update the document
+		view.dispatch({
+			changes: { from, to: state.selection.main.to, insert: result },
+			selection: { anchor: from + result.length },
+			scrollIntoView: true,
+		});
+
+		return true;
+	};
+
 	async function format(view: view.EditorView) {
 		const doc = view.state.doc.toString();
 
@@ -33,6 +68,7 @@
 				parser: "yaml",
 			});
 
+			// If document hasn't changed, return early
 			if (formatted === doc) return;
 
 			view.dispatch({
@@ -50,7 +86,6 @@
 				indentationMarkers(),
 				catppuccinMacchiato,
 				yamlSchema(schema),
-				yaml(),
 
 				view.lineNumbers(),
 				view.highlightSpecialChars(),
@@ -59,7 +94,6 @@
 				view.drawSelection(),
 				view.dropCursor(),
 				estate.EditorState.allowMultipleSelections.of(true),
-				language.indentOnInput(),
 				language.syntaxHighlighting(language.defaultHighlightStyle, { fallback: true }),
 				language.bracketMatching(),
 				autocomplete.closeBrackets(),
@@ -67,6 +101,8 @@
 				view.rectangularSelection(),
 				view.crosshairCursor(),
 				view.keymap.of([
+					{ key: "Enter", run: enterHandler },
+					{ key: "Ctrl-Enter", run: () => true },
 					commands.indentWithTab,
 					...autocomplete.closeBracketsKeymap,
 					...commands.defaultKeymap,
@@ -74,6 +110,7 @@
 					...language.foldKeymap,
 					...autocomplete.completionKeymap,
 					...lint.lintKeymap,
+					{ key: "Ctrl-Shift-z", run: commands.redo },
 
 					// Format keybind
 					{
