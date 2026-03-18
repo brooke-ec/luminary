@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { faCircleInfo, faGears, faLayerGroup, faPencil } from "@fortawesome/free-solid-svg-icons";
+	import { faCircleInfo, faLayerGroup, faPencil } from "@fortawesome/free-solid-svg-icons";
 	import ComposeEditor from "$lib/component/ComposeEditor.svelte";
 	import LogTerminal from "$lib/component/LogTerminal.svelte";
 	import StatusIcon from "$lib/component/StatusIcon.svelte";
@@ -31,7 +31,6 @@
 		tabs={[
 			{ label: "status", icon: faCircleInfo, content: status },
 			{ label: "compose", icon: faPencil, content: compose },
-			{ label: "variables", icon: faGears, content: variables },
 		]}
 	/>
 </div>
@@ -45,12 +44,13 @@
 {/snippet}
 
 {#snippet compose()}
+	<div>
+		<label for="name">Name</label>
+		<input required id="name" type="text" value={project.name} />
+	</div>
+
 	<h2>Compose</h2>
 	<ComposeEditor bind:content={data.compose} />
-{/snippet}
-
-{#snippet variables()}
-	<h2>Variables Tab</h2>
 {/snippet}
 
 <style lang="scss">
