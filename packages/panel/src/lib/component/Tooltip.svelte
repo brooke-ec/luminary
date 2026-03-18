@@ -18,7 +18,7 @@
 	});
 </script>
 
-<div class="trigger" {...tooltip.trigger}>
+<div class="trigger" {...tooltip.trigger} onfocusin={() => (tooltip.open = true)}>
 	{@render children()}
 </div>
 
