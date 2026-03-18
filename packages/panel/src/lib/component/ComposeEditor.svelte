@@ -69,6 +69,7 @@
 				cursorOffset: view.state.selection.main.head,
 				plugins: [prettierYaml],
 				parser: "yaml",
+				useTabs: false,
 			});
 
 			// If document hasn't changed, return early
@@ -85,7 +86,10 @@
 
 	const editor: Attachment<HTMLElement> = (parent) => {
 		const editor = new view.EditorView({
+			doc: initial,
+			parent,
 			extensions: [
+				language.indentUnit.of("  "),
 				indentationMarkers(),
 				catppuccinMacchiato,
 				yamlSchema(schema),
@@ -132,8 +136,6 @@
 					}
 				}),
 			],
-			doc: initial,
-			parent,
 		});
 
 		return () => {
