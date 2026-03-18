@@ -8,14 +8,16 @@
 	import Tabs from "$lib/component/Tabs.svelte";
 	import { getProjects } from "$lib/api";
 	import { page } from "$app/state";
-	import { isMobile } from "$lib";
+	import { api, isMobile } from "$lib";
 	import Fa from "svelte-fa";
+
+	type Payload = api.components["schemas"]["luminary_node.api.project.ComposeWithName"];
 
 	let project = $derived(getProjects()[page.params.project!]);
 	let { data } = $props();
 
 	// svelte-ignore state_referenced_locally
-	let copy = $state({
+	let payload: Payload = $state({
 		name: project.name,
 		compose: data.compose,
 	});
@@ -23,8 +25,23 @@
 	// Watch for changes to set unsaved state
 	let unsaved = $state(false);
 	$effect(() => {
-		unsaved = copy.name !== project.name || copy.compose !== data.compose;
+		unsaved = payload.name !== project.name || payload.compose !== data.compose;
 	});
+
+	function revert() {
+		payload.compose = data.compose;
+		payload.name = project.name;
+	}
+
+	function save() {
+		api.client.PUT(`/api/project/{project}`, {
+			params: { path: { project: project.name } },
+			body: payload,
+		});
+
+		unsaved = false;
+		data.compose = payload.compose;
+	}
 </script>
 
 <div class="flexc gap-10">
@@ -59,20 +76,20 @@
 {#snippet compose()}
 	<div>
 		<label for="name">Name</label>
-		<input required id="name" type="text" bind:value={copy.name} />
+		<input required id="name" type="text" bind:value={payload.name} />
 	</div>
 
 	<h2>Compose</h2>
-	<ComposeEditor bind:content={copy.compose} />
+	<ComposeEditor bind:content={payload.compose} />
 {/snippet}
 
 {#if unsaved}
 	<div style="color: var(--peach); margin-bottom: 10px;">* Unsaved changes</div>
 	<div class="flexr gap-10">
-		<button class="flexr gap-5 center">
+		<button class="flexr gap-5 center" onclick={save}>
 			<Fa icon={faSave} /> Save
 		</button>
-		<button class="flexr gap-5 center">
+		<button class="flexr gap-5 center" onclick={revert}>
 			<Fa icon={faClockRotateLeft} /> Revert
 		</button>
 	</div>

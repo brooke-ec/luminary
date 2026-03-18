@@ -1,16 +1,14 @@
 //! Manages retrieving and updating project compose files.
 
-use std::str::from_utf8;
-
-use eyre::Context;
-use salvo::Request;
 use salvo::Router;
 use salvo::Writer;
 use salvo::oapi::ToSchema;
+use salvo::oapi::extract::JsonBody;
 use salvo::{
     Depot,
     oapi::{endpoint, extract::PathParam},
 };
+use serde::Deserialize;
 use serde::Serialize;
 
 use crate::core::LuminaryProject;
@@ -49,12 +47,23 @@ struct LuminaryProjectWithCompose {
 #[endpoint]
 pub async fn put_compose(
     project: PathParam<String>,
-    req: &mut Request,
+    payload: JsonBody<ComposeWithName>,
     depot: &mut Depot,
 ) -> LuminaryResponse<()> {
     let engine = obtain!(depot, LuminaryEngine);
-    let bytes = req.payload().await.wrap_err("Failed to read request body")?;
-    let compose = from_utf8(bytes).wrap_err("Failed to decode error")?;
-    engine.put_compose(&project.into_inner(), compose).await?;
+
+    engine
+        .put_compose(&project.into_inner(), &payload.compose)
+        .await?;
+
     return Ok(().into());
+}
+
+#[derive(Debug, Clone, Deserialize, ToSchema)]
+struct ComposeWithName {
+    /// The new name for the project.
+    name: String,
+
+    /// The compose file for this project.
+    compose: String,
 }
