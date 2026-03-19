@@ -16,7 +16,10 @@ use crate::{api::response::LuminaryResponse, core::LuminaryEngine, obtain};
 
 /// Returns the router for compose related endpoints.
 pub fn router() -> Router {
-    return Router::new().get(get_project_endpoint).patch(patch_compose);
+    return Router::new()
+        .get(get_project_endpoint)
+        .patch(patch_compose)
+        .delete(delete_project);
 }
 
 /// Retrieves the compose file for a given project.
@@ -63,4 +66,15 @@ pub async fn patch_compose(
 
     engine.patch_project(&project, &payload.0).await?;
     return get_project(engine, &payload.to.take().unwrap_or(project.0)).await;
+}
+
+/// Deletes a project and all of its resources.
+#[endpoint]
+pub async fn delete_project(project: PathParam<String>, depot: &mut Depot) -> LuminaryResponse<()> {
+    let engine = obtain!(depot, LuminaryEngine);
+
+    engine.wait_until_idle(&project, None).await?;
+    engine.delete_project(&project).await?;
+
+    return Ok(().into());
 }

@@ -1,10 +1,11 @@
 <script lang="ts">
+	import { faArrowsRotate, faBan, faPlay, faRocket, faStop } from "@fortawesome/free-solid-svg-icons";
 	import PromiseButton from "$lib/component/PromiseButton.svelte";
-	import { faArrowsRotate, faPlay, faRocket, faStop } from "@fortawesome/free-solid-svg-icons";
-	import Fa from "svelte-fa";
-	import { api } from "$lib";
 	import StatusIcon from "$lib/component/StatusIcon.svelte";
 	import Tooltip from "$lib/component/Tooltip.svelte";
+	import { goto } from "$app/navigation";
+	import Fa from "svelte-fa";
+	import { api } from "$lib";
 
 	let { project }: { project: api.LuminaryProject } = $props();
 
@@ -15,6 +16,11 @@
 		if (services.some((service) => service.action !== action)) return "idle";
 		return action;
 	});
+
+	async function deleteProject() {
+		await api.client.DELETE("/api/project/{project}", { params: { path: { project: project.name } } });
+		await goto("/projects");
+	}
 </script>
 
 <h2>Actions</h2>
@@ -22,69 +28,73 @@
 	<div>You must fix the <a href="#compose">compose file</a> to trigger actions.</div>
 {:else}
 	<div class="flexr gap-5 wrap">
-		<div>
-			<PromiseButton
-				style="outline"
-				disabled={project.busy}
-				loading={allAction === "starting"}
-				onclick={() =>
-					api.client.POST("/api/project/{project}/start", { params: { path: { project: project.name } } })}
-			>
-				{#snippet children(loading)}
-					<div class="flexr center gap-10">
-						{#if !loading}<Fa icon={faPlay} />{/if}
-						Start All
-					</div>
-				{/snippet}
-			</PromiseButton>
-		</div>
-		<div>
-			<PromiseButton
-				style="outline"
-				disabled={project.busy}
-				loading={allAction === "restarting"}
-				onclick={() =>
-					api.client.POST("/api/project/{project}/restart", { params: { path: { project: project.name } } })}
-			>
-				{#snippet children(loading)}
-					<div class="flexr center gap-10">
-						{#if !loading}<Fa icon={faArrowsRotate} />{/if}
-						Restart All
-					</div>
-				{/snippet}
-			</PromiseButton>
-		</div>
-		<div>
-			<PromiseButton
-				style="outline"
-				disabled={project.busy}
-				loading={allAction === "stopping"}
-				onclick={() =>
-					api.client.POST("/api/project/{project}/stop", { params: { path: { project: project.name } } })}
-			>
-				{#snippet children(loading)}
-					<div class="flexr center gap-10">
-						{#if !loading}<Fa icon={faStop} />{/if}
-						Stop All
-					</div>
-				{/snippet}
-			</PromiseButton>
-		</div>
-		<div>
-			<PromiseButton
-				style="outline"
-				disabled={project.busy}
-				onclick={() =>
-					api.client.POST("/api/project/{project}/recreate", { params: { path: { project: project.name } } })}
-			>
-				{#snippet children(loading)}
-					<div class="flexr center gap-10">
-						{#if !loading}<Fa icon={faRocket} />{/if}
-						Recreate All
-					</div>
-				{/snippet}
-			</PromiseButton>
-		</div>
+		<PromiseButton
+			fit
+			style="outline"
+			disabled={project.busy}
+			loading={allAction === "starting"}
+			onclick={() =>
+				api.client.POST("/api/project/{project}/start", { params: { path: { project: project.name } } })}
+		>
+			{#snippet children(loading)}
+				<div class="flexr center gap-10">
+					{#if !loading}<Fa icon={faPlay} />{/if}
+					Start All
+				</div>
+			{/snippet}
+		</PromiseButton>
+		<PromiseButton
+			fit
+			style="outline"
+			disabled={project.busy}
+			loading={allAction === "restarting"}
+			onclick={() =>
+				api.client.POST("/api/project/{project}/restart", { params: { path: { project: project.name } } })}
+		>
+			{#snippet children(loading)}
+				<div class="flexr center gap-10">
+					{#if !loading}<Fa icon={faArrowsRotate} />{/if}
+					Restart All
+				</div>
+			{/snippet}
+		</PromiseButton>
+		<PromiseButton
+			fit
+			style="outline"
+			disabled={project.busy}
+			loading={allAction === "stopping"}
+			onclick={() =>
+				api.client.POST("/api/project/{project}/stop", { params: { path: { project: project.name } } })}
+		>
+			{#snippet children(loading)}
+				<div class="flexr center gap-10">
+					{#if !loading}<Fa icon={faStop} />{/if}
+					Stop All
+				</div>
+			{/snippet}
+		</PromiseButton>
+		<PromiseButton
+			fit
+			style="outline"
+			disabled={project.busy}
+			onclick={() =>
+				api.client.POST("/api/project/{project}/recreate", { params: { path: { project: project.name } } })}
+		>
+			{#snippet children(loading)}
+				<div class="flexr center gap-10">
+					{#if !loading}<Fa icon={faRocket} />{/if}
+					Recreate All
+				</div>
+			{/snippet}
+		</PromiseButton>
+		<PromiseButton fit style="outline" disabled={project.busy} onclick={deleteProject}>
+			{#snippet children(loading)}
+				<div class="flexr center gap-10">
+					{#if !loading}<Fa icon={faBan} />{/if}
+					Delete Project
+				</div>
+			{/snippet}
+		</PromiseButton>
 	</div>
 {/if}
 

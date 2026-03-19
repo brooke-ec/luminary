@@ -43,6 +43,25 @@ impl LuminaryEngine {
         return Ok(());
     }
 
+    #[wrap_err("Failed to delete project")]
+    pub async fn delete_project(&self, project: &str) -> Result<()> {
+        let (project_path, _) = self.get_path(project);
+
+        self.stop(project, None).await?;
+
+        if !project_path.exists() {
+            eyre::bail!("Project '{}' does not exist", project);
+        }
+
+        fs::remove_dir_all(project_path)
+            .await
+            .wrap_err("Failed to delete project directory")?;
+
+        self.refresh().await?;
+
+        return Ok(());
+    }
+
     /// Updates the given project by applying the provided patch
     pub async fn patch_project(&self, project: &str, patch: &LuminaryProjectPatch) -> Result<()> {
         // Validate request
