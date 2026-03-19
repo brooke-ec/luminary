@@ -10,7 +10,8 @@
 		password: "",
 	});
 
-	async function login() {
+	async function login(e: SubmitEvent) {
+		e.preventDefault();
 		loading = true;
 		try {
 			await api.login(credentials);

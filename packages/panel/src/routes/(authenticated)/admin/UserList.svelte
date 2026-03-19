@@ -22,7 +22,7 @@
 			body: { username },
 		});
 
-		let url = new URL(`reset/${response.data!}`, window.location.toString()).toString();
+		let url = new URL(`reset?token=${response.data!}`, window.location.toString()).toString();
 
 		refresh();
 		openDialog({
