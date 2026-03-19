@@ -5,7 +5,15 @@
 	import Fa from "svelte-fa";
 	import { api } from "$lib";
 
+	const THEME_KEY = "luminary-theme";
+
 	let { data } = $props();
+
+	let theme = $state(localStorage.getItem(THEME_KEY) ?? "macchiato");
+	$effect(() => {
+		localStorage.setItem(THEME_KEY, theme);
+		document.documentElement.setAttribute("class", theme);
+	});
 </script>
 
 <div class="flexc gap-10">
@@ -27,5 +35,25 @@
 </div>
 
 {#snippet appearance()}
-	<div class="flexc gap-10">COMING SOON</div>
+	<div class="flexc gap-10">
+		<div class="fit">
+			<h2>Theme</h2>
+			<div>
+				<input type="radio" id="theme-macchiato" name="theme" value="macchiato" bind:group={theme} />
+				<label for="theme-macchiato">🌺 Macchiato</label>
+			</div>
+			<div>
+				<input type="radio" id="theme-frappe" name="theme" value="frappe" bind:group={theme} />
+				<label for="theme-frappe">🪴 Frappé</label>
+			</div>
+			<div>
+				<input type="radio" id="theme-mocha" name="theme" value="mocha" bind:group={theme} />
+				<label for="theme-mocha">🌿 Mocha</label>
+			</div>
+			<div>
+				<input type="radio" id="theme-latte" name="theme" value="latte" bind:group={theme} />
+				<label for="theme-latte">🌻 Latte</label>
+			</div>
+		</div>
+	</div>
 {/snippet}

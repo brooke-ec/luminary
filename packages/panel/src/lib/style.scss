@@ -145,6 +145,10 @@ input[type="password"] {
 	}
 }
 
+*:has(input[type="radio"]) > label {
+	display: inline-block;
+}
+
 @media (min-width: 426px) {
 	.island {
 		background-color: var(--surface0);

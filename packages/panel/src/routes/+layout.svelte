@@ -16,11 +16,16 @@
 	import Toaster from "./Toaster.svelte";
 	import Dialog from "./Dialog.svelte";
 	import { AnimationFrames } from "runed";
+	import { onMount } from "svelte";
 
 	let { children } = $props();
 
 	new AnimationFrames(() => {
 		windowWidth = window.innerWidth;
+	});
+
+	onMount(() => {
+		document.documentElement.setAttribute("class", localStorage.getItem("luminary-theme") ?? "macchiato");
 	});
 </script>
 

@@ -90,6 +90,16 @@
 </div>
 
 <style lang="scss">
+	// Modify h2 of all child components
+	* :global(h2) {
+		margin-bottom: 5px;
+		font-size: 16px;
+
+		&:not(:first-child) {
+			margin-top: 15px;
+		}
+	}
+
 	.container {
 		background-color: var(--surface0);
 		border-radius: 10px;
