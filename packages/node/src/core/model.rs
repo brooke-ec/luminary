@@ -21,14 +21,15 @@ pub struct LuminaryProjectList<String, LuminaryProject>;
 pub struct LuminaryServiceList<String, LuminaryService>;
 
 /// Represents a Luminary project, consisting of a docker compose project.
-///
-/// This is derived entirely from that state of its services.
 #[derive(Debug, Clone, PartialEq)]
 pub struct LuminaryProject {
     /// The name of this project
     pub name: String,
     /// A map of the services that make up this projects
     pub services: LuminaryServiceList,
+
+    /// [true] if the compose file is invalid or has no services.
+    pub invalid: bool,
 }
 
 impl LuminaryProject {
@@ -56,6 +57,7 @@ impl Serialize for LuminaryProject {
         state.serialize_field("status", &self.status())?;
         state.serialize_field("busy", &self.busy())?;
         state.serialize_field("services", &self.services)?;
+        state.serialize_field("invalid", &self.invalid)?;
         state.end()
     }
 }
@@ -73,7 +75,9 @@ impl ToSchema for LuminaryProject {
                     .property("busy", Object::with_type(BasicType::Boolean))
                     .required("busy")
                     .property("services", LuminaryServiceList::to_schema(components))
-                    .required("services"),
+                    .required("services")
+                    .property("invalid", Object::with_type(BasicType::Boolean))
+                    .required("invalid"),
             ))
         );
     }

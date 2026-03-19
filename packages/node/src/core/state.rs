@@ -105,12 +105,12 @@ impl LuminaryEngine {
             }
         }
 
-        self.load_from_docker(&mut list).await?;
         self.load_from_filesystem(&mut list).await?;
+        self.load_from_docker(&mut list).await?;
 
         list.0.retain(|_, project| {
             project.services.0.retain(|_, service| !service.stale);
-            return !project.services.0.is_empty();
+            return project.invalid || !project.services.0.is_empty();
         });
 
         self.broadcast(list.clone()).await;
@@ -125,8 +125,29 @@ impl LuminaryEngine {
             .wrap_err("Failed to list project directory contents")?;
 
         while let Some(entry) = entries.next_entry().await? {
-            if let Err(err) = self.load_project_dir(entry.path(), list).await {
-                error!("{}", eyre_fmt!(err));
+            let mut path = entry.path();
+
+            if path.is_dir()
+                && let Some(project_name) = path.file_name().and_then(|n| n.to_str()).map(|s| s.to_string())
+            {
+                path.push(COMPOSE_FILENAME);
+                if path.exists() {
+                    // Add project even if parsing the compose file fails
+                    let project = list
+                        .0
+                        .entry(project_name.clone())
+                        .or_insert_with(|| LuminaryProject {
+                            name: project_name.clone(),
+                            services: LuminaryServiceList::new(),
+                            invalid: false,
+                        });
+
+                    if let Err(err) = self.load_project_dir(project, path).await {
+                        warn!("{}", eyre_fmt!(err));
+                    }
+
+                    project.invalid = project.services.0.is_empty();
+                }
             }
         }
 
@@ -134,48 +155,33 @@ impl LuminaryEngine {
     }
 
     /// Loads a single project from the filesystem if a compose file is found, merging it into the given state list.
-    async fn load_project_dir(&self, mut path: PathBuf, list: &mut LuminaryProjectList) -> Result<()> {
-        if path.is_dir()
-            && let Some(project_name) = path.file_name().and_then(|n| n.to_str()).map(|s| s.to_string())
-        {
-            path.push(COMPOSE_FILENAME);
-            if path.exists() {
-                let file = File::open(path)
-                    .await
-                    .wrap_err("Failed to open compose file")?
-                    .into_std()
-                    .await;
+    async fn load_project_dir(&self, project: &mut LuminaryProject, path: PathBuf) -> Result<()> {
+        let file = File::open(path)
+            .await
+            .wrap_err("Failed to open compose file")?
+            .into_std()
+            .await;
 
-                // Run this in a thread as it uses a blocking file reader instead of an async one
-                let compose: Compose = tokio::task::spawn_blocking(move || {
-                    return serde_saphyr::from_reader(file);
-                })
-                .await
-                .wrap_err("Compose deserialization failed.")?
-                .wrap_err_with(|| format!("Failed to deserialize compose file for {}", &project_name))?;
+        // Run this in a thread as it uses a blocking file reader instead of an async one
+        let compose: Compose = tokio::task::spawn_blocking(move || {
+            return serde_saphyr::from_reader(file);
+        })
+        .await
+        .wrap_err("Compose deserialization failed.")?
+        .wrap_err_with(|| format!("Failed to deserialize compose file for {}", &project.name))?;
 
-                let project = list
-                    .0
-                    .entry(project_name.clone())
-                    .or_insert_with(|| LuminaryProject {
-                        name: project_name.clone(),
-                        services: LuminaryServiceList::new(),
-                    });
-
-                for (service_name, _) in compose.services.0 {
-                    let existing = project.services.0.get(&service_name);
-                    project.services.0.insert(
-                        service_name.clone(),
-                        LuminaryService {
-                            stale: false,
-                            orphan: false,
-                            action: existing.map(|s| s.action).unwrap_or(LuminaryAction::Idle),
-                            status: existing.map(|s| s.status).unwrap_or(LuminaryStatus::Down),
-                            identifier: LuminaryIdentifier::new(project_name.clone(), service_name),
-                        },
-                    );
-                }
-            }
+        for (service_name, _) in compose.services.0 {
+            let existing = project.services.0.get(&service_name);
+            project.services.0.insert(
+                service_name.clone(),
+                LuminaryService {
+                    stale: false,
+                    orphan: false,
+                    action: existing.map(|s| s.action).unwrap_or(LuminaryAction::Idle),
+                    status: existing.map(|s| s.status).unwrap_or(LuminaryStatus::Down),
+                    identifier: LuminaryIdentifier::new(project.name.clone(), service_name),
+                },
+            );
         }
 
         return Ok(());
@@ -218,10 +224,14 @@ impl LuminaryEngine {
                 .or_insert_with(|| LuminaryProject {
                     name: project_name.clone(),
                     services: LuminaryServiceList::new(),
+                    invalid: false,
                 });
 
             let existing = project.services.0.get(&service_name);
-            let orphan = existing.as_ref().map(|e| e.stale || e.orphan).unwrap_or(false);
+            let orphan = existing
+                .as_ref()
+                .map(|e| e.stale || e.orphan)
+                .unwrap_or(project.invalid);
 
             // If the service is down and the service is an orphan, remove it
             if status == LuminaryStatus::Down && orphan {
@@ -237,7 +247,7 @@ impl LuminaryEngine {
                         .map(|e| e.action)
                         .unwrap_or(LuminaryAction::Idle),
                     identifier: LuminaryIdentifier::new(project_name, service_name),
-                    stale: existing.is_none() && status != LuminaryStatus::Down,
+                    stale: false,
                     status,
                     orphan,
                 },

@@ -1,5 +1,6 @@
 use std::path::{Path, PathBuf};
 
+use docker_compose_types::Compose;
 use eyre::{Context, Ok, Result};
 use futures_util::StreamExt;
 use luminary_macros::wrap_err;
@@ -28,6 +29,18 @@ impl LuminaryEngine {
         }
 
         return Ok(read_to_string(path).await.wrap_err("Failed to read file")?);
+    }
+
+    /// Validates a compose file by attempting to parse it and performing basic checks on the structure.
+    #[wrap_err("Invalid compose file")]
+    pub fn validate_compose(&self, compose: &str) -> Result<()> {
+        let compose = serde_saphyr::from_str::<Compose>(compose).wrap_err("Failed to parse compose file")?;
+
+        if compose.services.is_empty() {
+            eyre::bail!("Compose file must contain at least one service");
+        }
+
+        return Ok(());
     }
 
     /// Updates the given project by applying the provided patch

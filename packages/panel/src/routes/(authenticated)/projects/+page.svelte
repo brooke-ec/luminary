@@ -73,7 +73,13 @@
 							{project.name}
 						</h2>
 						<div class="subtext">
-							{Object.keys(project.services).length} services {project.status}
+							{#if project.invalid}
+								<span style="color: var(--peach);">invalid compose</span>
+							{/if}
+
+							{#if Object.keys(project.services).length > 0}
+								{Object.keys(project.services).length} services {project.status}
+							{/if}
 						</div>
 					</a>
 				{/each}
