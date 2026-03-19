@@ -183,6 +183,8 @@
 				</div>
 			{/if}
 		</div>
+	{:else}
+		<div>No services found in compose file.</div>
 	{/each}
 </div>
 
