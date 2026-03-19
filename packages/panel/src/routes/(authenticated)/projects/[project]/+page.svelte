@@ -16,6 +16,8 @@
 	let project = $derived(getProjects()[page.params.project!]);
 	let { data } = $props();
 
+	let format = $state(async () => {});
+
 	// svelte-ignore state_referenced_locally
 	let copy = $state({
 		compose: data.compose ?? "",
@@ -36,8 +38,9 @@
 	}
 
 	async function save() {
-		const rename = copy.name !== project.name;
+		if (localStorage.getItem("luminary-format-on-save") == "true") await format();
 
+		const rename = copy.name !== project.name;
 		const response = await api.client.PATCH(`/api/project/{project}`, {
 			params: { path: { project: project.name } },
 			body: {
@@ -88,7 +91,7 @@
 			</div>
 		</h1>
 
-		<EditTabs bind:data={copy} tabs={[{ label: "status", icon: faCircleInfo, content: status }]} />
+		<EditTabs bind:format bind:data={copy} tabs={[{ label: "status", icon: faCircleInfo, content: status }]} />
 	</div>
 
 	{#snippet status()}

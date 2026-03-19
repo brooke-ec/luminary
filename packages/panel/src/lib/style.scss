@@ -145,7 +145,8 @@ input[type="password"] {
 	}
 }
 
-*:has(input[type="radio"]) > label {
+*:has(input[type="radio"]) > label,
+*:has(input[type="checkbox"]) > label {
 	display: inline-block;
 }
 

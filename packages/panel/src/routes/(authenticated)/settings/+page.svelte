@@ -6,13 +6,21 @@
 	import { api } from "$lib";
 
 	const THEME_KEY = "luminary-theme";
+	const FORMAT_ON_SAVE_KEY = "luminary-format-on-save";
 
 	let { data } = $props();
 
 	let theme = $state(localStorage.getItem(THEME_KEY) ?? "macchiato");
+
 	$effect(() => {
 		localStorage.setItem(THEME_KEY, theme);
 		document.documentElement.setAttribute("class", theme);
+	});
+
+	let formatOnSave = $state(localStorage.getItem(FORMAT_ON_SAVE_KEY) == "true");
+
+	$effect(() => {
+		localStorage.setItem(FORMAT_ON_SAVE_KEY, String(formatOnSave));
 	});
 </script>
 
@@ -36,6 +44,13 @@
 
 {#snippet appearance()}
 	<div class="flexc gap-10">
+		<div class="fit">
+			<h2>Editor</h2>
+			<div class="fit">
+				<input type="checkbox" id="format-on-save" bind:checked={formatOnSave} />
+				<label for="format-on-save">Format on save</label>
+			</div>
+		</div>
 		<div class="fit">
 			<h2>Theme</h2>
 			<div>

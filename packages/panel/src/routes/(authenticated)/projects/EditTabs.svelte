@@ -7,14 +7,19 @@
 	let {
 		tabs = [],
 		data = $bindable(),
-	}: { data: { name: string; compose: string }; tabs?: ComponentProps<typeof Tabs>["tabs"] } = $props();
+		format = $bindable(),
+	}: {
+		tabs?: ComponentProps<typeof Tabs>["tabs"];
+		data: { name: string; compose: string };
+		format?: () => Promise<void>;
+	} = $props();
 </script>
 
 <Tabs tabs={[...tabs, { label: "compose", icon: faPencil, content: compose }]} />
 
 {#snippet compose()}
 	<div>
-		<label for="name">Name</label>
+		<label for="name"><h2 style="display: inline-block;">Name</h2></label>
 		<div style="position: relative; display: flex; align-items: center;">
 			{#if data.name.trim() === ""}
 				<div class="error">Name is required</div>
@@ -24,7 +29,7 @@
 	</div>
 
 	<h2>Compose</h2>
-	<ComposeEditor bind:content={data.compose} />
+	<ComposeEditor bind:content={data.compose} bind:format />
 {/snippet}
 
 <style lang="scss">

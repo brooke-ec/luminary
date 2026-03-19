@@ -18,7 +18,8 @@
 	import { error } from "$lib";
 	import Fa from "svelte-fa";
 
-	let { content = $bindable() }: { content: string } = $props();
+	let { content = $bindable(), format: f = $bindable() }: { content: string; format?: () => Promise<void> } =
+		$props();
 
 	let initial = $state.snapshot(content);
 	let focused = $state(false);
@@ -144,6 +145,8 @@
 					changes: { from: 0, to: editor.state.doc.length, insert: content },
 				});
 		});
+
+		f = () => format(editor);
 
 		return () => {
 			editor.destroy();

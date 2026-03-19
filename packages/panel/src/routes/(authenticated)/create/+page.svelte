@@ -8,13 +8,17 @@
 	import { api } from "$lib";
 	import Fa from "svelte-fa";
 
+	let format = $state(async () => {});
+
 	// svelte-ignore state_referenced_locally
 	let project = $state({
 		compose: placeholder,
 		name: "unnamed",
 	});
 
-	async function save() {
+	async function create() {
+		if (localStorage.getItem("luminary-format-on-save") == "true") await format();
+
 		const response = await api.client.PATCH(`/api/project/{project}`, {
 			body: { compose: project.compose, creating: true },
 			params: { path: { project: project.name } },
@@ -28,7 +32,7 @@
 		const saveKeybind = (event: KeyboardEvent) => {
 			if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") {
 				event.preventDefault();
-				save();
+				create();
 			}
 		};
 
@@ -51,12 +55,12 @@
 			</div>
 		</h1>
 
-		<EditTabs bind:data={project} />
+		<EditTabs bind:format bind:data={project} />
 	</div>
 
 	<div class="flexr gap-10">
 		<div>
-			<PromiseButton onclick={save} disabled={project.name.trim() === ""}>
+			<PromiseButton onclick={create} disabled={project.name.trim() === ""}>
 				<div class="flexr gap-5 center">
 					<Fa icon={faPlus} /> Create
 				</div>
