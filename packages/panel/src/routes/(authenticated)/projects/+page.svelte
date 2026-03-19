@@ -100,6 +100,8 @@
 	{/if}
 </div>
 
+<br />
+
 <style lang="scss">
 	.projects {
 		container: projects / inline-size;

@@ -6,30 +6,33 @@
 -->
 
 <script lang="ts">
+	import Crane from "$lib/component/Crane.svelte";
 	import { onNavigate } from "$app/navigation";
 	import { slide } from "svelte/transition";
+	import type { Snippet } from "svelte";
 	import { page } from "$app/state";
 	import { isMobile } from "$lib";
 	import Fa from "svelte-fa";
 	import {
-		faBars,
-		faChevronLeft,
-		faCircleUser,
-		faGear,
-		faLayerGroup,
 		faMagnifyingGlass,
+		faChevronLeft,
+		faLayerGroup,
 		faXmark,
+		faBars,
+		faGear,
+		faPlusCircle,
+		faLock,
 	} from "@fortawesome/free-solid-svg-icons";
-	import type { Snippet } from "svelte";
-	import Crane from "$lib/component/Crane.svelte";
 
 	const EXPANDED_KEY = "luminary-navbar-expanded";
 
 	const PAGES = [
 		{ icon: faLayerGroup, label: "Projects", href: "/projects" },
+		{ icon: faPlusCircle, label: "Create", href: "/create" },
+		"search",
+		{ icon: faLock, label: "Admin", href: "/admin" },
 		{ icon: faGear, label: "Settings", href: "/settings" },
-		{ icon: faCircleUser, label: "User", href: "/user" },
-	] satisfies { icon: any; label: string; href: string }[];
+	] satisfies ({ icon: any; label: string; href: string } | "search")[];
 
 	let { children }: { children: Snippet<[]> } = $props();
 
@@ -55,13 +58,24 @@
 </script>
 
 {#snippet links()}
-	{#each PAGES as { icon, label, href }}
-		<a class="entry" {href} class:current={page.url.pathname.startsWith(href)}>
-			<div class="icon">
-				<Fa {icon} />
-			</div>
-			<div class="label">{label}</div>
-		</a>
+	{#each PAGES as entry}
+		{#if entry === "search"}
+			<button class="a entry" style="margin-bottom: auto">
+				<div class="icon">
+					<Fa icon={faMagnifyingGlass} />
+				</div>
+				<div class="label">Search</div>
+			</button>
+		{:else}
+			{@const { icon, label, href } = entry}
+
+			<a class="entry" {href} class:current={page.url.pathname.startsWith(href)}>
+				<div class="icon">
+					<Fa {icon} />
+				</div>
+				<div class="label">{label}</div>
+			</a>
+		{/if}
 	{/each}
 {/snippet}
 
@@ -93,13 +107,6 @@
 
 		<nav class:expanded bind:clientWidth={navbarWidth}>
 			{@render links()}
-
-			<button class="a entry" style="margin-top: auto">
-				<div class="icon">
-					<Fa icon={faMagnifyingGlass} />
-				</div>
-				<div class="label">Search</div>
-			</button>
 
 			<button class="a entry" onclick={toggleExpanded} aria-label="{expanded ? 'collapse' : 'expand'} sidebar">
 				<div class="icon">
@@ -135,6 +142,7 @@
 		background-color: var(--crust);
 
 		position: fixed;
+		z-index: 100;
 		left: 0;
 		top: 0;
 

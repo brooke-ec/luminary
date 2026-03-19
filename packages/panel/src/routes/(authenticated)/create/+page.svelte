@@ -1,0 +1,87 @@
+<script lang="ts">
+	import { faBan, faCircleInfo, faLayerGroup } from "@fortawesome/free-solid-svg-icons";
+	import { faSquarePlus } from "@fortawesome/free-regular-svg-icons";
+	import PromiseButton from "$lib/component/PromiseButton.svelte";
+	import EditTabs from "../projects/EditTabs.svelte";
+	import placeholder from "./placeholder.yml?raw";
+	import { goto } from "$app/navigation";
+	import { onMount } from "svelte";
+	import { api } from "$lib";
+	import Fa from "svelte-fa";
+
+	// svelte-ignore state_referenced_locally
+	let project = $state({
+		compose: placeholder,
+		name: "unnamed",
+	});
+
+	async function save() {
+		const response = await api.client.PATCH(`/api/project/{project}`, {
+			body: { compose: project.compose, creating: true },
+			params: { path: { project: project.name } },
+		});
+
+		api.putProject(response.data!);
+		await goto(`/projects/${project.name}${location.hash}`);
+	}
+
+	onMount(() => {
+		const saveKeybind = (event: KeyboardEvent) => {
+			if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") {
+				event.preventDefault();
+				save();
+			}
+		};
+
+		window.addEventListener("keydown", saveKeybind, true);
+
+		return () => {
+			window.removeEventListener("keydown", saveKeybind, true);
+		};
+	});
+</script>
+
+{#if project}
+	<div class="flexc gap-10">
+		<!-- Title Bar -->
+		<h1 class="flexr gap-10 center fit">
+			<Fa icon={faLayerGroup} size="lg" />
+			<div style="display: inline-block;">
+				<div style="font-size: 22px;">{project.name}</div>
+				<div class="subtext flexr gap-5">New Project</div>
+			</div>
+		</h1>
+
+		<EditTabs bind:data={project} />
+	</div>
+
+	<div class="flexr gap-10">
+		<div>
+			<PromiseButton onclick={save}>
+				<div class="flexr gap-5 center">
+					<Fa icon={faSquarePlus} /> Create
+				</div>
+			</PromiseButton>
+		</div>
+		<a class="button flexr gap-5 center" href="../">
+			<Fa icon={faBan} /> Cancel
+		</a>
+	</div>
+{:else}
+	<div class="flexc gap-10 center">
+		<Fa icon={faCircleInfo} size="lg" />
+		<div style="font-size: 22px;">Project no longer exists</div>
+	</div>
+{/if}
+
+<style lang="scss">
+	// Modify h2 of all child components
+	* :global(h2) {
+		margin-bottom: 5px;
+		font-size: 16px;
+
+		&:not(:first-child) {
+			margin-top: 15px;
+		}
+	}
+</style>

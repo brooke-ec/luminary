@@ -193,4 +193,7 @@ pub struct LuminaryProjectPatch {
 
     /// If [Some], renames the current to the given name. If [None], no rename will take place.
     pub to: Option<String>,
+
+    /// Wether this request is for creating a new project.
+    pub creating: bool,
 }

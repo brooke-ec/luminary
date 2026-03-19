@@ -43,6 +43,7 @@
 			body: {
 				compose: copy.compose === data.compose ? null : copy.compose,
 				to: rename ? copy.name : null,
+				creating: false,
 			},
 		});
 

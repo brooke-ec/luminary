@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 
 use docker_compose_types::Compose;
-use eyre::{Context, Ok, Result};
+use eyre::{Context, Ok, Result, bail};
 use futures_util::StreamExt;
 use luminary_macros::wrap_err;
 use tokio::fs::{self, read_to_string};
@@ -33,7 +33,7 @@ impl LuminaryEngine {
 
     /// Validates a compose file by attempting to parse it and performing basic checks on the structure.
     #[wrap_err("Invalid compose file")]
-    pub fn validate_compose(&self, compose: &str) -> Result<()> {
+    fn validate_compose(&self, compose: &str) -> Result<()> {
         let compose = serde_saphyr::from_str::<Compose>(compose).wrap_err("Failed to parse compose file")?;
 
         if compose.services.is_empty() {
@@ -45,8 +45,26 @@ impl LuminaryEngine {
 
     /// Updates the given project by applying the provided patch
     pub async fn patch_project(&self, project: &str, patch: &LuminaryProjectPatch) -> Result<()> {
-        self.set_action(project, None, LuminaryAction::Patching).await?;
+        // Validate request
+        if project.len() == 0 || patch.to.as_ref().is_some_and(|name| name.len() == 0) {
+            bail!("Project name cannot be empty");
+        }
 
+        if let Some(compose) = &patch.compose {
+            self.validate_compose(compose)?;
+        }
+
+        if patch.creating {
+            if self.get_project(&project).await.is_ok() {
+                eyre::bail!("Project '{}' already exists", project);
+            }
+        } else {
+            self.set_action(project, None, LuminaryAction::Patching)
+                .await
+                .ok();
+        }
+
+        // Perform requested changes
         let (project_path, compose_path) = self.get_path(project);
         let mut changed = false;
 
@@ -60,7 +78,9 @@ impl LuminaryEngine {
             changed = true;
         }
 
-        self.set_action(project, None, LuminaryAction::Idle).await?;
+        if !patch.creating {
+            self.set_action(project, None, LuminaryAction::Idle).await.ok();
+        }
 
         if changed {
             self.refresh().await?;

@@ -5,9 +5,9 @@
 	import type { ComponentProps } from "svelte";
 
 	let {
-		tabs,
+		tabs = [],
 		data = $bindable(),
-	}: { data: { name: string; compose: string }; tabs: ComponentProps<typeof Tabs>["tabs"] } = $props();
+	}: { data: { name: string; compose: string }; tabs?: ComponentProps<typeof Tabs>["tabs"] } = $props();
 </script>
 
 <Tabs tabs={[...tabs, { label: "compose", icon: faPencil, content: compose }]} />

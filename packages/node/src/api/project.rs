@@ -1,6 +1,5 @@
 //! Manages retrieving and updating project compose files.
 
-use eyre::eyre;
 use salvo::Router;
 use salvo::Writer;
 use salvo::oapi::ToSchema;
@@ -58,15 +57,10 @@ pub async fn patch_compose(
 ) -> LuminaryResponse<LuminaryProjectWithCompose> {
     let engine = obtain!(depot, LuminaryEngine);
 
-    if project.len() == 0 || payload.to.as_ref().is_some_and(|name| name.len() == 0) {
-        Err(eyre!("Project name cannot be empty"))?;
+    if !payload.creating {
+        engine.wait_until_idle(&project, None).await?;
     }
 
-    if let Some(compose) = &payload.compose {
-        engine.validate_compose(compose)?;
-    }
-
-    engine.wait_until_idle(&project, None).await?;
     engine.patch_project(&project, &payload.0).await?;
     return get_project(engine, &payload.to.take().unwrap_or(project.0)).await;
 }
