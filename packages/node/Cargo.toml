@@ -4,7 +4,6 @@ version = { workspace = true }
 edition = { workspace = true }
 
 [dependencies]
-salvo = { version = "0.89.1", features = ["affix-state", "oapi", "sse"] }
 uuid = { version = "1.21.0", features = ["serde", "v4"] }
 bollard = { version = "0.20", features = ["chrono"] }
 luminary-macros = { path = "./macros" }
@@ -25,6 +24,13 @@ hex = "0.4.3"
 eyre = "0.6"
 envy = "0.4"
 bytes = "1"
+
+salvo = { version = "0.89.1", features = [
+    "affix-state",
+    "oapi",
+    "sse",
+    "serve-static",
+] }
 
 tokio = { version = "1.49", features = [
     "rt-multi-thread",

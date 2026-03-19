@@ -755,6 +755,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7cd812cc2bc1d69d4764bd80df88b4317eaef9e773c75226407d9bc0876b211c"
 dependencies = [
  "powerfmt",
+ "serde_core",
 ]
 
 [[package]]
@@ -2176,6 +2177,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "path-slash"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1e91099d4268b0e11973f036e885d652fb0b21fedcf69738c627f94db6a44f42"
+
+[[package]]
 name = "pem"
 version = "3.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2864,6 +2871,7 @@ dependencies = [
  "salvo-acme",
  "salvo-oapi",
  "salvo-proxy",
+ "salvo-serve-static",
  "salvo_core",
  "salvo_extra",
 ]
@@ -2990,6 +2998,26 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.116",
+]
+
+[[package]]
+name = "salvo-serve-static"
+version = "0.89.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "754271d8494b3dcca612589993bf215936f97964eaf0cee4f59abea61bc9481d"
+dependencies = [
+ "hex",
+ "mime",
+ "mime-infer",
+ "path-slash",
+ "percent-encoding",
+ "rust-embed",
+ "salvo_core",
+ "serde",
+ "serde_json",
+ "time",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]

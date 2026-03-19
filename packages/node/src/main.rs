@@ -38,7 +38,6 @@ async fn main() -> Result<()> {
         .init();
 
     // Load configuration
-    #[cfg(debug_assertions)]
     let configuration = Arc::new(envy::prefixed("LUMINARY_").from_env::<LuminaryConfiguration>()?);
 
     // Set up the app and dependencies

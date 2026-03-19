@@ -2,6 +2,7 @@
 
 use eyre::Result;
 use luminary_macros::wrap_err;
+use salvo::serve_static::StaticDir;
 use salvo::{Router, affix_state, oapi::endpoint};
 use sqlx::SqlitePool;
 
@@ -61,36 +62,38 @@ pub async fn setup(engine: LuminaryEngine, pool: SqlitePool, logs: BroadcastLaye
 
 /// Sets up a Salvo router with all API routes
 fn router() -> Router {
-    return Router::new().push(
-        Router::with_path("/api")
-            .push(Router::with_path("ping").get(ping))
-            .push(auth::router())
-            .push(
-                // New router for protected routes, to avoid repetition
-                Router::with_hoop(protected)
-                    .push(Router::with_path("realtime").get(app_subscribe))
-                    .push(
-                        Router::with_path("/project/{project}")
-                            .push(project::router())
-                            .push(Router::with_path("logs").get(logs_subscribe))
-                            .push(Router::with_path("restart").post(action::restart_project))
-                            .push(Router::with_path("start").post(action::start_project))
-                            .push(Router::with_path("stop").post(action::stop_project))
-                            .push(Router::with_path("recreate").post(action::recreate_project))
-                            .push(Router::with_path("pull").post(action::pull_project))
-                            .push(Router::with_path("build").post(action::build_project))
-                            .push(
-                                Router::with_path("service/{service}")
-                                    .push(Router::with_path("restart").post(action::restart_service))
-                                    .push(Router::with_path("start").post(action::start_service))
-                                    .push(Router::with_path("stop").post(action::stop_service))
-                                    .push(Router::with_path("recreate").post(action::recreate_service))
-                                    .push(Router::with_path("pull").post(action::pull_service))
-                                    .push(Router::with_path("build").post(action::build_service)),
-                            ),
-                    ),
-            ),
-    );
+    return Router::new()
+        .push(
+            Router::with_path("/api")
+                .push(Router::with_path("ping").get(ping))
+                .push(auth::router())
+                .push(
+                    // New router for protected routes, to avoid repetition
+                    Router::with_hoop(protected)
+                        .push(Router::with_path("realtime").get(app_subscribe))
+                        .push(
+                            Router::with_path("/project/{project}")
+                                .push(project::router())
+                                .push(Router::with_path("logs").get(logs_subscribe))
+                                .push(Router::with_path("restart").post(action::restart_project))
+                                .push(Router::with_path("start").post(action::start_project))
+                                .push(Router::with_path("stop").post(action::stop_project))
+                                .push(Router::with_path("recreate").post(action::recreate_project))
+                                .push(Router::with_path("pull").post(action::pull_project))
+                                .push(Router::with_path("build").post(action::build_project))
+                                .push(
+                                    Router::with_path("service/{service}")
+                                        .push(Router::with_path("restart").post(action::restart_service))
+                                        .push(Router::with_path("start").post(action::start_service))
+                                        .push(Router::with_path("stop").post(action::stop_service))
+                                        .push(Router::with_path("recreate").post(action::recreate_service))
+                                        .push(Router::with_path("pull").post(action::pull_service))
+                                        .push(Router::with_path("build").post(action::build_service)),
+                                ),
+                        ),
+                ),
+        )
+        .push(Router::with_path("{*path}").get(StaticDir::new(["static"]).defaults("fallback.html")));
 }
 
 /// A simple endpoint to test if the server is running.
