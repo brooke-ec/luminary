@@ -18,7 +18,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::{SqlitePool, prelude::FromRow};
 use uuid::Uuid;
 
-use crate::{api::response::LuminaryResponse, eyre_fmt, obtain};
+use crate::{api::response::LuminaryResponse, eyre_fmt, get_user, obtain};
 
 /// Returns a router containing all authentication-related endpoints.
 pub fn router() -> Router {
@@ -31,13 +31,20 @@ pub fn router() -> Router {
                 .post(reset_password),
         )
         .push(
-            Router::with_hoop(protected).push(
-                Router::with_path("users")
-                    .get(get_users)
-                    .post(create_user)
-                    .push(Router::with_path("{user}").delete(delete_user)),
-            ),
+            Router::with_hoop(protected)
+                .push(Router::with_path("self").get(get_current_user))
+                .push(
+                    Router::with_path("users")
+                        .get(get_users)
+                        .post(create_user)
+                        .push(Router::with_path("{user}").delete(delete_user)),
+                ),
         );
+}
+
+#[endpoint]
+async fn get_current_user(depot: &mut Depot) -> LuminaryResponse<LuminaryUser> {
+    return Ok(get_user!(depot).clone().into());
 }
 
 /// Reads username and password from the request body, and returns an authentication token if the credentials are valid.

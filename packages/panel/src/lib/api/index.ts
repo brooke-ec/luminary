@@ -120,3 +120,13 @@ export async function login(credentials: components["schemas"]["luminary_node.ap
 	const response = await client.POST("/api/auth/login", { body: credentials });
 	putToken(response.data!);
 }
+
+/**
+ * Logs the user out by invalidating the token on the backend and removing it from localStorage.
+ */
+export async function logout() {
+	await client.POST("/api/auth/logout");
+	putToken(null);
+
+	await goto("/login");
+}

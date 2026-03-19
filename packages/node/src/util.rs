@@ -14,7 +14,7 @@ macro_rules! obtain {
 macro_rules! get_user {
     ($depot:expr) => {
         $depot
-            .get::<crate::auth::LuminaryUser>("user")
+            .get::<crate::api::auth::LuminaryUser>("user")
             .ok()
             .and_then(|v| Some(v))
             .expect("User can not be obtained from a unprotected endpoint.")
