@@ -61,6 +61,7 @@ async function listen(signal: AbortSignal, fetch?: typeof globalThis.fetch) {
 					handleEvent(event);
 				}
 			} catch (err) {
+				if (signal.aborted) return;
 				error("Connection to server lost", [
 					"Your connection to the server was lost: " + (err instanceof Error ? err.message : String(err)),
 					"Luminary will attempt to reconnect automatically. If the issue persists, please check your network connection and the server status.",
