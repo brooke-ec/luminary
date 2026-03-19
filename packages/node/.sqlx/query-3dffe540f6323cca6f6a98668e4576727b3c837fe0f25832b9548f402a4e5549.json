@@ -17,6 +17,11 @@
         "name": "password",
         "ordinal": 2,
         "type_info": "Text"
+      },
+      {
+        "name": "join_token",
+        "ordinal": 3,
+        "type_info": "Text"
       }
     ],
     "parameters": {
@@ -25,7 +30,8 @@
     "nullable": [
       false,
       false,
-      false
+      true,
+      true
     ]
   },
   "hash": "3dffe540f6323cca6f6a98668e4576727b3c837fe0f25832b9548f402a4e5549"

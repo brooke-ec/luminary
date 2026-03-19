@@ -12,6 +12,7 @@ use rand_chacha::{
 use salvo::{oapi::extract::JsonBody, prelude::*};
 use serde::Deserialize;
 use sqlx::{SqlitePool, prelude::FromRow};
+use uuid::Uuid;
 
 use crate::{api::response::LuminaryResponse, eyre_fmt, obtain};
 
@@ -70,7 +71,11 @@ impl LuminaryAuthentication {
 
         // Verifying the password is blocking and pretty slow (~600ms), so run on a separate thread
         let user = tokio::task::spawn_blocking(move || {
-            user.filter(|user| verify_password(&credentials.password, &user.password).is_ok())
+            user.filter(|user| {
+                user.password
+                    .as_ref()
+                    .is_some_and(|password| verify_password(&credentials.password, &password).is_ok())
+            })
         })
         .await
         .wrap_err("Password verification task failed")?;
@@ -81,14 +86,13 @@ impl LuminaryAuthentication {
             Some(u) => u,
         };
 
-        // Generate a secure bearer token using ChaCha12
-        let mut token_bytes = [0u8; 32];
-        ChaCha12Rng::from_entropy().fill_bytes(&mut token_bytes);
-        let token = hex::encode(token_bytes);
+        let token = generate_token();
 
         // Store the token in the database, associated with the user
+        let uuid = Uuid::new_v4().to_string();
         sqlx::query!(
-            "INSERT INTO [session] ([token], [user_agent], [user]) VALUES (?, ?, ?)",
+            "INSERT INTO [session] ([uuid], [token], [user_agent], [user]) VALUES (?, ?, ?, ?)",
+            uuid,
             token,
             "todo", // todo: capture user agent from request and store it here
             user.uuid
@@ -121,6 +125,23 @@ impl LuminaryAuthentication {
         .wrap_err("Failed to look up session")?;
 
         return Ok(user);
+    }
+
+    async fn create_user(&self, username: &str) -> Result<String> {
+        let uuid = Uuid::new_v4().to_string();
+        let token = generate_token();
+
+        sqlx::query!(
+            "INSERT INTO [user] ([uuid], [username], [join_token]) VALUES (?, ?, ?)",
+            uuid,
+            username,
+            token
+        )
+        .execute(&self.pool)
+        .await
+        .wrap_err("Failed to create user")?;
+
+        return Ok(token);
     }
 }
 
@@ -188,7 +209,8 @@ pub struct LuminaryUserCredentials {
 pub struct LuminaryUser {
     uuid: String,
     username: String,
-    password: String,
+    password: Option<String>,
+    join_token: Option<String>,
 }
 
 impl Debug for LuminaryUser {
@@ -197,6 +219,21 @@ impl Debug for LuminaryUser {
             .field("id", &self.uuid)
             .field("username", &self.username)
             .field("password", &"***")
+            .field(
+                "join_token",
+                if self.join_token.is_none() {
+                    &"None"
+                } else {
+                    &"Some(***)"
+                },
+            )
             .finish()
     }
+}
+
+/// Generates a secure random token for authentication purposes.
+fn generate_token() -> String {
+    let mut token_bytes = [0u8; 32];
+    ChaCha12Rng::from_entropy().fill_bytes(&mut token_bytes);
+    return hex::encode(token_bytes);
 }

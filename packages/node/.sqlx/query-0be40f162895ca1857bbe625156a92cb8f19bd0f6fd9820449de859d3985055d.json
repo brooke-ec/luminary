@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO [session] ([uuid], [token], [user_agent], [user]) VALUES (?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "0be40f162895ca1857bbe625156a92cb8f19bd0f6fd9820449de859d3985055d"
+}
