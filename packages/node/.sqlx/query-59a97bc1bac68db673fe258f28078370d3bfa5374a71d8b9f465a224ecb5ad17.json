@@ -19,7 +19,7 @@
         "type_info": "Text"
       },
       {
-        "name": "join_token",
+        "name": "reset_token",
         "ordinal": 3,
         "type_info": "Text"
       }

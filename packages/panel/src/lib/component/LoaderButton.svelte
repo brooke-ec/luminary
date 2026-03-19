@@ -11,6 +11,7 @@
 		"aria-label": ariaLabel,
 		style = "button",
 		loading = false,
+		fit = false,
 		children,
 		disabled,
 		onclick,
@@ -21,10 +22,11 @@
 		"aria-label"?: string;
 		disabled?: boolean;
 		loading?: boolean;
+		fit?: boolean;
 	} = $props();
 </script>
 
-<button class="full {style}" disabled={loading || disabled} {onclick} aria-label={ariaLabel}>
+<button class="{fit ? 'fit' : 'full'} {style}" disabled={loading || disabled} {onclick} aria-label={ariaLabel}>
 	{#if loading}
 		<span class="loader"></span>
 	{/if}

@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT [user].* FROM [user] INNER JOIN [session] ON [user].[uuid] = [session].[user] WHERE [session].[token] = ?",
+  "query": "SELECT * FROM [user]",
   "describe": {
     "columns": [
       {
@@ -25,7 +25,7 @@
       }
     ],
     "parameters": {
-      "Right": 1
+      "Right": 0
     },
     "nullable": [
       false,
@@ -34,5 +34,5 @@
       true
     ]
   },
-  "hash": "3dffe540f6323cca6f6a98668e4576727b3c837fe0f25832b9548f402a4e5549"
+  "hash": "9c7b60e27f5ec596ad3182eee5411b0c236373c1a344acde2cf0d11a7df0bd5c"
 }

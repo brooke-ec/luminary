@@ -22,7 +22,7 @@
 	{@render children()}
 </div>
 
-<div {...tooltip.content} class="tooltip">
+<div {...tooltip.content} class="tooltip fit">
 	<div class="arrow" {...tooltip.arrow}></div>
 	<span>{content}</span>
 </div>

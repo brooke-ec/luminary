@@ -33,6 +33,7 @@
 		disabled,
 		loading,
 		style,
+		fit,
 	}: {
 		style?: ComponentProps<typeof LoaderButton>["style"];
 		children: Snippet<[boolean]> | string;
@@ -40,6 +41,7 @@
 		"aria-label"?: string;
 		disabled?: boolean;
 		loading?: boolean;
+		fit?: boolean;
 	} = $props();
 
 	let waiting = $state(false);
@@ -54,4 +56,12 @@
 	}
 </script>
 
-<LoaderButton onclick={handleClick} {disabled} {style} {children} loading={waiting || loading} aria-label={ariaLabel} />
+<LoaderButton
+	loading={waiting || loading}
+	aria-label={ariaLabel}
+	onclick={handleClick}
+	{disabled}
+	{children}
+	{style}
+	{fit}
+/>

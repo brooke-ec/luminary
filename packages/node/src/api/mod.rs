@@ -67,8 +67,7 @@ fn router() -> Router {
             .push(auth::router())
             .push(
                 // New router for protected routes, to avoid repetition
-                Router::new()
-                    .hoop(protected)
+                Router::with_hoop(protected)
                     .push(Router::with_path("realtime").get(app_subscribe))
                     .push(
                         Router::with_path("/project/{project}")

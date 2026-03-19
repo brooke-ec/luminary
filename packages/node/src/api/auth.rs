@@ -4,13 +4,17 @@ use std::fmt::Debug;
 
 use eyre::{Context, ContextCompat, Result};
 use log::error;
+use luminary_macros::wrap_err;
 use password_auth::verify_password;
 use rand_chacha::{
     ChaCha12Rng,
     rand_core::{RngCore, SeedableRng},
 };
-use salvo::{oapi::extract::JsonBody, prelude::*};
-use serde::Deserialize;
+use salvo::{
+    oapi::extract::{JsonBody, PathParam},
+    prelude::*,
+};
+use serde::{Deserialize, Serialize};
 use sqlx::{SqlitePool, prelude::FromRow};
 use uuid::Uuid;
 
@@ -20,7 +24,20 @@ use crate::{api::response::LuminaryResponse, eyre_fmt, obtain};
 pub fn router() -> Router {
     return Router::with_path("/auth")
         .push(Router::with_path("login").post(login))
-        .push(Router::with_path("logout").post(logout));
+        .push(Router::with_path("logout").post(logout))
+        .push(
+            Router::with_path("reset/{token}")
+                .get(verify_reset_token)
+                .post(reset_password),
+        )
+        .push(
+            Router::with_hoop(protected).push(
+                Router::with_path("users")
+                    .get(get_users)
+                    .post(create_user)
+                    .push(Router::with_path("{user}").delete(delete_user)),
+            ),
+        );
 }
 
 /// Reads username and password from the request body, and returns an authentication token if the credentials are valid.
@@ -39,11 +56,79 @@ async fn login(depot: &mut Depot, body: JsonBody<LuminaryUserCredentials>) -> Lu
 #[endpoint]
 async fn logout(req: &mut Request, depot: &mut Depot) -> LuminaryResponse<()> {
     let auth = obtain!(depot, LuminaryAuthentication);
-
     let token = extract_token(req).wrap_err("Missing or invalid authorization token")?;
 
     auth.logout(token).await?;
     return Ok(().into());
+}
+
+/// Fetches a list of all users.
+#[endpoint]
+async fn get_users(depot: &mut Depot) -> LuminaryResponse<Vec<LuminaryUser>> {
+    let auth = obtain!(depot, LuminaryAuthentication);
+    let users = auth.get_users().await?;
+    return Ok(users.into());
+}
+
+/// Creates a new user with the given username, returning a reset token that can be used to set the user's password.
+#[endpoint]
+async fn create_user(depot: &mut Depot, body: JsonBody<CreateUserRequest>) -> LuminaryResponse<String> {
+    let auth = obtain!(depot, LuminaryAuthentication);
+
+    let reset_token = auth.create_user(&body.username).await?;
+    return Ok(reset_token.into());
+}
+
+/// Request body for creating a new user.
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct CreateUserRequest {
+    username: String,
+}
+
+/// Deletes the user with the given UUID.
+#[endpoint]
+async fn delete_user(depot: &mut Depot, user: PathParam<String>) -> LuminaryResponse<()> {
+    let auth = obtain!(depot, LuminaryAuthentication);
+
+    auth.delete_user(&user).await?;
+    return Ok(().into());
+}
+
+/// Verifies that a reset token is valid.
+#[endpoint]
+async fn verify_reset_token(depot: &mut Depot, token: PathParam<String>) -> LuminaryResponse<String> {
+    let auth = obtain!(depot, LuminaryAuthentication);
+
+    let user = auth
+        .get_user_from_reset_token(&token)
+        .await?
+        .wrap_err("Invalid reset token")?;
+
+    return Ok(user.username.into());
+}
+
+/// Resets a user's password using a reset token, which is invalidated after use.
+#[endpoint]
+async fn reset_password(
+    depot: &mut Depot,
+    token: PathParam<String>,
+    body: JsonBody<ResetPasswordRequest>,
+) -> LuminaryResponse<()> {
+    let auth = obtain!(depot, LuminaryAuthentication);
+
+    let user = auth
+        .get_user_from_reset_token(&token)
+        .await?
+        .wrap_err("Invalid reset token")?;
+
+    auth.set_password(&user.uuid, body.password.clone()).await?;
+    return Ok(().into());
+}
+
+/// Request body for resetting a user's password.
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct ResetPasswordRequest {
+    password: String,
 }
 
 /// Acts as the authentication backend for the Luminary Node, handling user authentication and bearer token management.
@@ -58,8 +143,10 @@ impl LuminaryAuthentication {
         Self { pool }
     }
 
-    /// Authenticates a user with the given credentials and returns a bearer token on success.
-    pub async fn login(&self, credentials: LuminaryUserCredentials) -> Result<Option<String>> {
+    pub async fn verify_password(
+        &self,
+        credentials: LuminaryUserCredentials,
+    ) -> Result<Option<LuminaryUser>> {
         let user = sqlx::query_as!(
             LuminaryUser,
             "SELECT * FROM [user] WHERE [username] = ?",
@@ -80,8 +167,13 @@ impl LuminaryAuthentication {
         .await
         .wrap_err("Password verification task failed")?;
 
+        return Ok(user);
+    }
+
+    /// Authenticates a user with the given credentials and returns a bearer token on success.
+    pub async fn login(&self, credentials: LuminaryUserCredentials) -> Result<Option<String>> {
         // Terminate early if the user doesn't exist or the password is wrong
-        let user = match user {
+        let user = match self.verify_password(credentials).await? {
             None => return Ok(None),
             Some(u) => u,
         };
@@ -127,12 +219,14 @@ impl LuminaryAuthentication {
         return Ok(user);
     }
 
-    async fn create_user(&self, username: &str) -> Result<String> {
+    /// Creates a new user with the given username and a random reset token, returning the reset token.
+    #[wrap_err("Failed to create user")]
+    pub async fn create_user(&self, username: &str) -> Result<String> {
         let uuid = Uuid::new_v4().to_string();
         let token = generate_token();
 
         sqlx::query!(
-            "INSERT INTO [user] ([uuid], [username], [join_token]) VALUES (?, ?, ?)",
+            "INSERT INTO [user] ([uuid], [username], [reset_token]) VALUES (?, ?, ?)",
             uuid,
             username,
             token
@@ -143,6 +237,62 @@ impl LuminaryAuthentication {
 
         return Ok(token);
     }
+
+    /// Sets a user's password to the given value.
+    #[wrap_err("Failed to update password")]
+    pub async fn set_password(&self, uuid: &str, password: String) -> Result<()> {
+        let hashed_password = tokio::task::spawn_blocking(move || password_auth::generate_hash(password))
+            .await
+            .wrap_err("Failed to spawn hashing task")?;
+
+        sqlx::query!(
+            "UPDATE [user] SET [password] = ?, [reset_token] = NULL WHERE [uuid] = ?",
+            hashed_password,
+            uuid
+        )
+        .execute(&self.pool)
+        .await
+        .wrap_err("Failed to set user password")?;
+
+        return Ok(());
+    }
+
+    /// Finds a user from their reset token, or [None] if the token is invalid.
+    #[wrap_err("Failed to get user from reset token")]
+    pub async fn get_user_from_reset_token(&self, token: &str) -> Result<Option<LuminaryUser>> {
+        let user = sqlx::query_as!(
+            LuminaryUser,
+            "SELECT * FROM [user] WHERE [reset_token] = ?",
+            token
+        )
+        .fetch_optional(&self.pool)
+        .await
+        .wrap_err("Failed to look up user from reset token")?;
+
+        return Ok(user);
+    }
+
+    /// Deletes a user from the database, along with all their sessions.
+    #[wrap_err("Failed to delete user")]
+    pub async fn delete_user(&self, uuid: &str) -> Result<()> {
+        sqlx::query!("DELETE FROM [user] WHERE [uuid] = ?", uuid)
+            .execute(&self.pool)
+            .await
+            .wrap_err("Failed to delete user")?;
+
+        return Ok(());
+    }
+
+    /// Fetches a list of all users.
+    #[wrap_err("Failed to get users")]
+    pub async fn get_users(&self) -> Result<Vec<LuminaryUser>> {
+        let users = sqlx::query_as!(LuminaryUser, "SELECT * FROM [user]")
+            .fetch_all(&self.pool)
+            .await
+            .wrap_err("Failed to query users")?;
+
+        return Ok(users);
+    }
 }
 
 /// Salvo middleware for validating authentication.
@@ -152,7 +302,7 @@ impl LuminaryAuthentication {
 /// # Examples
 /// ```
 /// use salvo::{Router, oapi::endpoint};
-/// use crate::auth::protected;
+/// use crate::api::auth::protected;
 ///
 /// let router = Router::new().hoop(protected).get(protected_handler);
 ///
@@ -205,12 +355,14 @@ pub struct LuminaryUserCredentials {
 }
 
 /// Represents a user in Luminary Node.
-#[derive(Clone, FromRow)]
+#[derive(Clone, Serialize, ToSchema, FromRow)]
 pub struct LuminaryUser {
     uuid: String,
     username: String,
+    #[serde(skip_serializing)]
     password: Option<String>,
-    join_token: Option<String>,
+    #[serde(skip_serializing)]
+    reset_token: Option<String>,
 }
 
 impl Debug for LuminaryUser {
@@ -220,8 +372,8 @@ impl Debug for LuminaryUser {
             .field("username", &self.username)
             .field("password", &"***")
             .field(
-                "join_token",
-                if self.join_token.is_none() {
+                "reset_token",
+                if self.reset_token.is_none() {
                     &"None"
                 } else {
                     &"Some(***)"

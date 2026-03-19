@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE [user] SET [password] = ?, [reset_token] = NULL WHERE [uuid] = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "a7f6c56dcb894f10f2d47dbf45a42baf8ef4fdce1d2c81c82413816061727f52"
+}

@@ -4,7 +4,7 @@ CREATE TABLE [user] (
     [username] TEXT NOT NULL UNIQUE,
     -- Password will be null for users that have been invited but haven't set a password yet
     [password] TEXT NULL,
-    [join_token] TEXT NULL UNIQUE,
+    [reset_token] TEXT NULL UNIQUE,
     PRIMARY KEY ([uuid])
 );
 
