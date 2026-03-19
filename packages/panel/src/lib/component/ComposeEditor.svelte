@@ -138,6 +138,13 @@
 			],
 		});
 
+		$effect(() => {
+			if (content !== editor.state.doc.toString())
+				editor.dispatch({
+					changes: { from: 0, to: editor.state.doc.length, insert: content },
+				});
+		});
+
 		return () => {
 			editor.destroy();
 		};
