@@ -1,6 +1,5 @@
 <script lang="ts">
-	import { faBan, faCircleInfo, faLayerGroup } from "@fortawesome/free-solid-svg-icons";
-	import { faSquarePlus } from "@fortawesome/free-regular-svg-icons";
+	import { faBan, faCircleInfo, faLayerGroup, faPlus } from "@fortawesome/free-solid-svg-icons";
 	import PromiseButton from "$lib/component/PromiseButton.svelte";
 	import EditTabs from "../projects/EditTabs.svelte";
 	import placeholder from "./placeholder.yml?raw";
@@ -57,9 +56,9 @@
 
 	<div class="flexr gap-10">
 		<div>
-			<PromiseButton onclick={save}>
+			<PromiseButton onclick={save} disabled={project.name.trim() === ""}>
 				<div class="flexr gap-5 center">
-					<Fa icon={faSquarePlus} /> Create
+					<Fa icon={faPlus} /> Create
 				</div>
 			</PromiseButton>
 		</div>

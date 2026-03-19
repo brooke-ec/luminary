@@ -15,7 +15,12 @@
 {#snippet compose()}
 	<div>
 		<label for="name">Name</label>
-		<input required id="name" type="text" bind:value={data.name} />
+		<div style="position: relative; display: flex; align-items: center;">
+			{#if data.name.trim() === ""}
+				<div class="error">Name is required</div>
+			{/if}
+			<input required id="name" type="text" bind:value={data.name} />
+		</div>
 	</div>
 
 	<h2>Compose</h2>
@@ -31,5 +36,12 @@
 		&:not(:first-child) {
 			margin-top: 15px;
 		}
+	}
+
+	.error {
+		color: var(--red);
+		position: absolute;
+		margin-left: 10px;
+		font-style: italic;
 	}
 </style>

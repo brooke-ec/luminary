@@ -103,7 +103,7 @@
 		<div style="color: var(--peach); margin-bottom: 10px;">* Unsaved changes</div>
 		<div class="flexr gap-10">
 			<div>
-				<PromiseButton onclick={save}>
+				<PromiseButton onclick={save} disabled={copy.name.trim() === ""}>
 					<div class="flexr gap-5 center">
 						<Fa icon={faSave} /> Save
 					</div>
