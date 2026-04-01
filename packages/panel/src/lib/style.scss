@@ -91,7 +91,7 @@ a.button {
 	}
 
 	&:disabled {
-		background-color: var(--overlay1) !important;
+		background-color: var(--overlay1);
 		cursor: not-allowed;
 	}
 
