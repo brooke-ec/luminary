@@ -12,7 +12,7 @@ use tracing_subscriber::{
 
 use crate::{configuration::LuminaryConfiguration, core::LuminaryEngine};
 
-const DATABASE: &str = "luminary.db";
+const DATABASE: &str = "data/luminary.db";
 
 mod api;
 mod configuration;

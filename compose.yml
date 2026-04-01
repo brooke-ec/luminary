@@ -1,0 +1,12 @@
+services:
+  luminary:
+    image: luminary:latest
+    restart: unless-stopped
+    ports:
+      - 9000:9000
+    volumes:
+      - ${LUMINARY_PROJECT_DIRECTORY}:${LUMINARY_PROJECT_DIRECTORY}
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./data:/opt/app/data
+    environment:
+      - LUMINARY_PROJECT_DIRECTORY=${LUMINARY_PROJECT_DIRECTORY}
