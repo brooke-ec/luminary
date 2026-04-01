@@ -2,9 +2,29 @@
 
 use crate::{api::response::LuminaryResponse, core::LuminaryEngine, obtain};
 use salvo::{
-    Depot, Writer,
+    Depot, Router, Writer,
     oapi::{endpoint, extract::PathParam},
 };
+
+/// Returns a router with all action-related routes.
+pub fn router() -> Router {
+    return Router::new()
+        .push(Router::with_path("restart").post(restart_project))
+        .push(Router::with_path("start").post(start_project))
+        .push(Router::with_path("stop").post(stop_project))
+        .push(Router::with_path("recreate").post(recreate_project))
+        .push(Router::with_path("pull").post(pull_project))
+        .push(Router::with_path("build").post(build_project))
+        .push(
+            Router::with_path("service/{service}")
+                .push(Router::with_path("restart").post(restart_service))
+                .push(Router::with_path("start").post(start_service))
+                .push(Router::with_path("stop").post(stop_service))
+                .push(Router::with_path("recreate").post(recreate_service))
+                .push(Router::with_path("pull").post(pull_service))
+                .push(Router::with_path("build").post(build_service)),
+        );
+}
 
 /// Restarts the given project and all its services.
 #[endpoint]
