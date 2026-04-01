@@ -15,7 +15,11 @@ install:
 build:
     pnpm build
     cargo build --release
-    cp -R packages/panel/build target/release/static
+    rm -R  target/release/static; cp -R packages/panel/build target/release/static
+
+[working-directory('target/release')]
+preview:
+    ./luminary-node
 
 export DATABASE_URL := "sqlite://" + justfile_dir() + "/luminary.db"
 

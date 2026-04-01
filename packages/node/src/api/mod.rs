@@ -93,7 +93,7 @@ fn router() -> Router {
                         ),
                 ),
         )
-        .push(Router::with_path("{*path}").get(StaticDir::new(["static"]).defaults("fallback.html")));
+        .push(Router::with_path("{*path}").get(StaticDir::new(["static"]).fallback("index.html")));
 }
 
 /// A simple endpoint to test if the server is running.

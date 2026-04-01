@@ -41,7 +41,7 @@
 
 	let navbarWidth = $state(0);
 
-	let returnable = $derived(page.url.pathname.split("/").length > 2);
+	let returnable = $derived(page.url.pathname.split("/").length > 3);
 
 	function toggleExpanded() {
 		expanded = !expanded;
@@ -89,7 +89,7 @@
 					<Fa icon={open ? faXmark : faBars} />
 				</button>
 				{#if returnable}
-					<a href="./">
+					<a href="../">
 						<Fa icon={faChevronLeft} />
 					</a>
 				{:else}
@@ -119,7 +119,7 @@
 
 	<div class="flexc gap-20 full">
 		{#if returnable && !isMobile()}
-			<a href="./"><Fa icon={faChevronLeft} /> Back</a>
+			<a href="../"><Fa icon={faChevronLeft} /> Back</a>
 		{/if}
 		<main class="full">
 			{@render children()}
