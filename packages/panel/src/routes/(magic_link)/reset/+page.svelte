@@ -3,6 +3,10 @@
 	let { data } = $props();
 </script>
 
+<svelte:head>
+	<title>Reset Password - Luminary</title>
+</svelte:head>
+
 <div class="flexc center">
 	<h2 class="sub">
 		<Logo />

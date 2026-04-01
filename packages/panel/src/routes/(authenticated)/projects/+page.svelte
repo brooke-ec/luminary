@@ -38,6 +38,10 @@
 	};
 </script>
 
+<svelte:head>
+	<title>Projects - Luminary</title>
+</svelte:head>
+
 <div class="flexc gap-10 full projects" {...accordion.root}>
 	<div class="flexr center gap-10">
 		<Fa icon={faMagnifyingGlass} size="lg" />

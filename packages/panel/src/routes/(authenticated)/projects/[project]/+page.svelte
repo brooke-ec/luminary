@@ -81,6 +81,10 @@
 	});
 </script>
 
+<svelte:head>
+	<title>{page.params.project} - Luminary</title>
+</svelte:head>
+
 {#if project}
 	<div class="flexc gap-10">
 		<!-- Title Bar -->

@@ -22,6 +22,10 @@
 	}
 </script>
 
+<svelte:head>
+	<title>Log In - Luminary</title>
+</svelte:head>
+
 <main class="full flex center">
 	<div class="island flexc center gap-20">
 		<div class="flexc center">

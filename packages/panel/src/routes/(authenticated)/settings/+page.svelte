@@ -24,6 +24,10 @@
 	});
 </script>
 
+<svelte:head>
+	<title>Settings - Luminary</title>
+</svelte:head>
+
 <div class="flexc gap-10">
 	<!-- Title Bar -->
 	<h1 class="flexr gap-10 center fit">

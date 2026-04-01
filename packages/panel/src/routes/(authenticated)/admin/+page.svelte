@@ -4,6 +4,10 @@
 	import UserList from "./UserList.svelte";
 </script>
 
+<svelte:head>
+	<title>Admin - Luminary</title>
+</svelte:head>
+
 <Tabs tabs={[{ icon: faUsers, label: "users", content: users }]} />
 
 {#snippet users()}
