@@ -1,10 +1,9 @@
 <script lang="ts">
 	import { faBan, faKey, faPlus, faSignature, faUserCircle, faWrench } from "@fortawesome/free-solid-svg-icons";
-	import { api, isMobile, openDialog } from "$lib";
-	import Fa from "svelte-fa";
 	import LoaderButton from "$lib/component/LoaderButton.svelte";
 	import CopyBox from "$lib/component/CopyBox.svelte";
-	import { page } from "$app/state";
+	import { api, isMobile, openDialog } from "$lib";
+	import Fa from "svelte-fa";
 
 	type LuminaryUser = api.components["schemas"]["luminary_node.api.auth.LuminaryUser"];
 
@@ -22,7 +21,7 @@
 			body: { username },
 		});
 
-		let url = new URL(`reset?token=${response.data!}`, window.location.toString()).toString();
+		let url = new URL(`invite?token=${response.data!}`, window.location.toString()).toString();
 
 		refresh();
 		openDialog({

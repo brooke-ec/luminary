@@ -95,9 +95,6 @@
 		display: flex;
 		flex-direction: column;
 
-		min-width: 75vw;
-		min-height: 25vh;
-
 		padding: 10px;
 
 		transition: opacity ease 300ms;
