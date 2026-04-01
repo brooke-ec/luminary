@@ -1,5 +1,5 @@
 [package]
-name = "luminary-node"
+name = "luminary"
 version = { workspace = true }
 edition = { workspace = true }
 

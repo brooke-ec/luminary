@@ -22,7 +22,7 @@ mod util;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    dotenvy::dotenv()?;
+    dotenvy::dotenv().ok();
 
     // Set up logging
     let broadcast_layer = logging::BroadcastLayer::new();
