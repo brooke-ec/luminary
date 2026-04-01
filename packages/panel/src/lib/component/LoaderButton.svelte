@@ -16,10 +16,10 @@
 		disabled,
 		onclick,
 	}: {
-		style?: "button" | "a" | "outline";
+		style?: "button" | "a" | "outline" | "danger";
 		children: Snippet<[boolean]> | string;
-		onclick?: () => Promise<void>;
 		"aria-label"?: string;
+		onclick?: () => any;
 		disabled?: boolean;
 		loading?: boolean;
 		fit?: boolean;

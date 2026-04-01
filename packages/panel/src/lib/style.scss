@@ -81,8 +81,17 @@ a.button {
 		background-color: var(--mauve);
 	}
 
+	&.danger {
+		background-color: var(--red);
+
+		&:hover {
+			background-color: var(--red);
+			opacity: 0.8;
+		}
+	}
+
 	&:disabled {
-		background-color: var(--overlay1);
+		background-color: var(--overlay1) !important;
 		cursor: not-allowed;
 	}
 

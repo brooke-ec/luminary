@@ -1,13 +1,21 @@
 <script lang="ts">
-	import { faArrowsRotate, faBan, faPlay, faRocket, faStop } from "@fortawesome/free-solid-svg-icons";
 	import PromiseButton from "$lib/component/PromiseButton.svelte";
 	import StatusIcon from "$lib/component/StatusIcon.svelte";
 	import Tooltip from "$lib/component/Tooltip.svelte";
 	import { goto } from "$app/navigation";
+	import { api, closeDialog, openDialog } from "$lib";
 	import Fa from "svelte-fa";
-	import { api } from "$lib";
+	import {
+		faArrowsRotate,
+		faBan,
+		faCircleExclamation,
+		faPlay,
+		faRocket,
+		faStop,
+	} from "@fortawesome/free-solid-svg-icons";
 
 	let { project }: { project: api.LuminaryProject } = $props();
+	let confirmation = $state("");
 
 	let allAction = $derived.by(() => {
 		let services = Object.values(project.services);
@@ -17,11 +25,62 @@
 		return action;
 	});
 
+	function clickDelete() {
+		openDialog({ title: deletionTitle, content: deletionContent, parameters: project.name });
+		confirmation = "";
+	}
+
 	async function deleteProject() {
 		await api.client.DELETE("/api/project/{project}", { params: { path: { project: project.name } } });
 		await goto("/projects");
+		closeDialog();
 	}
 </script>
+
+{#snippet deletionTitle()}
+	<span style:color="var(--red)" style="padding-right: 5px;">
+		<Fa icon={faCircleExclamation} />
+	</span>
+	<span>Delete Project</span>
+{/snippet}
+
+{#snippet deletionContent(name: string)}
+	<p>
+		Are you sure that you want to delete <span style="font-weight: bold">{name}</span>?
+		<br />
+		This will delete the entire project directory and its contents.
+	</p>
+	<p style="color: var(--red); font-weight: bold; text-align: center">THIS ACTION IS IRREVERSIBLE</p>
+	<br />
+	<p>
+		<label for="confirmation">
+			Enter <span style="color: var(--red); font-weight: bold">delete {name}</span> below to confirm deletion:
+		</label>
+		<input id="confirmation" type="text" bind:value={confirmation} />
+	</p>
+	<div class="flexr gap-5">
+		<PromiseButton
+			disabled={project?.busy || confirmation !== `delete ${project.name}`}
+			onclick={deleteProject}
+			style="danger"
+			fit
+		>
+			{#snippet children(loading)}
+				<div class="flexr center gap-10">
+					{#if !loading}<Fa icon={faCircleExclamation} /> Delete Project
+					{:else}
+						Deleting...
+					{/if}
+				</div>
+			{/snippet}
+		</PromiseButton>
+		<button class="outline" onclick={closeDialog}>
+			<div class="flexr center gap-10">
+				<Fa icon={faBan} /> Cancel
+			</div>
+		</button>
+	</div>
+{/snippet}
 
 <h2>Actions</h2>
 {#if project.invalid}
@@ -87,14 +146,12 @@
 				</div>
 			{/snippet}
 		</PromiseButton>
-		<PromiseButton fit style="outline" disabled={project.busy} onclick={deleteProject}>
-			{#snippet children(loading)}
-				<div class="flexr center gap-10">
-					{#if !loading}<Fa icon={faBan} />{/if}
-					Delete Project
-				</div>
-			{/snippet}
-		</PromiseButton>
+		<button class="outline" disabled={project.busy} onclick={clickDelete}>
+			<div class="flexr center gap-10">
+				<Fa icon={faBan} />
+				Delete Project
+			</div>
+		</button>
 	</div>
 {/if}
 
