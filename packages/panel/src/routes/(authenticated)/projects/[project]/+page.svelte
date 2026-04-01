@@ -4,10 +4,10 @@
 	import { faSave } from "@fortawesome/free-regular-svg-icons";
 	import LogTerminal from "$lib/component/LogTerminal.svelte";
 	import StatusIcon from "$lib/component/StatusIcon.svelte";
+	import { beforeNavigate, goto } from "$app/navigation";
 	import StatusTab from "./ProjectStatus.svelte";
 	import EditTabs from "../EditTabs.svelte";
 	import { getProjects } from "$lib/api";
-	import { goto } from "$app/navigation";
 	import { api, isMobile } from "$lib";
 	import { page } from "$app/state";
 	import { onMount } from "svelte";
@@ -74,6 +74,10 @@
 		return () => {
 			window.removeEventListener("keydown", saveKeybind, true);
 		};
+	});
+
+	beforeNavigate(({ cancel }) => {
+		if (unsaved && !confirm("You have unsaved changes. Are you sure you want to leave?")) cancel();
 	});
 </script>
 

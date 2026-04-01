@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { faBan, faCircleInfo, faLayerGroup, faPlus } from "@fortawesome/free-solid-svg-icons";
 	import PromiseButton from "$lib/component/PromiseButton.svelte";
+	import { beforeNavigate, goto } from "$app/navigation";
 	import EditTabs from "../projects/EditTabs.svelte";
 	import placeholder from "./placeholder.yml?raw";
-	import { goto } from "$app/navigation";
 	import { onMount } from "svelte";
 	import { api } from "$lib";
 	import Fa from "svelte-fa";
@@ -41,6 +41,10 @@
 		return () => {
 			window.removeEventListener("keydown", saveKeybind, true);
 		};
+	});
+
+	beforeNavigate(({ cancel }) => {
+		if (!confirm("You may have unsaved changes. Are you sure you want to leave?")) cancel();
 	});
 </script>
 
