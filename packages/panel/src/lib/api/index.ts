@@ -9,10 +9,10 @@ export * from "./realtime.svelte";
 
 const TOKEN_KEY = "luminary-token";
 
-type LuminaryFailResponse = components["schemas"]["luminary_node.api.response.LuminaryFailResponse"];
+type LuminaryFailResponse = components["schemas"]["luminary.api.response.LuminaryFailResponse"];
 
 type LuminaryResponse =
-	| components["schemas"]["luminary_node.api.response.LuminarySuccessResponse<()>"]
+	| components["schemas"]["luminary.api.response.LuminarySuccessResponse<()>"]
 	| LuminaryFailResponse;
 
 type ExcludeFail<T> = T extends LuminaryFailResponse ? never : T;
@@ -116,7 +116,7 @@ client.use(middleware);
  * If successful, the token will be stored and used for future requests.
  * @param credentials The credentials to use for authentication.
  */
-export async function login(credentials: components["schemas"]["luminary_node.api.auth.LuminaryUserCredentials"]) {
+export async function login(credentials: components["schemas"]["luminary.api.auth.LuminaryUserCredentials"]) {
 	const response = await client.POST("/api/auth/login", { body: credentials });
 	putToken(response.data!);
 }

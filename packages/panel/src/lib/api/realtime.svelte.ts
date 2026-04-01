@@ -5,9 +5,9 @@ import { client, isAuthenticated } from ".";
 import { goto } from "$app/navigation";
 import { patch } from "ultrapatch";
 
-export type LuminaryProjectList = components["schemas"]["luminary_node.core.model.LuminaryProjectList"];
-export type LuminaryProject = components["schemas"]["luminary_node.core.model.LuminaryProject"];
-type LogMessage = components["schemas"]["luminary_node.logging.LogMessage"];
+export type LuminaryProjectList = components["schemas"]["luminary.core.model.LuminaryProjectList"];
+export type LuminaryProject = components["schemas"]["luminary.core.model.LuminaryProject"];
+type LogMessage = components["schemas"]["luminary.logging.LogMessage"];
 
 /**
  * The current internal list of projects and their states.
@@ -67,10 +67,10 @@ async function listen(signal: AbortSignal, fetch?: typeof globalThis.fetch) {
 					"Luminary will attempt to reconnect automatically. If the issue persists, please check your network connection and the server status.",
 				]);
 			}
-		} catch (_) {
-			if (signal.aborted) return;
-			await backoff.wait();
-		}
+		} catch (_) {}
+
+		if (signal.aborted) return;
+		await backoff.wait();
 	}
 }
 

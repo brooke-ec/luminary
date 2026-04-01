@@ -1,5 +1,5 @@
 <script lang="ts" module>
-	export type LuminaryStatus = components["schemas"]["luminary_node.core.model.LuminaryStatus"];
+	export type LuminaryStatus = components["schemas"]["luminary.core.model.LuminaryStatus"];
 </script>
 
 <script lang="ts">

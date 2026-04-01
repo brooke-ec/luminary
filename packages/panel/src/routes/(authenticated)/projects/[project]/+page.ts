@@ -3,7 +3,7 @@ import type { LuminaryProject } from "$lib/api";
 import type { PageLoad } from "./$types";
 import { api } from "$lib";
 
-type LuminaryProjectWithCompose = components["schemas"]["luminary_node.api.project.LuminaryProjectWithCompose"];
+type LuminaryProjectWithCompose = components["schemas"]["luminary.api.project.LuminaryProjectWithCompose"];
 
 export const load: PageLoad = async ({ params }) => {
 	const response = await api.client

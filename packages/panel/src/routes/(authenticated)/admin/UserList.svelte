@@ -5,7 +5,7 @@
 	import { api, isMobile, openDialog } from "$lib";
 	import Fa from "svelte-fa";
 
-	type LuminaryUser = api.components["schemas"]["luminary_node.api.auth.LuminaryUser"];
+	type LuminaryUser = api.components["schemas"]["luminary.api.auth.LuminaryUser"];
 
 	let users: LuminaryUser[] = $state([]);
 
