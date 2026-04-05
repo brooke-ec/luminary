@@ -59,7 +59,7 @@
 		<label for="confirmation">
 			Enter <span style="color: var(--red); font-weight: bold">delete {name}</span> below to confirm deletion:
 		</label>
-		<input id="confirmation" type="text" bind:value={confirmation} />
+		<input id="confirmation" type="text" bind:value={confirmation} autocomplete="off" />
 	</p>
 	<div class="flexr gap-5">
 		<PromiseButton
