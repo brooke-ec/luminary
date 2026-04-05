@@ -20,6 +20,8 @@ RUN pnpm build
 
 FROM alpine:latest
 
+RUN apk add docker-cli-compose
+
 WORKDIR /opt/app
 
 COPY --from=backend-builder /opt/app/target/release/luminary .
