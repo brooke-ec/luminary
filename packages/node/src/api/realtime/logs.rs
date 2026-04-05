@@ -14,7 +14,10 @@ use salvo::{
     sse::{self, SseEvent},
 };
 
-use crate::{core::LuminaryEngine, eyre_fmt, obtain};
+use crate::{
+    core::{LuminaryEngine, ProjectLogChannelMessage},
+    eyre_fmt, obtain,
+};
 
 /// Subscribes to a stream of log messages for a given project, sent as Server-Sent Events.
 #[endpoint(
@@ -30,13 +33,13 @@ pub async fn logs_subscribe(project: PathParam<String>, res: &mut Response, depo
     let engine = obtain!(depot, LuminaryEngine);
     let project = project.into_inner();
 
-    let mut stream = engine.logs_subscribe(project).await;
+    let mut stream = engine.clone().logs_subscribe(project).await;
 
     sse::stream(
         res,
         async_stream::stream! {
-            while let Some(bytes) = stream.next().await {
-                match create_event(&bytes).wrap_err("Failed to create SSE event from log bytes") {
+            while let Some(message) = stream.next().await {
+                match create_event(message).wrap_err("Failed to create SSE event from log bytes") {
                     Err(err) => log::error!("{}", eyre_fmt!(err)),
                     Ok(event) => yield Ok::<SseEvent, Infallible>(event),
                 }
@@ -46,7 +49,12 @@ pub async fn logs_subscribe(project: PathParam<String>, res: &mut Response, depo
 }
 
 /// Creates a Server-Sent Event from a chunk of log bytes.
-fn create_event(bytes: &[u8]) -> Result<SseEvent, Infallible> {
-    let encoded = STANDARD.encode(bytes);
-    return Ok(SseEvent::default().text(encoded));
+fn create_event(message: ProjectLogChannelMessage) -> Result<SseEvent, Infallible> {
+    return match message {
+        ProjectLogChannelMessage::Close(uuid) => Ok(SseEvent::default().id("close").text(uuid)),
+        ProjectLogChannelMessage::Write(uuid, bytes) => {
+            let encoded = STANDARD.encode(bytes);
+            Ok(SseEvent::default().id(uuid).text(encoded))
+        }
+    };
 }

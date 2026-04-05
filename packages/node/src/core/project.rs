@@ -33,7 +33,7 @@ impl LuminaryEngine {
 
     /// Validates a compose file by attempting to parse it and performing basic checks on the structure.
     #[wrap_err("Invalid compose file")]
-    fn validate_compose(&self, compose: &str) -> Result<()> {
+    fn validate_compose(&self, compose: &String) -> Result<()> {
         let compose = serde_saphyr::from_str::<Compose>(compose).wrap_err("Failed to parse compose file")?;
 
         if compose.services.is_empty() {
@@ -44,7 +44,7 @@ impl LuminaryEngine {
     }
 
     #[wrap_err("Failed to delete project")]
-    pub async fn delete_project(&self, project: &str) -> Result<()> {
+    pub async fn delete_project(&self, project: &String) -> Result<()> {
         let (project_path, _) = self.get_path(project);
 
         self.stop(project, None).await?;
@@ -63,7 +63,7 @@ impl LuminaryEngine {
     }
 
     /// Updates the given project by applying the provided patch
-    pub async fn patch_project(&self, project: &str, patch: &LuminaryProjectPatch) -> Result<()> {
+    pub async fn patch_project(&self, project: &String, patch: &LuminaryProjectPatch) -> Result<()> {
         // Validate request
         if project.len() == 0 || patch.to.as_ref().is_some_and(|name| name.len() == 0) {
             bail!("Project name cannot be empty");

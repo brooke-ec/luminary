@@ -1,12 +1,13 @@
 //! This module defines the core data models used within the Luminary application.
 
-use std::{fmt::Display, sync::Arc};
+use std::{collections::HashMap, fmt::Display, sync::Arc};
 
 use bytes::{Bytes, BytesMut};
 use luminary_macros::hashmap_schema;
 use salvo::oapi::{BasicType, Components, Object, RefOr, Schema, ToSchema};
 use serde::{Deserialize, Serialize, ser::SerializeStruct};
 use tokio::sync::{RwLock, broadcast};
+use uuid::Uuid;
 
 use crate::schema_ref_or;
 
@@ -180,9 +181,25 @@ pub enum LuminaryAction {
 /// This is created lazily when a client subscribes to logs for a project.
 #[derive(Debug, Clone)]
 pub struct ProjectLogChannel {
-    pub channel: broadcast::Sender<Bytes>,
+    pub channel: broadcast::Sender<ProjectLogChannelMessage>,
     // Using an Arc here to allow the worker to keep a reference to the log buffer
-    pub buffer: Arc<RwLock<BytesMut>>,
+    pub state: Arc<RwLock<HashMap<Uuid, BytesMut>>>,
+}
+
+impl Default for ProjectLogChannel {
+    fn default() -> Self {
+        Self {
+            state: Arc::new(RwLock::new(HashMap::new())),
+            channel: broadcast::channel(64).0,
+        }
+    }
+}
+
+/// A message type for multiplexing log streams.
+#[derive(Debug, Clone)]
+pub enum ProjectLogChannelMessage {
+    Write(Uuid, Bytes),
+    Close(Uuid),
 }
 
 /// The configuration for updating a project. Allows for multiple updates at once.

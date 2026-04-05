@@ -9,8 +9,8 @@ impl LuminaryEngine {
     #[wrap_err("Failed to set action for service")]
     pub(super) async fn set_action(
         &self,
-        project: &str,
-        service: Option<&str>,
+        project: &String,
+        service: Option<&String>,
         action: LuminaryAction,
     ) -> Result<()> {
         // Get list of targets to update
@@ -52,8 +52,8 @@ impl LuminaryEngine {
     async fn run(
         &self,
         action: LuminaryAction,
-        project: &str,
-        service: Option<&str>,
+        project: &String,
+        service: Option<&String>,
         mut args: Vec<&str>,
     ) -> Result<()> {
         self.set_action(project, service, action).await?;
@@ -63,14 +63,20 @@ impl LuminaryEngine {
         }
 
         let mut stream = self.cli(&project, args)?;
-        while let Some(_) = stream.next().await {}
+        let sender = self.create_log_sender(project.clone()).await;
+
+        while let Some(bytes) = stream.next().await {
+            sender.write(bytes?).await;
+        }
+
         self.set_action(project, service, LuminaryAction::Idle).await?;
+        sender.close().await;
         return Ok(());
     }
 
     /// Restarts the given project and optionally, a specific service within that project.
     #[wrap_err("Failed to restart project/service")]
-    pub async fn restart(&self, project: &str, service: Option<&str>) -> Result<()> {
+    pub async fn restart(&self, project: &String, service: Option<&String>) -> Result<()> {
         self.run(LuminaryAction::Restarting, project, service, vec!["restart"])
             .await?;
         Ok(())
@@ -78,7 +84,7 @@ impl LuminaryEngine {
 
     /// Starts the given project and optionally, a specific service within that project.
     #[wrap_err("Failed to start project/service")]
-    pub async fn start(&self, project: &str, service: Option<&str>) -> Result<()> {
+    pub async fn start(&self, project: &String, service: Option<&String>) -> Result<()> {
         self.run(LuminaryAction::Starting, project, service, vec!["up", "-d"])
             .await?;
         Ok(())
@@ -86,7 +92,7 @@ impl LuminaryEngine {
 
     /// Stops the given project and optionally, a specific service within that project.
     #[wrap_err("Failed to stop project/service")]
-    pub async fn stop(&self, project: &str, service: Option<&str>) -> Result<()> {
+    pub async fn stop(&self, project: &String, service: Option<&String>) -> Result<()> {
         self.run(
             LuminaryAction::Stopping,
             project,
@@ -99,7 +105,7 @@ impl LuminaryEngine {
 
     /// Recreates the given project and optionally, a specific service within that project.
     #[wrap_err("Failed to recreate project/service")]
-    pub async fn recreate(&self, project: &str, service: Option<&str>) -> Result<()> {
+    pub async fn recreate(&self, project: &String, service: Option<&String>) -> Result<()> {
         self.stop(project, service).await?;
         self.start(project, service).await?;
         Ok(())
@@ -107,7 +113,7 @@ impl LuminaryEngine {
 
     /// Pulls the latest images for the given project and optionally, a specific service within that project.
     #[wrap_err("Failed to pull project/service images")]
-    pub async fn pull(&self, project: &str, service: Option<&str>) -> Result<()> {
+    pub async fn pull(&self, project: &String, service: Option<&String>) -> Result<()> {
         self.run(
             LuminaryAction::Pulling,
             project,
@@ -120,7 +126,7 @@ impl LuminaryEngine {
 
     /// Builds the images for the given project and optionally, a specific service within that project.
     #[wrap_err("Failed to build project/service images")]
-    pub async fn build(&self, project: &str, service: Option<&str>) -> Result<()> {
+    pub async fn build(&self, project: &String, service: Option<&String>) -> Result<()> {
         self.run(
             LuminaryAction::Building,
             project,
