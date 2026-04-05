@@ -9,6 +9,7 @@
 	import Fa from "svelte-fa";
 
 	let format = $state(async () => {});
+	let saving = false;
 
 	// svelte-ignore state_referenced_locally
 	let project = $state({
@@ -24,6 +25,7 @@
 			params: { path: { project: project.name } },
 		});
 
+		saving = true;
 		api.putProject(response.data!);
 		await goto(`/projects/${project.name}${location.hash}`);
 	}
@@ -44,7 +46,7 @@
 	});
 
 	beforeNavigate(({ cancel }) => {
-		if (!confirm("You may have unsaved changes. Are you sure you want to leave?")) cancel();
+		if (!saving && !confirm("You may have unsaved changes. Are you sure you want to leave?")) cancel();
 	});
 </script>
 

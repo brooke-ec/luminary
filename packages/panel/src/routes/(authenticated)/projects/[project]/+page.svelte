@@ -51,13 +51,13 @@
 		});
 
 		api.putProject(response.data!);
+		unsaved = false;
 
 		if (rename) {
 			await goto(`/projects/${copy.name}${location.hash}`);
 			return;
 		}
 
-		unsaved = false;
 		data.compose = copy.compose;
 	}
 
