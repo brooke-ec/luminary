@@ -150,7 +150,7 @@ impl LuminaryEngine {
 
         if recreate {
             // Use manual command as action is currently "patching"
-            let mut stream = self.cli(&from, vec!["down", "--remove-orphans"])?;
+            let mut stream = self.run_pty(&from, vec!["down", "--remove-orphans"])?;
             while let Some(_) = stream.next().await {}
         };
 
@@ -159,7 +159,7 @@ impl LuminaryEngine {
             .wrap_err("Failed to rename project directory")?;
 
         if recreate {
-            let mut stream = self.cli(&to, vec!["up", "-d"])?;
+            let mut stream = self.run_pty(&to, vec!["up", "-d"])?;
             while let Some(_) = stream.next().await {}
         }
 

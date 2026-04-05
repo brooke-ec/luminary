@@ -87,7 +87,7 @@ impl LuminaryEngine {
                 debug!("Starting logs stream for project '{}'...", project);
                 // Spawn docker compose process, yielding logs as they are recieved
                 match this
-                    .cli(&project, ["logs", "-f"])
+                    .run_pty(&project, ["logs", "-f"])
                     .wrap_err("Failed to start docker compose logs process")
                 {
                     Err(err) => error!("{}", eyre_fmt!(err)),

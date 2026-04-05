@@ -62,7 +62,7 @@ impl LuminaryEngine {
             args.push(service);
         }
 
-        let mut stream = self.cli(&project, args)?;
+        let mut stream = self.run_pty(&project, args)?;
         let sender = self.create_log_sender(project.clone()).await;
 
         while let Some(bytes) = stream.next().await {

@@ -1,22 +1,27 @@
 //! The core engine of the Luminary application, containing shared state and configuration.
 
-use std::{collections::HashMap, path::Path, process::Stdio, sync::Arc};
+use std::{collections::HashMap, io::Read, path::Path, sync::Arc};
 
 use async_stream::stream;
 use bollard::Docker;
 use bytes::Bytes;
 use eyre::{Context, Result, bail};
 use futures_util::{StreamExt, stream::BoxStream};
+use log::error;
 use luminary_macros::wrap_err;
-use tokio::{
-    io::AsyncReadExt,
-    process::Command,
-    sync::{Mutex, RwLock, broadcast},
-};
+use portable_pty::{CommandBuilder, PtySize, native_pty_system};
+use tokio::sync::{Mutex, RwLock, broadcast, mpsc};
 
 use crate::{
     configuration::LuminaryConfiguration,
     core::{LuminaryProjectList, ProjectLogChannel},
+};
+
+const PTY_SIZE: PtySize = PtySize {
+    rows: 40,
+    cols: 80,
+    pixel_width: 18,
+    pixel_height: 18,
 };
 
 /// The core engine of the Luminary application, containing shared state and configuration.
@@ -66,8 +71,8 @@ impl LuminaryEngine {
         }
     }
 
-    /// Spawns a `docker compose` process and returns a stream of raw bytes merging both stdout and stderr
-    pub(super) fn cli<'a>(
+    /// Spawns a `docker compose` process and returns a stream of raw bytes from its output.
+    pub(super) fn run_pty<'a>(
         &self,
         name: &'a str,
         args: impl IntoIterator<Item = &'a str>,
@@ -78,52 +83,51 @@ impl LuminaryEngine {
             bail!("Project '{}' does not exist", name);
         }
 
-        let mut child = Command::new("docker")
-            .current_dir(path)
-            .arg("compose")
-            .args(["--ansi", "always"])
-            .args(args)
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn()
-            .wrap_err("Failed to spawn docker compose process")?;
+        let pty = native_pty_system()
+            .openpty(PTY_SIZE)
+            .map_err(|e| eyre::eyre!("Failed to open PTY: {e}"))?;
 
-        let mut stdout = child.stdout.take().expect("stdout was piped");
-        let mut stderr = child.stderr.take().expect("stderr was piped");
+        let mut command = CommandBuilder::new("docker");
+        command.cwd(path);
+        command.arg("compose");
+        command.args(args);
 
-        Ok(stream! {
-            let mut stdout_buf = vec![0u8; 4096];
-            let mut stderr_buf = vec![0u8; 4096];
-            let mut stdout_done = false;
-            let mut stderr_done = false;
+        let mut child = pty
+            .slave
+            .spawn_command(command)
+            .map_err(|err| eyre::eyre!("Failed to spawn docker compose process: {}", err))?;
 
-            while !stdout_done || !stderr_done {
-                tokio::select! {
-                    result = stdout.read(&mut stdout_buf), if !stdout_done => {
-                        match result {
-                            Ok(0) => stdout_done = true,
-                            Ok(n) => yield Ok(Bytes::copy_from_slice(&stdout_buf[..n])),
-                            Err(e) => {
-                                yield Err(eyre::eyre!(e).wrap_err("Failed to read stdout"));
-                                stdout_done = true;
-                            }
-                        }
-                    }
-                    result = stderr.read(&mut stderr_buf), if !stderr_done => {
-                        match result {
-                            Ok(0) => stderr_done = true,
-                            Ok(n) => yield Ok(Bytes::copy_from_slice(&stderr_buf[..n])),
-                            Err(e) => {
-                                yield Err(eyre::eyre!(e).wrap_err("Failed to read stderr"));
-                                stderr_done = true;
-                            }
-                        }
+        let mut reader = pty
+            .master
+            .try_clone_reader()
+            .map_err(|err| eyre::eyre!("Failed to create PTY output reader: {}", err))?;
+
+        // Close the slave so reader recieves EOF
+        drop(pty.slave);
+
+        let (sender, mut reciever) = mpsc::channel::<Result<Bytes>>(64);
+
+        tokio::task::spawn_blocking(move || {
+            let mut buf = vec![0u8; 4096];
+
+            loop {
+                match reader.read(&mut buf) {
+                    Err(err) => error!("Error reading from PTY: {}", err),
+                    Ok(0) => break,
+                    Ok(n) => {
+                        sender.blocking_send(Ok(Bytes::copy_from_slice(&buf[..n]))).ok();
                     }
                 }
             }
 
-            child.wait().await.ok();
+            child.wait().ok();
+        });
+
+        return Ok(stream! {
+            while let Some(chunk) = reciever.recv().await {
+                yield chunk;
+            }
         }
-        .boxed())
+        .boxed());
     }
 }
