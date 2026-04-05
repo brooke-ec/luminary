@@ -15,6 +15,7 @@ pub fn router() -> Router {
         .push(Router::with_path("recreate").post(recreate_project))
         .push(Router::with_path("pull").post(pull_project))
         .push(Router::with_path("build").post(build_project))
+        .push(Router::with_path("update").post(update_project))
         .push(
             Router::with_path("service/{service}")
                 .push(Router::with_path("restart").post(restart_service))
@@ -141,6 +142,16 @@ pub async fn pull_service(
 pub async fn build_project(project: PathParam<String>, depot: &mut Depot) -> LuminaryResponse<()> {
     let engine = obtain!(depot, LuminaryEngine);
 
+    engine.build(&project, None).await?;
+    return Ok(().into());
+}
+
+/// Pulls and builds the images for all the services in the given project.
+#[endpoint]
+pub async fn update_project(project: PathParam<String>, depot: &mut Depot) -> LuminaryResponse<()> {
+    let engine = obtain!(depot, LuminaryEngine);
+
+    engine.pull(&project, None).await?;
     engine.build(&project, None).await?;
     return Ok(().into());
 }

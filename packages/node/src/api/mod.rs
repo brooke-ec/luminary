@@ -52,7 +52,7 @@ pub async fn setup(engine: LuminaryEngine, pool: SqlitePool, logs: BroadcastLaye
         crate::core::LuminaryProjectList::to_schema(&mut openapi.components);
         crate::logging::LogMessage::to_schema(&mut openapi.components);
 
-        let location = concat!(env!("CARGO_MANIFEST_DIR"), "/../panel/static/openapi.json");
+        let location = concat!(env!("CARGO_MANIFEST_DIR"), "/openapi.json");
         std::fs::write(location, openapi.to_pretty_json()?)?;
         info!("OpenAPI documentation written to {}", location);
     }

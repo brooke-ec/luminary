@@ -9,9 +9,12 @@
 		faArrowsRotate,
 		faBan,
 		faCircleExclamation,
+		faDownload,
+		faHammer,
 		faPlay,
 		faRocket,
 		faStop,
+		faTimeline,
 	} from "@fortawesome/free-solid-svg-icons";
 
 	let { project }: { project: api.LuminaryProject } = $props();
@@ -146,6 +149,20 @@
 				</div>
 			{/snippet}
 		</PromiseButton>
+		<PromiseButton
+			fit
+			style="outline"
+			disabled={project.busy}
+			onclick={() =>
+				api.client.POST("/api/project/{project}/update", { params: { path: { project: project.name } } })}
+		>
+			{#snippet children(loading)}
+				<div class="flexr center gap-10">
+					{#if !loading}<Fa icon={faTimeline} />{/if}
+					Update All
+				</div>
+			{/snippet}
+		</PromiseButton>
 		<button class="outline" disabled={project.busy} onclick={clickDelete}>
 			<div class="flexr center gap-10">
 				<Fa icon={faBan} />
@@ -244,6 +261,40 @@
 						>
 							{#snippet children(loading)}
 								{#if !loading}<Fa icon={faRocket} />{/if}
+							{/snippet}
+						</PromiseButton>
+					</Tooltip>
+
+					<Tooltip placement="left" content="Pull Service">
+						<PromiseButton
+							style="a"
+							aria-label="Pull Service"
+							disabled={service.action !== "idle"}
+							loading={service.action === "pulling"}
+							onclick={() =>
+								api.client.POST("/api/project/{project}/service/{service}/pull", {
+									params: { path: { project: project.name, service: service.serviceName } },
+								})}
+						>
+							{#snippet children(loading)}
+								{#if !loading}<Fa icon={faDownload} />{/if}
+							{/snippet}
+						</PromiseButton>
+					</Tooltip>
+
+					<Tooltip placement="left" content="Rebuild Service">
+						<PromiseButton
+							style="a"
+							aria-label="Rebuild Service"
+							disabled={service.action !== "idle"}
+							loading={service.action === "building"}
+							onclick={() =>
+								api.client.POST("/api/project/{project}/service/{service}/build", {
+									params: { path: { project: project.name, service: service.serviceName } },
+								})}
+						>
+							{#snippet children(loading)}
+								{#if !loading}<Fa icon={faHammer} />{/if}
 							{/snippet}
 						</PromiseButton>
 					</Tooltip>

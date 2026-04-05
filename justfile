@@ -21,7 +21,7 @@ build:
 preview:
     ./luminary-node
 
-export DATABASE_URL := "sqlite://" + justfile_dir() + "/luminary.db"
+export DATABASE_URL := "sqlite://" + justfile_dir() + "/data/luminary.db"
 
 [working-directory('packages/node')]
 prepare:

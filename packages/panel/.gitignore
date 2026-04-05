@@ -9,7 +9,6 @@ node_modules
 /build
 
 # Generated
-/static/openapi.json
 /src/lib/api/openapi.ts
 
 # OS

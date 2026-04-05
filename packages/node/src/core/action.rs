@@ -97,6 +97,7 @@ impl LuminaryEngine {
         Ok(())
     }
 
+    /// Recreates the given project and optionally, a specific service within that project.
     #[wrap_err("Failed to recreate project/service")]
     pub async fn recreate(&self, project: &str, service: Option<&str>) -> Result<()> {
         self.stop(project, service).await?;
@@ -104,27 +105,30 @@ impl LuminaryEngine {
         Ok(())
     }
 
-    /// Stops the given project and optionally, a specific service within that project.
+    /// Pulls the latest images for the given project and optionally, a specific service within that project.
     #[wrap_err("Failed to pull project/service images")]
     pub async fn pull(&self, project: &str, service: Option<&str>) -> Result<()> {
-        self.run(LuminaryAction::Pulling, project, service, vec!["pull"])
-            .await?;
-        self.recreate(project, service).await?;
+        self.run(
+            LuminaryAction::Pulling,
+            project,
+            service,
+            vec!["up", "--pull", "always", "-d"],
+        )
+        .await?;
         Ok(())
     }
 
-    /// Stops the given project and optionally, a specific service within that project.
+    /// Builds the images for the given project and optionally, a specific service within that project.
     #[wrap_err("Failed to build project/service images")]
     pub async fn build(&self, project: &str, service: Option<&str>) -> Result<()> {
         self.run(
             LuminaryAction::Building,
             project,
             service,
-            vec!["build", "--no-cache"],
+            vec!["up", "--build", "-d"],
         )
         .await?;
 
-        self.recreate(project, service).await?;
         Ok(())
     }
 }

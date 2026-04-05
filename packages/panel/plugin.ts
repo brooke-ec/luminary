@@ -3,7 +3,7 @@ import { writeFileSync } from "node:fs";
 import { existsSync } from "node:fs";
 import type { Plugin } from "vite";
 
-const OPENAPI_PATH = new URL("static/openapi.json", import.meta.url);
+const OPENAPI_PATH = new URL("../node/openapi.json", import.meta.url);
 
 async function generateTypes() {
 	if (!existsSync(OPENAPI_PATH)) return;
