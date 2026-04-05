@@ -51,10 +51,10 @@ pub async fn logs_subscribe(project: PathParam<String>, res: &mut Response, depo
 /// Creates a Server-Sent Event from a chunk of log bytes.
 fn create_event(message: ProjectLogChannelMessage) -> Result<SseEvent, Infallible> {
     return match message {
-        ProjectLogChannelMessage::Close(uuid) => Ok(SseEvent::default().id("close").text(uuid)),
+        ProjectLogChannelMessage::Close(uuid) => Ok(SseEvent::default().name("close").text(uuid)),
         ProjectLogChannelMessage::Write(uuid, bytes) => {
             let encoded = STANDARD.encode(bytes);
-            Ok(SseEvent::default().id(uuid).text(encoded))
+            Ok(SseEvent::default().name(uuid).text(encoded))
         }
     };
 }

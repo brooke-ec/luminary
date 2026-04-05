@@ -2,14 +2,18 @@
 	import { parseServerSentEvents, type ServerSentEvent } from "parse-sse";
 	import { WebLinksAddon } from "@xterm/addon-web-links";
 	import type { Attachment } from "svelte/attachments";
-	import { FitAddon } from "@xterm/addon-fit";
 	import { Terminal, type ITheme } from "@xterm/xterm";
+	import { SvelteMap } from "svelte/reactivity";
+	import { FitAddon } from "@xterm/addon-fit";
 	import "@xterm/xterm/css/xterm.css";
 	import { client } from "$lib/api";
+	import { onMount } from "svelte";
 	import { Backoff } from "$lib";
 
 	let { project }: { project: string } = $props();
 	let loading = $state(true);
+
+	let terminals = $state(new SvelteMap<string, Terminal>());
 
 	function getComputedCSSVar(name: string) {
 		return getComputedStyle(document.documentElement).getPropertyValue(`--${name}`).trim();
@@ -33,8 +37,7 @@
 		} satisfies ITheme).map(([key, varName]) => [key, getComputedCSSVar(varName)]),
 	);
 
-	const terminal: Attachment<HTMLElement> = (el) => {
-		const terminal = new Terminal({ theme, disableStdin: true });
+	const terminal: (terminal: Terminal) => Attachment<HTMLElement> = (terminal) => (el) => {
 		const fitAddon = new FitAddon();
 
 		terminal.loadAddon(new WebLinksAddon());
@@ -49,17 +52,12 @@
 		const observer = new ResizeObserver(() => fitAddon.fit());
 		observer.observe(el);
 
-		const abort = new AbortController();
-		stream(terminal, abort.signal);
-
 		return () => {
-			abort.abort();
 			observer.disconnect();
-			terminal.dispose();
 		};
 	};
 
-	async function stream(terminal: Terminal, signal: AbortSignal) {
+	async function stream(signal: AbortSignal) {
 		const backoff = new Backoff();
 
 		while (true) {
@@ -80,14 +78,34 @@
 					if (signal.aborted) return;
 					loading = false;
 
-					terminal.write(Uint8Array.from(atob(event.data), (c) => c.charCodeAt(0)));
+					if (event.type === "close") {
+						const terminal = terminals.get(event.data);
+						if (terminal) terminal.dispose();
+						terminals.delete(event.data);
+					} else {
+						const id = event.type;
+						if (!terminals.has(id)) terminals.set(id, new Terminal({ theme, disableStdin: true }));
+						const terminal = terminals.get(event.type)!;
+
+						terminal.write(Uint8Array.from(atob(event.data), (c) => c.charCodeAt(0)));
+					}
 				}
-			} catch (_) {
+			} catch (e) {
 				if (signal.aborted) return;
 				await backoff.wait();
 			}
 		}
 	}
+
+	onMount(() => {
+		const abort = new AbortController();
+		stream(abort.signal);
+
+		return () => {
+			terminals.forEach((t) => t.dispose());
+			abort.abort();
+		};
+	});
 </script>
 
 <div class="container">
@@ -95,7 +113,11 @@
 		<div class="positioner"><span class="loader"></span></div>
 	{/if}
 
-	<div {@attach terminal}></div>
+	<div class="terminals">
+		{#each terminals.entries() as [id, t] (id)}
+			<div {@attach terminal(t)} data-uuid={id}></div>
+		{/each}
+	</div>
 </div>
 
 <style lang="scss">
@@ -105,6 +127,20 @@
 		background-color: var(--crust);
 		border-radius: 10px;
 		padding: 10px;
+	}
+
+	.terminals {
+		display: grid;
+		grid-auto-flow: row;
+		grid-auto-rows: minmax(0, 1fr);
+
+		max-height: 452px;
+		min-height: 452px;
+	}
+
+	.terminals > div {
+		min-width: 0;
+		width: 100%;
 	}
 
 	.positioner {
