@@ -1,6 +1,6 @@
 //! The main entry point for the Luminary Node, which serves as the backend for the Luminary Panel.
 
-use std::sync::Arc;
+use std::{fs::OpenOptions, sync::Arc};
 
 use eyre::{Context, Result};
 use log::debug;
@@ -12,7 +12,7 @@ use tracing_subscriber::{
 
 use crate::{configuration::LuminaryConfiguration, core::LuminaryEngine};
 
-const DATABASE: &str = "data/luminary.db";
+const DATABASE: &str = "./data/luminary.db";
 
 mod api;
 mod configuration;
@@ -57,6 +57,12 @@ async fn main() -> Result<()> {
 
 /// Sets up the SQLite database, running any pending migrations.
 async fn setup_database() -> Result<SqlitePool> {
+    OpenOptions::new()
+        .write(true)
+        .create(true)
+        .open(DATABASE)
+        .wrap_err_with(|| format!("Invalid permissions to open database file."))?;
+
     // Connect to the database
     let options = SqliteConnectOptions::default()
         .create_if_missing(true)

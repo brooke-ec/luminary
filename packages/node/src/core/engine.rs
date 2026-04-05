@@ -67,7 +67,6 @@ impl LuminaryEngine {
     }
 
     /// Spawns a `docker compose` process and returns a stream of raw bytes merging both stdout and stderr
-    #[wrap_err("Failed to spawn docker compose process")]
     pub(super) fn cli<'a>(
         &self,
         name: &'a str,
