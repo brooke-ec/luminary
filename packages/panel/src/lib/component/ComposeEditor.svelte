@@ -158,7 +158,7 @@
 	{#if focused}
 		<div class="keybinds">
 			<div class="keybind"><Fa icon={faArrowRightFromBracket} /> Esc</div>
-			<div class="keybind"><Fa icon={faAlignLeft} /> Alt F</div>
+			<div class="keybind"><Fa icon={faAlignLeft} /> Alt + F</div>
 		</div>
 	{/if}
 	<div onfocusin={() => (focused = true)} onfocusout={() => (focused = false)} class="editor" {@attach editor}></div>
