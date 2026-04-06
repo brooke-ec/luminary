@@ -1,0 +1,20 @@
+name: Build Image
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  build:
+    permissions:
+      packages: write
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+      - uses: docker/build-push-action@v6
+        with:
+          image: luminary
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
