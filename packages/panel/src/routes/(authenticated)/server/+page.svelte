@@ -5,7 +5,7 @@
 </script>
 
 <svelte:head>
-	<title>Admin - Luminary</title>
+	<title>Server - Luminary</title>
 </svelte:head>
 
 <Tabs tabs={[{ icon: faUsers, label: "users", content: users }]} />
