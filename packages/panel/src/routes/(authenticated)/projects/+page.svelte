@@ -6,8 +6,8 @@
 	import { getProjects } from "$lib/api";
 	import { Debounced } from "runed";
 	import hotkeys from "hotkeys-js";
-	import Fa from "svelte-fa";
 	import { roving } from "$lib";
+	import Fa from "svelte-fa";
 
 	const ORDER = ["healthy", "running", "exited", "paused", "down", "paused"] as LuminaryStatus[];
 

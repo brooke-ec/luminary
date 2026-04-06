@@ -2,15 +2,16 @@
 	import { faCircleInfo, faClockRotateLeft, faLayerGroup } from "@fortawesome/free-solid-svg-icons";
 	import PromiseButton from "$lib/component/PromiseButton.svelte";
 	import { faSave } from "@fortawesome/free-regular-svg-icons";
+	import { getProjects, type LuminaryProject } from "$lib/api";
 	import LogTerminal from "$lib/component/LogTerminal.svelte";
 	import StatusIcon from "$lib/component/StatusIcon.svelte";
 	import { beforeNavigate, goto } from "$app/navigation";
 	import StatusTab from "./ProjectStatus.svelte";
 	import EditTabs from "../EditTabs.svelte";
-	import { getProjects } from "$lib/api";
 	import { api, isMobile } from "$lib";
 	import { page } from "$app/state";
 	import { onMount } from "svelte";
+	import { watch } from "runed";
 	import Fa from "svelte-fa";
 
 	let project = $derived(getProjects()[page.params.project!]);
@@ -19,33 +20,34 @@
 	let format = $state(async () => {});
 
 	// svelte-ignore state_referenced_locally
-	let copy = $state({
-		compose: data.compose ?? "",
-		name: project?.name ?? "",
-	});
-
-	// Watch for changes to set unsaved state
-	let unsaved = $state(false);
-	$effect(() => {
-		if (!project) return;
-
-		unsaved = copy.name !== project.name || copy.compose !== data.compose;
-	});
+	// @ts-ignore
+	let changes: { compose: string; name: string } = $state({});
 
 	function revert() {
-		copy.compose = data.compose ?? "";
-		copy.name = project.name;
+		changes.compose = data.compose ?? "";
+		changes.name = project.name;
 	}
+
+	revert();
+
+	// If the project changes (eg. due to navigation), reset working data to the new project's data
+	watch(() => page.params.project, revert);
+
+	// Unsaved check
+	let unsaved = $derived.by(() => {
+		if (!project) return false;
+		return changes.name !== project.name || changes.compose !== data.compose;
+	});
 
 	async function save() {
 		if (localStorage.getItem("luminary-format-on-save") == "true") await format();
 
-		const rename = copy.name !== project.name;
+		const rename = changes.name !== project.name;
 		const response = await api.client.PATCH(`/api/project/{project}`, {
 			params: { path: { project: project.name } },
 			body: {
-				compose: copy.compose === data.compose ? null : copy.compose,
-				to: rename ? copy.name : null,
+				compose: changes.compose === data.compose ? null : changes.compose,
+				to: rename ? changes.name : null,
 				creating: false,
 			},
 		});
@@ -54,11 +56,11 @@
 		unsaved = false;
 
 		if (rename) {
-			await goto(`/projects/${copy.name}${location.hash}`);
+			await goto(`/projects/${changes.name}${location.hash}`);
 			return;
 		}
 
-		data.compose = copy.compose;
+		data.compose = changes.compose;
 	}
 
 	onMount(() => {
@@ -77,7 +79,7 @@
 	});
 
 	beforeNavigate(({ cancel }) => {
-		if (unsaved && !confirm("You have unsaved changes. Are you sure you want to leave?")) cancel();
+		if (unsaved && !confirm("You have unsaved changes. Are you sure you want to leave?")) return cancel();
 	});
 </script>
 
@@ -99,7 +101,7 @@
 			</div>
 		</h1>
 
-		<EditTabs bind:format bind:data={copy} tabs={[{ label: "status", icon: faCircleInfo, content: status }]} />
+		<EditTabs bind:format bind:data={changes} tabs={[{ label: "status", icon: faCircleInfo, content: status }]} />
 	</div>
 
 	{#snippet status()}
@@ -114,7 +116,7 @@
 		<div style="color: var(--peach); margin-bottom: 10px;">* Unsaved changes</div>
 		<div class="flexr gap-10">
 			<div>
-				<PromiseButton onclick={save} disabled={copy.name.trim() === ""}>
+				<PromiseButton onclick={save} disabled={changes.name.trim() === ""}>
 					<div class="flexr gap-5 center">
 						<Fa icon={faSave} /> Save
 					</div>

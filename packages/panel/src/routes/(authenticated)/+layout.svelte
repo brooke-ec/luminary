@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Navbar from "./Navbar.svelte";
 	import { api } from "$lib";
+	import Search from "./Search.svelte";
 
 	let { children } = $props();
 
@@ -8,3 +9,4 @@
 </script>
 
 <Navbar {children} />
+<Search />

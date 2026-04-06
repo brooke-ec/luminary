@@ -7,11 +7,13 @@
 
 <script lang="ts">
 	import Crane from "$lib/component/Crane.svelte";
+	import { onMount, type Snippet } from "svelte";
 	import { onNavigate } from "$app/navigation";
+	import { openSearch } from "./Search.svelte";
 	import { slide } from "svelte/transition";
 	import { isMobile, roving } from "$lib";
-	import type { Snippet } from "svelte";
 	import { page } from "$app/state";
+	import hotkeys from "hotkeys-js";
 	import Fa from "svelte-fa";
 	import {
 		faMagnifyingGlass,
@@ -21,7 +23,7 @@
 		faBars,
 		faGear,
 		faPlusCircle,
-		faLock,
+		faServer,
 	} from "@fortawesome/free-solid-svg-icons";
 
 	const EXPANDED_KEY = "luminary-navbar-expanded";
@@ -30,7 +32,7 @@
 		{ icon: faLayerGroup, label: "Projects", href: "/projects" },
 		{ icon: faPlusCircle, label: "Create", href: "/create" },
 		"search",
-		{ icon: faLock, label: "Admin", href: "/admin" },
+		{ icon: faServer, label: "Server", href: "/server" },
 		{ icon: faGear, label: "Settings", href: "/settings" },
 	] satisfies ({ icon: any; label: string; href: string } | "search")[];
 
@@ -55,16 +57,27 @@
 	onNavigate(() => {
 		open = false;
 	});
+
+	onMount(() => {
+		hotkeys("ctrl+/", () => {
+			openSearch();
+			return false;
+		});
+
+		return () => {
+			hotkeys.unbind("ctrl+/");
+		};
+	});
 </script>
 
 {#snippet links()}
 	{#each PAGES as entry}
 		{#if entry === "search"}
-			<button class="a entry" style="margin-bottom: auto">
+			<button class="a entry" style="margin-bottom: auto" aria-label="search" onclick={openSearch}>
 				<div class="icon">
 					<Fa icon={faMagnifyingGlass} />
 				</div>
-				<div class="label">Search</div>
+				<div class="label"><span class="keybind">ctrl + /</span></div>
 			</button>
 		{:else}
 			{@const { icon, label, href } = entry}
