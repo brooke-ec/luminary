@@ -1,6 +1,6 @@
 services:
   luminary:
-    image: luminary:latest
+    image: ghcr.io/brooke-ec/luminary:latest
     container_name: luminary
     restart: unless-stopped
     ports:
