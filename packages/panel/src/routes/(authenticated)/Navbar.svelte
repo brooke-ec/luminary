@@ -30,11 +30,11 @@
 
 	const PAGES = [
 		{ icon: faLayerGroup, label: "Projects", href: "/projects" },
-		{ icon: faPlusCircle, label: "Create", href: "/create" },
+		{ icon: faPlusCircle, label: "Create", long: "Create Project", href: "/create" },
 		"search",
-		{ icon: faServer, label: "Server", href: "/server" },
-		{ icon: faGear, label: "Settings", href: "/settings" },
-	] satisfies ({ icon: any; label: string; href: string } | "search")[];
+		{ icon: faServer, label: "Server", long: "Server Settings", href: "/server" },
+		{ icon: faGear, label: "Settings", long: "user Settings", href: "/settings" },
+	] satisfies ({ icon: any; label: string; href: string; long?: string } | "search")[];
 
 	let { children }: { children: Snippet<[]> } = $props();
 
@@ -77,16 +77,28 @@
 				<div class="icon">
 					<Fa icon={faMagnifyingGlass} />
 				</div>
-				<div class="label"><span class="keybind">ctrl + /</span></div>
+				<div class="label">
+					{#if isMobile()}
+						Search
+					{:else}
+						<span class="keybind">ctrl + /</span>
+					{/if}
+				</div>
 			</button>
 		{:else}
-			{@const { icon, label, href } = entry}
+			{@const { icon, label, href, long } = entry}
 
 			<a class="entry" {href} class:current={page.url.pathname.startsWith(href)}>
 				<div class="icon">
 					<Fa {icon} />
 				</div>
-				<div class="label">{label}</div>
+				<div class="label">
+					{#if isMobile()}
+						{long ?? label}
+					{:else}
+						{label}
+					{/if}
+				</div>
 			</a>
 		{/if}
 	{/each}
@@ -239,7 +251,9 @@
 	}
 
 	.expanded .label {
-		flex-basis: #{$navbar-width - 48px};
+		@media (min-width: 426px) {
+			flex-basis: #{$navbar-width - 48px};
+		}
 	}
 
 	.icon {
@@ -260,5 +274,9 @@
 
 		white-space: nowrap;
 		font-size: 14px;
+
+		@media (max-width: 425px) {
+			flex-basis: auto;
+		}
 	}
 </style>
