@@ -7,6 +7,7 @@
 	import { Debounced } from "runed";
 	import hotkeys from "hotkeys-js";
 	import Fa from "svelte-fa";
+	import { roving } from "$lib";
 
 	const ORDER = ["healthy", "running", "exited", "paused", "down", "paused"] as LuminaryStatus[];
 
@@ -69,7 +70,7 @@
 			<hr />
 		</button>
 		{#if item.isExpanded}
-			<div class="grid" {...item.content}>
+			<div class="grid" {...item.content} {@attach roving("a.project")}>
 				{#each projects as project (project.name)}
 					<a href="/projects/{project.name}" class="project">
 						<h2>

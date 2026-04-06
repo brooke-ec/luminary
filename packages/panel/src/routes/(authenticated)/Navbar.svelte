@@ -9,9 +9,9 @@
 	import Crane from "$lib/component/Crane.svelte";
 	import { onNavigate } from "$app/navigation";
 	import { slide } from "svelte/transition";
+	import { isMobile, roving } from "$lib";
 	import type { Snippet } from "svelte";
 	import { page } from "$app/state";
-	import { isMobile } from "$lib";
 	import Fa from "svelte-fa";
 	import {
 		faMagnifyingGlass,
@@ -105,7 +105,7 @@
 	{:else}
 		<div style:min-width="{navbarWidth}px"></div>
 
-		<nav class:expanded bind:clientWidth={navbarWidth}>
+		<nav class:expanded bind:clientWidth={navbarWidth} {@attach roving()}>
 			{@render links()}
 
 			<button class="a entry" onclick={toggleExpanded} aria-label="{expanded ? 'collapse' : 'expand'} sidebar">

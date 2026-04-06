@@ -1,12 +1,22 @@
 import { faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
 import { faCircleXmark } from "@fortawesome/free-regular-svg-icons";
+import type { Attachment } from "svelte/attachments";
 import { addToast } from "../routes/Toaster.svelte";
+import { rovingIndex } from "roving-ux";
 
 export { openDialog, closeDialog } from "../routes/Dialog.svelte";
 
 export * as api from "./api";
 
 export { isMobile } from "../routes/+layout.svelte";
+
+/// An attachment that applies roving behavior to the attached element. Allowing its children to be navigated with arrow keys.
+export const roving: (target?: string) => Attachment<HTMLElement> = (target) => (element) => {
+	rovingIndex({
+		target: target ?? "& > a, button",
+		element,
+	});
+};
 
 /**
  * Trims {@paramstr} to {@param maxLength}, adding ellipses if it was too long.

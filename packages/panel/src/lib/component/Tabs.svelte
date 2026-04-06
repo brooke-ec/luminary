@@ -15,6 +15,7 @@
 	import { Accordion } from "melt/builders";
 	import type { Snippet } from "svelte";
 	import { page } from "$app/state";
+	import { roving } from "$lib";
 	import Fa from "svelte-fa";
 
 	let { tabs }: { tabs: { label: string; icon: IconDefinition; content: Snippet<[]> }[] } = $props();
@@ -44,6 +45,7 @@
 		class:flexc={isMobile()}
 		class="flexr gap-10"
 		style:width={isMobile() ? "100%" : "fit-content"}
+		{@attach roving("button")}
 	>
 		{#each tabs as tab (tab.label)}
 			{@const item = accordion.getItem({ id: tab.label })}

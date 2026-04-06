@@ -100,6 +100,9 @@ importers:
       prettier-plugin-svelte:
         specifier: ^3.3.3
         version: 3.5.1(prettier@3.8.1)(svelte@5.53.7)
+      roving-ux:
+        specifier: ^1.0.5
+        version: 1.0.5
       runed:
         specifier: ^0.37.1
         version: 0.37.1(@sveltejs/kit@2.53.4(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.53.7)(vite@6.4.1(@types/node@25.3.5)(sass@1.97.3)(yaml@2.8.2)))(svelte@5.53.7)(typescript@5.9.3)(vite@6.4.1(@types/node@25.3.5)(sass@1.97.3)(yaml@2.8.2)))(svelte@5.53.7)
@@ -1191,6 +1194,9 @@ packages:
     resolution: {integrity: sha512-2oMpl67a3zCH9H79LeMcbDhXW/UmWG/y2zuqnF2jQq5uq9TbM9TVyXvA4+t+ne2IIkBdrLpAaRQAvo7YI/Yyeg==}
     engines: {node: '>=18.0.0', npm: '>=8.0.0'}
     hasBin: true
+
+  roving-ux@1.0.5:
+    resolution: {integrity: sha512-JCvxfcLOhhw8lGP/vrfZzQdsZ0tmM2Z04TPzxPANMOjg3p80cbRyOEhUZdIOwn76bGSJA1S/TfYk+hcNA3jhLA==}
 
   runed@0.23.4:
     resolution: {integrity: sha512-9q8oUiBYeXIDLWNK5DfCWlkL0EW3oGbk845VdKlPeia28l751VpfesaB/+7pI6rnbx1I6rqoZ2fZxptOJLxILA==}
@@ -2411,6 +2417,8 @@ snapshots:
       '@rollup/rollup-win32-x64-gnu': 4.59.0
       '@rollup/rollup-win32-x64-msvc': 4.59.0
       fsevents: 2.3.3
+
+  roving-ux@1.0.5: {}
 
   runed@0.23.4(svelte@5.53.7):
     dependencies:

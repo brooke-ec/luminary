@@ -1,9 +1,9 @@
 <script lang="ts">
 	import PromiseButton from "$lib/component/PromiseButton.svelte";
+	import { api, closeDialog, openDialog, roving } from "$lib";
 	import StatusIcon from "$lib/component/StatusIcon.svelte";
 	import Tooltip from "$lib/component/Tooltip.svelte";
 	import { goto } from "$app/navigation";
-	import { api, closeDialog, openDialog } from "$lib";
 	import Fa from "svelte-fa";
 	import {
 		faArrowsRotate,
@@ -89,7 +89,7 @@
 {#if project.invalid}
 	<div>You must fix the <a href="#compose">compose file</a> to trigger actions.</div>
 {:else}
-	<div class="flexr gap-5 wrap">
+	<div class="flexr gap-5 wrap" {@attach roving()}>
 		<PromiseButton
 			fit
 			style="outline"
@@ -197,7 +197,7 @@
 			</div>
 
 			{#if !service.orphan}
-				<div class="flexr center gap-5">
+				<div class="flexr center gap-5" {@attach roving()}>
 					<Tooltip placement="left" content="Start Service">
 						<PromiseButton
 							style="a"
