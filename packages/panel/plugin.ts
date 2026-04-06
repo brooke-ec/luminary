@@ -1,9 +1,16 @@
 import openapiTS, { astToString } from "openapi-typescript";
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { existsSync } from "node:fs";
 import type { Plugin } from "vite";
 
 const OPENAPI_PATH = new URL("../node/openapi.json", import.meta.url);
+const CARGO_TOML_PATH = new URL("../../Cargo.toml", import.meta.url);
+
+export function getVersion() {
+	const cargo = readFileSync(CARGO_TOML_PATH, "utf8");
+	const version = cargo.match(/\[workspace\.package\][\s\S]*?\nversion\s*=\s*(.+)/)?.[1];
+	return version ?? "unknown";
+}
 
 async function generateTypes() {
 	if (!existsSync(OPENAPI_PATH)) return;
