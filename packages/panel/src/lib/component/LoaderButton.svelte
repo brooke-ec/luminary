@@ -42,7 +42,7 @@
 
 <style lang="scss">
 	button {
-		display: flex;
+		display: inline-flex;
 		align-items: center;
 		justify-content: center;
 		gap: 10px;

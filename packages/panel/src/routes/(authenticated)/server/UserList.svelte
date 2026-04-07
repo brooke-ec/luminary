@@ -4,6 +4,7 @@
 	import CopyBox from "$lib/component/CopyBox.svelte";
 	import { api, isMobile, openDialog } from "$lib";
 	import Fa from "svelte-fa";
+	import PromiseButton from "$lib/component/PromiseButton.svelte";
 
 	type LuminaryUser = api.components["schemas"]["luminary.api.auth.LuminaryUser"];
 
@@ -36,6 +37,7 @@
 	}
 
 	async function delete_user(uuid: string) {
+		if (!confirm(`Are you sure you want to delete this user? This action is irreversible.`)) return;
 		await api.client.DELETE("/api/auth/users/{user}", { params: { path: { user: uuid } } });
 		refresh();
 	}
@@ -88,9 +90,9 @@
 				{/if}
 				<td>{user.username}</td>
 				<td class="actions-col">
-					<button class="outline" onclick={() => delete_user(user.uuid)}>
+					<PromiseButton fit style="outline" onclick={() => delete_user(user.uuid)}>
 						<Fa icon={faBan} /> Delete
-					</button>
+					</PromiseButton>
 				</td>
 			</tr>
 		{/each}
