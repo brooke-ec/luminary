@@ -26,6 +26,9 @@
 			{/if}
 			<input required id="name" type="text" bind:value={data.name} />
 		</div>
+		{#if !/^[A-Za-z0-9-_]*$/.test(data.name)}
+			<div style="color: var(--red)">Project name only contain only alphanumeric, underscores and dashes</div>
+		{/if}
 	</div>
 
 	<h2>Compose</h2>

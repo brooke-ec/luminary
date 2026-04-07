@@ -116,7 +116,10 @@
 		<div style="color: var(--peach); margin-bottom: 10px;">* Unsaved changes</div>
 		<div class="flexr gap-10">
 			<div>
-				<PromiseButton onclick={save} disabled={changes.name.trim() === ""}>
+				<PromiseButton
+					onclick={save}
+					disabled={project.name.trim() === "" || !/^[A-Za-z0-9-_]*$/.test(changes.name)}
+				>
 					<div class="flexr gap-5 center">
 						<Fa icon={faSave} /> Save
 					</div>
