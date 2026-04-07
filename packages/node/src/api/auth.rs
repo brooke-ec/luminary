@@ -2,7 +2,7 @@
 
 use std::fmt::Debug;
 
-use eyre::{Context, ContextCompat, Result};
+use eyre::{Context, ContextCompat, Result, eyre};
 use log::error;
 use luminary_macros::wrap_err;
 use password_auth::verify_password;
@@ -81,6 +81,10 @@ async fn get_users(depot: &mut Depot) -> LuminaryResponse<Vec<LuminaryUser>> {
 #[endpoint]
 async fn create_user(depot: &mut Depot, body: JsonBody<CreateUserRequest>) -> LuminaryResponse<String> {
     let auth = obtain!(depot, LuminaryAuthentication);
+
+    if auth.get_user_by_name(&body.username).await?.is_some() {
+        return Err(eyre!("A user with that name already exists").into());
+    }
 
     let reset_token = auth.create_user(&body.username).await?;
     return Ok(reset_token.into());
@@ -222,6 +226,20 @@ impl LuminaryAuthentication {
         .fetch_optional(&self.pool)
         .await
         .wrap_err("Failed to look up session")?;
+
+        return Ok(user);
+    }
+
+    #[wrap_err("Failed to get user by name")]
+    pub async fn get_user_by_name(&self, username: &str) -> Result<Option<LuminaryUser>> {
+        let user = sqlx::query_as!(
+            LuminaryUser,
+            "SELECT * FROM [user] WHERE [username] = ?",
+            username
+        )
+        .fetch_optional(&self.pool)
+        .await
+        .wrap_err("Failed to look up user by name")?;
 
         return Ok(user);
     }
