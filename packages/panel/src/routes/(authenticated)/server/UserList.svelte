@@ -16,20 +16,23 @@
 	let username = $state("");
 	let loading = $state(false);
 	async function create_user() {
-		loading = true;
-		const response = await api.client.POST("/api/auth/users", {
-			body: { username },
-		});
+		try {
+			loading = true;
+			const response = await api.client.POST("/api/auth/users", {
+				body: { username },
+			});
 
-		let url = new URL(`invite?token=${response.data!}`, window.location.toString()).toString();
+			let url = new URL(`invite?token=${response.data!}`, window.location.toString()).toString();
 
-		refresh();
-		openDialog({
-			content: success,
-			title: `User ${username} created!`,
-			parameters: { username, url },
-		});
-		loading = false;
+			refresh();
+			openDialog({
+				content: success,
+				title: `User ${username} created!`,
+				parameters: { username, url },
+			});
+		} finally {
+			loading = false;
+		}
 	}
 
 	async function delete_user(uuid: string) {
