@@ -1,6 +1,6 @@
 FROM rust:alpine AS backend-builder
 
-COPY . /opt/app
+COPY / /opt/app
 
 WORKDIR /opt/app
 
@@ -13,7 +13,7 @@ FROM node:22-alpine AS frontend-builder
 
 RUN npm -g install pnpm
 
-COPY . /opt/app
+COPY / /opt/app
 
 WORKDIR /opt/app
 
