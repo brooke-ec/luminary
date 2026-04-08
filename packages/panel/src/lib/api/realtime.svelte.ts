@@ -1,4 +1,5 @@
-import { parseServerSentEvents, type ServerSentEvent } from "parse-sse";
+import { EventSourceParserStream } from "eventsource-parser/stream";
+import type { EventSourceMessage } from "eventsource-parser";
 import type { components } from "./openapi";
 import { Backoff, error, warn } from "$lib";
 import { client, isAuthenticated } from ".";
@@ -51,12 +52,19 @@ async function listen(signal: AbortSignal, fetch?: typeof globalThis.fetch) {
 				fetch,
 			});
 
+			if (!response.body) throw new Error("Missing response body");
+
 			backoff.reset();
 
 			try {
-				for await (const event of parseServerSentEvents(
-					response,
-				) as unknown as AsyncIterable<ServerSentEvent>) {
+				const events = response.body
+					.pipeThrough(new TextDecoderStream())
+					.pipeThrough(new EventSourceParserStream());
+				const reader = events.getReader();
+
+				while (true) {
+					const { done, value: event } = await reader.read();
+					if (done) break;
 					if (signal.aborted) return;
 					handleEvent(event);
 				}
@@ -78,8 +86,8 @@ async function listen(signal: AbortSignal, fetch?: typeof globalThis.fetch) {
  * Handle incoming server-sent events from the server.
  * @param event The event received from the server.
  */
-function handleEvent(event: ServerSentEvent) {
-	switch (event.type) {
+function handleEvent(event: EventSourceMessage) {
+	switch (event.event) {
 		case "list":
 			patch(list, JSON.parse(event.data));
 		case "log":

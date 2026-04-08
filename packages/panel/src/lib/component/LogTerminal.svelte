@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { parseServerSentEvents, type ServerSentEvent } from "parse-sse";
+	import { EventSourceParserStream } from "eventsource-parser/stream";
+	import type { EventSourceMessage } from "eventsource-parser";
 	import { WebLinksAddon } from "@xterm/addon-web-links";
 	import type { Attachment } from "svelte/attachments";
 	import { Terminal, type ITheme } from "@xterm/xterm";
@@ -70,30 +71,44 @@
 					signal,
 				});
 
+				if (!response.body) throw new Error("Missing response body");
+
 				backoff.reset();
 
-				for await (const event of parseServerSentEvents(
-					response,
-				) as unknown as AsyncIterable<ServerSentEvent>) {
+				const events = response.body
+					.pipeThrough(new TextDecoderStream())
+					.pipeThrough(new EventSourceParserStream());
+				const reader = events.getReader();
+
+				while (true) {
+					const { done, value: event } = await reader.read();
+					if (done) break;
 					if (signal.aborted) return;
 					loading = false;
 
-					if (event.type === "close") {
-						const terminal = terminals.get(event.data);
-						if (terminal) terminal.dispose();
-						terminals.delete(event.data);
-					} else {
-						const id = event.type;
-						if (!terminals.has(id)) terminals.set(id, new Terminal({ theme, disableStdin: true }));
-						const terminal = terminals.get(event.type)!;
-
-						terminal.write(Uint8Array.from(atob(event.data), (c) => c.charCodeAt(0)));
-					}
+					handleEvent(event);
 				}
 			} catch (e) {
 				if (signal.aborted) return;
 				await backoff.wait();
 			}
+		}
+	}
+
+	function handleEvent(event: EventSourceMessage) {
+		const eventType = event.event;
+		if (!eventType) return;
+
+		if (eventType === "close") {
+			const terminal = terminals.get(event.data);
+			if (terminal) terminal.dispose();
+			terminals.delete(event.data);
+		} else {
+			const id = eventType;
+			if (!terminals.has(id)) terminals.set(id, new Terminal({ theme, disableStdin: true }));
+			const terminal = terminals.get(id)!;
+
+			terminal.write(Uint8Array.from(atob(event.data), (c) => c.charCodeAt(0)));
 		}
 	}
 
